@@ -6,6 +6,11 @@ type: docker
   environment:
     GRADLE_USER_HOME: /drone/src/.gradle_user_home
 
+.when_master: &when_master
+  when:
+    branch:
+      - master
+
 steps:
   - name: restore-cache
     image: drillster/drone-volume-cache
@@ -67,6 +72,25 @@ steps:
         See {{ build.link }} for details.
     when:
       status: [ failure ]
+  - name: tag
+    image: alpine:latest
+    commands:
+      - echo -en "latest,signed,${DRONE_COMMIT_SHA:0:8}" > .tags
+      - echo -en "signed,${DRONE_COMMIT_SHA:0:8}" > .tags.signed
+    <<: *when_master
+
+  - name: package lab-res
+    image: plugins/docker
+    settings:
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      repo: healthmetrixgmbh/lab-res
+      dockerfile: Dockerfile
+      build_args:
+        - JAR_FILE=./build/libs/lab-res.jar
+    <<: *when_master
 
 volumes:
   - name: socket
@@ -79,3 +103,28 @@ volumes:
 trigger:
   event:
     - push
+
+---
+##
+# Secrets
+##
+
+kind: secret
+name: docker_username
+get:
+  path: dev/docker.hub/login
+  name: username
+
+---
+kind: secret
+name: docker_password
+get:
+  path: dev/docker.hub/login
+  name: password
+
+---
+kind: secret
+name: slack_webhook
+get:
+  path: dev/drone/slack-webhook
+  name: url
