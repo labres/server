@@ -1,0 +1,81 @@
+kind: pipeline
+name: lab-res
+type: docker
+
+.gradle_user_home: &gradle_user_home
+  environment:
+    GRADLE_USER_HOME: /drone/src/.gradle_user_home
+
+steps:
+  - name: restore-cache
+    image: drillster/drone-volume-cache
+    volumes:
+      - name: gradle-user-home-cache
+        path: /cache
+    settings:
+      restore: true
+      mount:
+        ./.gradle_user_home
+
+  - name: lint
+    image: healthmetrixgmbh/ktlint
+
+  - name: build
+    image: openjdk:11-jdk-slim
+    <<: *gradle_user_home
+    commands:
+      - ./gradlew --no-daemon shadowJar
+
+  - name: gradle dependency check
+    image: openjdk:11-jdk-slim
+    <<: *gradle_user_home
+    commands:
+      - ./gradlew --no-daemon dependencyUpdates
+
+  - name: rebuild-cache
+    image: drillster/drone-volume-cache
+    volumes:
+      - name: gradle-user-home-cache
+        path: /cache
+    settings:
+      rebuild: true
+      mount:
+        - ./.gradle_user_home
+
+  - name: report outdated dependencies
+    image: alpine:latest
+    environment:
+      WEBHOOK:
+        from_secret: slack_webhook
+    commands:
+      - if [ ! -f "build/dependencyUpdates/outdated-dependencies" ]; then exit 0; fi
+      - apk add curl
+      - 'curl -sS -X POST $WEBHOOK -H "Content-Type: application/json" -d "{\"text\":\"Found outdated dependencies in build ${DRONE_COMMIT_SHA:0:8}\n\`\`\`$(cat build/dependencyUpdates/outdated-dependencies)\`\`\`\"}"'
+
+  - name: slack
+    image: plugins/slack
+    settings:
+      webhook:
+        from_secret: slack_webhook
+      template: >
+        Build failed for {{ repo.name }}:
+
+        Commit {{truncate build.commit 8}} by {{ build.author }}
+
+        Branch {{ build.branch }}
+
+        See {{ build.link }} for details.
+    when:
+      status: [ failure ]
+
+volumes:
+  - name: socket
+    host:
+      path: /var/run/docker.sock
+  - name: gradle-user-home-cache
+    host:
+      path: /tmp/gradle-user-home-cache
+
+trigger:
+  event:
+    - push

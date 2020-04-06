@@ -1,12 +1,15 @@
+import com.github.benmanes.gradle.versions.reporter.result.Result
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+
 plugins {
     application
     kotlin("jvm") version "1.3.71"
-    id("com.github.johnrengelman.shadow") version "5.0.0"
+    id("com.github.johnrengelman.shadow") version "5.2.0"
+    id("com.github.ben-manes.versions") version "0.28.0"
 }
 
 group = "com.healthmetrix"
 version = "1.0-SNAPSHOT"
-
 
 repositories {
     mavenCentral()
@@ -47,4 +50,29 @@ tasks.withType<Jar> {
     }
 
     archiveFileName.set("lab-res.jar")
+}
+
+tasks.withType<DependencyUpdatesTask> {
+    outputFormatter = closureOf<Result> {
+        val sb = StringBuilder()
+        outdated.dependencies.forEach { dep ->
+            sb.append("${dep.group}:${dep.name} ${dep.version} -> ${dep.available.release ?: dep.available.milestone}\n")
+        }
+        if (sb.isNotBlank()) rootProject.file("build/dependencyUpdates/outdated-dependencies").apply {
+            parentFile.mkdirs()
+            println(sb.toString())
+            writeText(sb.toString())
+        } else println("Up to date!")
+    }
+
+    // no alphas, betas, milestones, release candidates
+    // or whatever the heck jaxb-api is using
+    rejectVersionIf {
+        candidate.version.contains("alpha") or
+                candidate.version.contains("beta") or
+                candidate.version.contains(Regex("M[0-9]*(-.*)?$")) or
+                candidate.version.contains("RC", ignoreCase = true) or
+                candidate.version.contains(Regex("b[0-9]+\\.[0-9]+$")) or
+                candidate.version.contains("eap")
+    }
 }
