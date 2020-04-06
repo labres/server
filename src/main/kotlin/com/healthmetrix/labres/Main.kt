@@ -3,7 +3,6 @@ package com.healthmetrix.labres
 import dagger.Binds
 import dagger.Component
 import dagger.Module
-import dagger.Provides
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install

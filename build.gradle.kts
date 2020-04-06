@@ -25,7 +25,7 @@ dependencies {
 
     // DI
     implementation("com.google.dagger:dagger:2.26")
-    kapt( "com.google.dagger:dagger-compiler:2.26")
+    kapt("com.google.dagger:dagger-compiler:2.26")
 }
 
 java {

@@ -14,5 +14,4 @@ class InMemoryEonRepository @Inject constructor() : EonRepository {
         map.add(eon)
         return true
     }
-
 }
