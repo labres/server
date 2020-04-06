@@ -1,5 +1,6 @@
 package com.healthmetrix.labres
 
+import dagger.Binds
 import dagger.Component
 import dagger.Module
 import dagger.Provides
@@ -38,8 +39,8 @@ abstract class D4LComponent {
 }
 
 @Module
-class EonModule {
+abstract class EonModule {
 
-    @Provides
-    fun provideEonRepository(): EonRepository = InMemoryEonRepository()
+    @Binds
+    abstract fun bindEonRepository(eonRepository: InMemoryEonRepository): EonRepository
 }

@@ -1,10 +1,12 @@
 package com.healthmetrix.labres
 
+import javax.inject.Inject
+
 interface EonRepository {
     fun save(eon: Eon): Boolean
 }
 
-class InMemoryEonRepository : EonRepository {
+class InMemoryEonRepository @Inject constructor() : EonRepository {
 
     private val map: HashSet<Eon> = hashSetOf()
 
