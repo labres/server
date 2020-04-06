@@ -4,6 +4,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 plugins {
     application
     kotlin("jvm") version "1.3.71"
+    kotlin("kapt") version "1.3.71"
     id("com.github.johnrengelman.shadow") version "5.2.0"
     id("com.github.ben-manes.versions") version "0.28.0"
 }
@@ -21,6 +22,10 @@ dependencies {
     implementation("io.ktor:ktor-server-core:1.3.2")
     implementation("io.ktor:ktor-server-netty:1.3.2")
     implementation("ch.qos.logback:logback-classic:1.2.3")
+
+    // DI
+    implementation("com.google.dagger:dagger:2.26")
+    kapt( "com.google.dagger:dagger-compiler:2.26")
 }
 
 java {
