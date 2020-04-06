@@ -18,7 +18,7 @@ fun Application.d4lModule() {
 
     routing {
         get("/hi") {
-            call.respond("Nice")
+            call.respond("Nice build pipeline")
         }
     }
 }
