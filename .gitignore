@@ -36,3 +36,7 @@ out/
 *-secret.properties
 *-secret.yaml
 .env
+
+# Terraform
+.terraform
+.tfplan
