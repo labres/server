@@ -7,7 +7,15 @@ enum class Status {
     POSITIVE,
     NEGATIVE,
     INVALID,
-    IN_PROGRESS
+    IN_PROGRESS;
+
+    companion object {
+        fun from(string: String): Status? = try {
+            valueOf(string)
+        } catch (ex: Exception) {
+            null
+        }
+    }
 }
 
 sealed class StatusResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : ApiResponse(httpStatus, hasBody) {

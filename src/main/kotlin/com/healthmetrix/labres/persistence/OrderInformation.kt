@@ -35,13 +35,7 @@ data class RawOrderInformation(
     fun cook(): OrderInformation? {
         val orderNumber = OrderNumber.from(number)
 
-        val status = status?.let {
-            try {
-                Status.valueOf(it)
-            } catch (ex: Exception) {
-                null
-            }
-        }
+        val status = status?.let(Status.Companion::from)
 
         return orderNumber?.let { n ->
             status?.let { s ->

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component
 class ExtractInfoUseCase {
     operator fun invoke(ldt: String): Pair<Status, String>? {
         // TODO
-        return (Status.values().toList() + listOf(null)).random()?.let {
+        return (Status.from(ldt))?.let {
             it to (0 until 32).map {
                 ('0'..'f').random()
             }.joinToString("")
