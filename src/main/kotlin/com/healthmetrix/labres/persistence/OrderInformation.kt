@@ -3,7 +3,6 @@ package com.healthmetrix.labres.persistence
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable
-import com.healthmetrix.labres.order.ALPHABET
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
 
@@ -22,12 +21,7 @@ data class RawOrderInformation(
     var status: String? = null
 ) {
     fun cook(): OrderInformation? {
-        val orderNumber = number?.let { n ->
-            if (n.matches(Regex("[$ALPHABET]{8}")))
-                OrderNumber(n)
-            else
-                null
-        }
+        val orderNumber = OrderNumber.from(number)
 
         val status = status?.let {
             try {
