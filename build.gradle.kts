@@ -2,10 +2,9 @@ import com.github.benmanes.gradle.versions.reporter.result.Result
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
 plugins {
-    application
     kotlin("jvm") version "1.3.71"
-    kotlin("kapt") version "1.3.71"
-    id("com.github.johnrengelman.shadow") version "5.2.0"
+    kotlin("plugin.spring") version "1.3.71"
+    id("org.springframework.boot") version "2.2.6.RELEASE"
     id("com.github.ben-manes.versions") version "0.28.0"
 }
 
@@ -14,47 +13,23 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("io.ktor:ktor-server-core:1.3.2")
-    implementation("io.ktor:ktor-server-netty:1.3.2")
-    implementation("ch.qos.logback:logback-classic:1.2.3")
-
-    // DI
-    implementation("com.google.dagger:dagger:2.26")
-    kapt("com.google.dagger:dagger-compiler:2.26")
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-}
-
-application {
-    mainClassName = "io.ktor.server.netty.EngineMain"
+    implementation(kotlin("reflect"))
+    implementation("org.springframework.boot:spring-boot-starter-web:2.2.6.RELEASE")
 }
 
 tasks {
     compileKotlin {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "11"
+        kotlinOptions.freeCompilerArgs = listOf("-Xjsr305=strict")
     }
     compileTestKotlin {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "11"
+        kotlinOptions.freeCompilerArgs = listOf("-Xjsr305=strict")
     }
-}
-
-tasks.withType<Jar> {
-    manifest {
-        attributes(
-            mapOf(
-                "Main-Class" to application.mainClassName
-            )
-        )
-    }
-
-    archiveFileName.set("lab-res.jar")
 }
 
 tasks.withType<DependencyUpdatesTask> {
