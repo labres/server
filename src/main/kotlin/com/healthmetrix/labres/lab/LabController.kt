@@ -23,7 +23,6 @@ class LabController(
         @RequestBody ldt: String
     ): ResponseEntity<UpdateStatusResponse> {
         val orderInfo = OrderNumber.from(externalOrderNumber)?.let {
-            println("num: $it")
             orderInformationRepository.findById(it.externalOrderNumber)
         }
         val status = extractStatusUseCase(ldt)
