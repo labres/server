@@ -29,7 +29,8 @@ class DynamoDbConfig {
                 withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(serviceEndpoint, "eu-central-1"))
         }.build()
 
-        db.ensureTable(RawOrderInformation::class.java)
+        if (!env.activeProfiles.contains("dynamo"))
+            db.ensureTable(RawOrderInformation::class.java)
 
         return db
     }
