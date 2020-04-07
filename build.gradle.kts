@@ -19,6 +19,11 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
     implementation("org.springframework.boot:spring-boot-starter-web:2.2.6.RELEASE")
+    implementation("org.springframework.boot:spring-boot-starter-actuator:2.2.6.RELEASE")
+
+    // swagger
+    implementation("io.springfox:springfox-swagger2:2.9.2")
+    implementation("io.springfox:springfox-swagger-ui:2.9.2")
 
     // spring data
     implementation("org.springframework.data:spring-data-commons:2.2.6.RELEASE")
