@@ -31,11 +31,12 @@ class OrderController(
 
     @GetMapping("/v1/order/{orderNumber}")
     fun getOrderNumber(@PathVariable orderNumber: String, @RequestParam hash: String): ResponseEntity<StatusResponse> {
-        return (orderInformationRepository
-            .findById(orderNumber)
-            ?.status
-            ?.let(StatusResponse::Found)
-            ?: StatusResponse.NotFound)
-            .asEntity()
+        val orderInfo = orderInformationRepository.findById(orderNumber)
+
+        return when {
+            orderInfo == null -> StatusResponse.NotFound
+            orderInfo.hash != hash -> StatusResponse.WrongHash
+            else -> StatusResponse.Found(orderInfo.status)
+        }.asEntity()
     }
 }
