@@ -21,7 +21,9 @@ class OrderController(
     fun postOrderNumber(): OrderNumber {
         val order = OrderInformation(
             OrderNumber.random(),
-            Status.values().random()
+            Status.values().random(),
+            updatedAt = null,
+            hash = null
         )
         orderInformationRepository.save(order)
         return order.number
