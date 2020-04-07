@@ -20,6 +20,7 @@ dependencies {
     implementation(kotlin("reflect"))
     implementation("org.springframework.boot:spring-boot-starter-web:2.2.6.RELEASE")
     implementation("org.springframework.boot:spring-boot-starter-actuator:2.2.6.RELEASE")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.3")
 
     // swagger
     implementation("io.springfox:springfox-swagger2:2.9.2")
@@ -30,8 +31,8 @@ dependencies {
     implementation("io.github.boostchicken:spring-data-dynamodb:5.2.3")
 
     // dynamodb
-    implementation(platform("com.amazonaws:aws-java-sdk-bom:1.11.228"))
-    implementation("com.amazonaws:aws-java-sdk-dynamodb:1.11.759")
+    implementation(platform("com.amazonaws:aws-java-sdk-bom:1.11.760"))
+    implementation("com.amazonaws:aws-java-sdk-dynamodb:1.11.760")
 }
 
 tasks {
