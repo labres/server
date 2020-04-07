@@ -7,31 +7,43 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput
 import com.amazonaws.services.dynamodbv2.model.ResourceInUseException
 import org.socialsignin.spring.data.dynamodb.repository.config.EnableDynamoDBRepositories
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
 
 @Configuration
 @EnableDynamoDBRepositories(basePackages = ["com.healthmetrix.labres.persistence"])
 class DynamoDbConfig {
+
+    // WARNING this function must have this name
     @Bean
-    fun amazonDynamoDB(): AmazonDynamoDB {
-        // todo yaml config
-        val db = AmazonDynamoDBClientBuilder.standard()
-            .withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration("http://localhost:8000", "eu-central-1"))
-            .build()
+    fun amazonDynamoDB(
+        env: Environment,
+        @Value("\${dynamo.local-endpoint}")
+        serviceEndpoint: String
+    ): AmazonDynamoDB {
+        val db = AmazonDynamoDBClientBuilder.standard().apply {
+            if (!env.activeProfiles.contains("dynamo"))
+                withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(serviceEndpoint, "eu-central-1"))
+        }.build()
 
-        val mapper = DynamoDBMapper(db)
-
-        val createTableRequest = mapper.generateCreateTableRequest(RawOrderInformation::class.java)
-        // probably not necessary
-        createTableRequest.provisionedThroughput = ProvisionedThroughput(1, 1)
-
-        try {
-            db.createTable(createTableRequest)
-        } catch (ex: ResourceInUseException) {
-            // all good
-        }
+        db.ensureTable(RawOrderInformation::class.java)
 
         return db
+    }
+
+    private fun AmazonDynamoDB.ensureTable(clazz: Class<*>) {
+        val req = DynamoDBMapper(this)
+            .generateCreateTableRequest(clazz)
+            .apply {
+                provisionedThroughput = ProvisionedThroughput(1, 1)
+            }
+
+        try {
+            createTable(req)
+        } catch (ex: ResourceInUseException) {
+            // todo, log?
+        }
     }
 }
