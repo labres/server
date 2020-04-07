@@ -19,6 +19,14 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
     implementation("org.springframework.boot:spring-boot-starter-web:2.2.6.RELEASE")
+
+    // spring data
+    implementation("org.springframework.data:spring-data-commons:2.2.6.RELEASE")
+    implementation("io.github.boostchicken:spring-data-dynamodb:5.2.3")
+
+    // dynamodb
+    implementation(platform("com.amazonaws:aws-java-sdk-bom:1.11.228"))
+    implementation("com.amazonaws:aws-java-sdk-dynamodb:1.11.759")
 }
 
 tasks {
