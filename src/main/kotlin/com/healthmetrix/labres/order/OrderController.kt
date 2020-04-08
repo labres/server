@@ -19,8 +19,13 @@ class OrderController(
 
     @PostMapping("/v1/order")
     fun postOrderNumber(): OrderNumber {
+
+        var orderNumber = OrderNumber.random()
+        while (orderInformationRepository.findById(orderNumber.externalOrderNumber) != null)
+            orderNumber = OrderNumber.random()
+
         val order = OrderInformation(
-            OrderNumber.random(),
+            orderNumber,
             Status.values().random(),
             updatedAt = null,
             hash = null
