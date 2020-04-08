@@ -40,8 +40,8 @@ class LabController(
         orderInformationRepository.save(
             OrderInformation(
                 number = orderInfo.number,
-                status = ldtInfo.first,
-                hash = ldtInfo.second,
+                status = ldtInfo.status,
+                hash = ldtInfo.hash,
                 updatedAt = Date.from(Instant.now())
             )
         )
