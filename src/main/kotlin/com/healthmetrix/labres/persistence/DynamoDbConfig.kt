@@ -4,6 +4,7 @@ import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput
 import com.amazonaws.services.dynamodbv2.model.ResourceInUseException
 import com.healthmetrix.labres.logger
@@ -14,7 +15,10 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
 
 @Configuration
-@EnableDynamoDBRepositories(basePackages = ["com.healthmetrix.labres.persistence"])
+@EnableDynamoDBRepositories(
+    basePackages = ["com.healthmetrix.labres.persistence"],
+    dynamoDBMapperConfigRef = "dynamoDBMapperConfig"
+)
 class DynamoDbConfig {
 
     // WARNING this function must have this name
@@ -22,7 +26,8 @@ class DynamoDbConfig {
     fun amazonDynamoDB(
         env: Environment,
         @Value("\${dynamo.local-endpoint}")
-        serviceEndpoint: String
+        serviceEndpoint: String,
+        config: DynamoDBMapperConfig
     ): AmazonDynamoDB {
         val db = AmazonDynamoDBClientBuilder.standard().apply {
             if (!env.activeProfiles.contains("dynamo"))
@@ -30,13 +35,13 @@ class DynamoDbConfig {
         }.build()
 
         if (!env.activeProfiles.contains("dynamo"))
-            db.ensureTable(RawOrderInformation::class.java)
+            db.ensureTable(RawOrderInformation::class.java, config)
 
         return db
     }
 
-    private fun AmazonDynamoDB.ensureTable(clazz: Class<*>) {
-        val req = DynamoDBMapper(this)
+    private fun AmazonDynamoDB.ensureTable(clazz: Class<*>, config: DynamoDBMapperConfig) {
+        val req = DynamoDBMapper(this, config)
             .generateCreateTableRequest(clazz)
             .apply {
                 provisionedThroughput = ProvisionedThroughput(1, 1)
@@ -48,4 +53,12 @@ class DynamoDbConfig {
             logger.info("Table already exists")
         }
     }
+
+    @Bean
+    fun dynamoDBMapperConfig(
+        @Value("\${dynamo.table-name}")
+        tableName: String
+    ): DynamoDBMapperConfig = DynamoDBMapperConfig.Builder().apply {
+        tableNameOverride = DynamoDBMapperConfig.TableNameOverride.withTableNameReplacement(tableName)
+    }.build()
 }
