@@ -21,6 +21,7 @@ data class OrderInformation(
     )
 }
 
+// WARNING tableName is replaced dynamically
 @DynamoDBTable(tableName = "order_information")
 data class RawOrderInformation(
     @DynamoDBHashKey
