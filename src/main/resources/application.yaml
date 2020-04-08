@@ -1,1 +1,3 @@
-dynamo.local-endpoint: http://localhost:8000
+dynamo:
+  table-name: order_information
+  local-endpoint: http://localhost:8000
