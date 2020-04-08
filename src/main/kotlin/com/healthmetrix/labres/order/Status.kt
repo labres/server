@@ -22,4 +22,6 @@ sealed class StatusResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : A
     data class Found(val status: Status) : StatusResponse(HttpStatus.OK)
 
     object NotFound : StatusResponse(HttpStatus.NOT_FOUND, false)
+
+    object WrongHash : StatusResponse(HttpStatus.FORBIDDEN, false)
 }
