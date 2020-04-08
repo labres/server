@@ -49,11 +49,11 @@ dependencies {
 
 tasks {
     compileKotlin {
-        kotlinOptions.jvmTarget = "11"
+        kotlinOptions.jvmTarget = "1.8"
         kotlinOptions.freeCompilerArgs = listOf("-Xjsr305=strict")
     }
     compileTestKotlin {
-        kotlinOptions.jvmTarget = "11"
+        kotlinOptions.jvmTarget = "1.8"
         kotlinOptions.freeCompilerArgs = listOf("-Xjsr305=strict")
     }
 
@@ -85,4 +85,8 @@ tasks {
                     candidate.version.contains("eap")
         }
     }
+}
+
+tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
+    setProperty("archiveFileName", "lab-res.jar")
 }

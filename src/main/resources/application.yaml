@@ -1,3 +1,10 @@
 dynamo:
   table-name: order_information
   local-endpoint: http://localhost:8000
+
+---
+spring:
+  profiles: dev
+  profiles.include: dynamo
+
+dynamo.local-endpoint: https://dynamodb.eu-central-1.amazonaws.com

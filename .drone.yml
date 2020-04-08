@@ -57,6 +57,36 @@ steps:
       - apk add curl
       - 'curl -sS -X POST $WEBHOOK -H "Content-Type: application/json" -d "{\"text\":\"Found outdated dependencies in build ${DRONE_COMMIT_SHA:0:8}\n\`\`\`$(cat build/dependencyUpdates/outdated-dependencies)\`\`\`\"}"'
 
+  - name: create new beanstalk application version
+    image: hashicorp/terraform
+    commands:
+      - cd terraform/application_version
+      - terraform init
+      - terraform validate
+      - terraform plan -var "eb_application_version=${DRONE_COMMIT_SHA:0:8}" -out application_version.tfplan
+      - terraform apply --auto-approve application_version.tfplan
+    <<: *when_master
+
+  - name: dev | update environment
+    image: hashicorp/terraform
+    environment:
+      TF_WORKSPACE: dev
+    commands:
+      - cd terraform/environment
+      - terraform init
+      - terraform validate
+      - terraform plan -out environment.tfplan
+      - terraform apply --auto-approve environment.tfplan
+    <<: *when_master
+
+  - name: dev | deploy application version
+    image: healthmetrixgmbh/aws-cli
+    environment:
+      AWS_DEFAULT_REGION: eu-central-1
+    commands:
+      - aws elasticbeanstalk update-environment --environment-name lab-res-dev --version-label ${DRONE_COMMIT_SHA:0:8}
+    <<: *when_master
+
   - name: slack
     image: plugins/slack
     settings:
@@ -72,30 +102,8 @@ steps:
         See {{ build.link }} for details.
     when:
       status: [ failure ]
-  - name: tag
-    image: alpine:latest
-    commands:
-      - echo -en "latest,signed,${DRONE_COMMIT_SHA:0:8}" > .tags
-      - echo -en "signed,${DRONE_COMMIT_SHA:0:8}" > .tags.signed
-    <<: *when_master
-
-  - name: package lab-res
-    image: plugins/docker
-    settings:
-      username:
-        from_secret: docker_username
-      password:
-        from_secret: docker_password
-      repo: healthmetrixgmbh/lab-res
-      dockerfile: Dockerfile
-      build_args:
-        - JAR_FILE=./build/libs/lab-res.jar
-    <<: *when_master
 
 volumes:
-  - name: socket
-    host:
-      path: /var/run/docker.sock
   - name: gradle-user-home-cache
     host:
       path: /tmp/gradle-user-home-cache
@@ -109,20 +117,6 @@ trigger:
 # Secrets
 ##
 
-kind: secret
-name: docker_username
-get:
-  path: dev/docker.hub/login
-  name: username
-
----
-kind: secret
-name: docker_password
-get:
-  path: dev/docker.hub/login
-  name: password
-
----
 kind: secret
 name: slack_webhook
 get:

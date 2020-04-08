@@ -39,4 +39,4 @@ out/
 
 # Terraform
 .terraform
-.tfplan
+*.tfplan
