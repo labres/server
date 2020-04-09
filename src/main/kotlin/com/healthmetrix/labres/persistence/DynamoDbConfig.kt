@@ -12,6 +12,7 @@ import org.socialsignin.spring.data.dynamodb.repository.config.EnableDynamoDBRep
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.core.env.Environment
 
 @Configuration
@@ -19,6 +20,7 @@ import org.springframework.core.env.Environment
     basePackages = ["com.healthmetrix.labres.persistence"],
     dynamoDBMapperConfigRef = "dynamoDBMapperConfig"
 )
+@Profile("dynamo")
 class DynamoDbConfig {
 
     // WARNING this function must have this name
@@ -29,12 +31,14 @@ class DynamoDbConfig {
         serviceEndpoint: String,
         config: DynamoDBMapperConfig
     ): AmazonDynamoDB {
+        val useLocalDb = serviceEndpoint.isNotBlank()
+
         val db = AmazonDynamoDBClientBuilder.standard().apply {
-            if (!env.activeProfiles.contains("dynamo"))
+            if (useLocalDb)
                 withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(serviceEndpoint, "eu-central-1"))
         }.build()
 
-        if (!env.activeProfiles.contains("dynamo"))
+        if (useLocalDb)
             db.ensureTable(RawOrderInformation::class.java, config)
 
         return db
