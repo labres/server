@@ -2,7 +2,7 @@
 
 A little service to receive and store lab results.
 
-## How to run locally
+## How to run locally with dynamo
 
 1. Start a local instance of [Amazon Dynamo DB](https://aws.amazon.com/dynamodb/)
    
@@ -13,15 +13,16 @@ A little service to receive and store lab results.
    
    For example, `http://localhost:8000`
    
-3. Start the server with `./gradlew bootRun`
+3. Start the server with `$ SPRING_PROFILES_ACTIVE=dynamo ./gradlew bootRun`
+   
+## How to run locally without dynamo
 
-   Make sure the `dynamo` profile is not set. If it is, the local endpoint
-   will be ignored
+1. `$ ./gradlew bootRun`   
    
 ## Profiles
 
-- `dynamo`: When enabled, ignores the local dynamo endpoint. Since
-  it will run on AWS, it will then find the real DynamoDB.
+- `dynamo`: When enabled, uses Dynamo DB for storage instead
+  of an in-memory HashMap
 
 - `notify`: When enabled, POSTs a JSON object to the given endpoint with
   the external order number that was just updated
