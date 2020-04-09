@@ -34,6 +34,9 @@ class LabControllerTest {
     @MockkBean
     private lateinit var orderInformationRepository: OrderInformationRepository
 
+    @MockkBean
+    private lateinit var extractResultUseCase: ExtractResultUseCase
+
     @BeforeEach
     fun beforeEach() {
         every { orderInformationRepository.save(any()) } returns Unit
@@ -69,7 +72,6 @@ class LabControllerTest {
     @Test
     fun `upload a document to an unknown order number returns 404`() {
         every { orderInformationRepository.findById(any()) } returns null
-
         mockMvc.put("/v1/order/${OrderNumber.random()}/result") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsBytes(
@@ -85,7 +87,6 @@ class LabControllerTest {
     @Test
     fun `upload a document to an invalid order number returns 404`() {
         every { orderInformationRepository.findById(any()) } returns null
-
         mockMvc.put("/v1/order/this_is_not_an_order_number/result") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsBytes(
@@ -99,11 +100,12 @@ class LabControllerTest {
     }
 
     @Test
-    fun `uploading a pretend LDT document returns 200`() {
+    fun `uploading a pretend OBX message returns 200`() {
         val orderNumber = OrderNumber.random()
 
         every { orderInformationRepository.findById(any()) } returns
                 OrderInformation(orderNumber, Status.IN_PROGRESS, null)
+        every { extractResultUseCase(any()) } returns Result.NEGATIVE
 
         mockMvc.put("/v1/order/${orderNumber.externalOrderNumber}/result") {
             contentType = MediaType.TEXT_PLAIN
@@ -121,15 +123,16 @@ class LabControllerTest {
     }
 
     @Test
-    fun `uploading an invalid LDT document returns 500`() {
+    fun `uploading an invalid OBX message returns 500`() {
         val orderNumber = OrderNumber.random()
 
         every { orderInformationRepository.findById(any()) } returns
                 OrderInformation(orderNumber, Status.IN_PROGRESS, null)
+        every { extractResultUseCase(any()) } returns null
 
         mockMvc.put("/v1/order/${orderNumber.externalOrderNumber}/result") {
             contentType = MediaType.TEXT_PLAIN
-            content = "NOT LDT"
+            content = "NOT OBX"
         }.andExpect {
             status { isInternalServerError }
         }

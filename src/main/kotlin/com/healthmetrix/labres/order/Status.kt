@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus
 
 enum class Status {
     POSITIVE,
+    WEAK_POSITIVE,
     NEGATIVE,
     INVALID,
     IN_PROGRESS;

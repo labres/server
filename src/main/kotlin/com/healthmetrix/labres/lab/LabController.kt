@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class LabController(
-    private val extractInfoUseCase: ExtractInfoUseCase,
+    private val extractResultUseCase: ExtractResultUseCase,
     private val updateResultUseCase: UpdateResultUseCase
 ) {
 
@@ -21,15 +21,13 @@ class LabController(
         path = ["/v1/order/{externalOrderNumber}/result"],
         consumes = [MediaType.TEXT_PLAIN_VALUE]
     )
-    fun ldtResult(
+    fun obxResult(
         @PathVariable externalOrderNumber: String,
-        @RequestBody ldt: String
+        @RequestBody obxMessage: String
     ): ResponseEntity<UpdateStatusResponse> {
+        val result = extractResultUseCase(obxMessage) ?: return UpdateStatusResponse.InfoUnreadable.asEntity()
 
-        val ldtInfo = extractInfoUseCase(ldt.trim())
-            ?: return UpdateStatusResponse.InfoUnreadable.asEntity()
-
-        return updateResultUseCase(externalOrderNumber, ldtInfo).asEntity()
+        return updateResultUseCase(externalOrderNumber, LabResult(result)).asEntity()
     }
 
     @PutMapping(
@@ -46,11 +44,13 @@ data class LabResult(val result: Result)
 
 enum class Result {
     POSITIVE,
+    WEAK_POSITIVE,
     NEGATIVE,
     INVALID;
 
     fun asStatus() = when (this) {
         POSITIVE -> Status.POSITIVE
+        WEAK_POSITIVE -> Status.WEAK_POSITIVE
         NEGATIVE -> Status.NEGATIVE
         INVALID -> Status.INVALID
     }
