@@ -45,14 +45,13 @@ class LabControllerTest {
         val orderNumber = OrderNumber.random()
 
         every { orderInformationRepository.findById(any()) } returns
-                OrderInformation(orderNumber, Status.IN_PROGRESS, null, null)
+                OrderInformation(orderNumber, Status.IN_PROGRESS, null)
 
         mockMvc.put("/v1/order/${orderNumber.externalOrderNumber}/result") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(
                 mapOf(
-                    "result" to Status.NEGATIVE,
-                    "hash" to "beep boop"
+                    "result" to Status.NEGATIVE
                 )
             )
         }.andExpect {
@@ -62,8 +61,7 @@ class LabControllerTest {
         verify(exactly = 1) {
             orderInformationRepository.save(match {
                 it.number == orderNumber &&
-                        it.status == Status.NEGATIVE &&
-                        it.hash == "beep boop"
+                        it.status == Status.NEGATIVE
             })
         }
     }
@@ -76,8 +74,7 @@ class LabControllerTest {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsBytes(
                 mapOf(
-                    "result" to Status.POSITIVE,
-                    "hash" to "beep boop"
+                    "result" to Status.POSITIVE
                 )
             )
         }.andExpect {
@@ -93,8 +90,7 @@ class LabControllerTest {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsBytes(
                 mapOf(
-                    "result" to Status.POSITIVE,
-                    "hash" to "beep boop"
+                    "result" to Status.POSITIVE
                 )
             )
         }.andExpect {
@@ -107,7 +103,7 @@ class LabControllerTest {
         val orderNumber = OrderNumber.random()
 
         every { orderInformationRepository.findById(any()) } returns
-                OrderInformation(orderNumber, Status.IN_PROGRESS, null, null)
+                OrderInformation(orderNumber, Status.IN_PROGRESS, null)
 
         mockMvc.put("/v1/order/${orderNumber.externalOrderNumber}/result") {
             contentType = MediaType.TEXT_PLAIN
@@ -129,7 +125,7 @@ class LabControllerTest {
         val orderNumber = OrderNumber.random()
 
         every { orderInformationRepository.findById(any()) } returns
-                OrderInformation(orderNumber, Status.IN_PROGRESS, null, null)
+                OrderInformation(orderNumber, Status.IN_PROGRESS, null)
 
         mockMvc.put("/v1/order/${orderNumber.externalOrderNumber}/result") {
             contentType = MediaType.TEXT_PLAIN

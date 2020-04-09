@@ -16,8 +16,7 @@ class CreateOrderUseCase(
         val orderInfo = OrderInformation(
             orderNumber,
             Status.IN_PROGRESS,
-            updatedAt = null,
-            hash = null
+            updatedAt = null
         )
 
         orderInformationRepository.save(orderInfo)

@@ -2,12 +2,7 @@ package com.healthmetrix.labres.lab
 
 import com.healthmetrix.labres.ApiResponse
 import com.healthmetrix.labres.asEntity
-import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
-import com.healthmetrix.labres.persistence.OrderInformation
-import com.healthmetrix.labres.persistence.OrderInformationRepository
-import java.time.Instant
-import java.util.Date
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -19,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class LabController(
     private val extractInfoUseCase: ExtractInfoUseCase,
-    private val orderInformationRepository: OrderInformationRepository
+    private val updateResultUseCase: UpdateResultUseCase
 ) {
 
     @PutMapping(
@@ -30,23 +25,11 @@ class LabController(
         @PathVariable externalOrderNumber: String,
         @RequestBody ldt: String
     ): ResponseEntity<UpdateStatusResponse> {
-        val orderInfo = OrderNumber.from(externalOrderNumber)?.let {
-            orderInformationRepository.findById(it.externalOrderNumber)
-        } ?: return UpdateStatusResponse.OrderNotFound.asEntity()
 
         val ldtInfo = extractInfoUseCase(ldt.trim())
             ?: return UpdateStatusResponse.InfoUnreadable.asEntity()
 
-        orderInformationRepository.save(
-            OrderInformation(
-                number = orderInfo.number,
-                status = ldtInfo.status,
-                hash = ldtInfo.hash,
-                updatedAt = Date.from(Instant.now())
-            )
-        )
-
-        return UpdateStatusResponse.Success.asEntity()
+        return updateResultUseCase(externalOrderNumber, ldtInfo).asEntity()
     }
 
     @PutMapping(
@@ -56,25 +39,10 @@ class LabController(
     fun jsonResult(
         @PathVariable externalOrderNumber: String,
         @RequestBody labResult: LabResult
-    ): ResponseEntity<UpdateStatusResponse> {
-        val orderInfo = OrderNumber.from(externalOrderNumber)?.let {
-            orderInformationRepository.findById(it.externalOrderNumber)
-        } ?: return UpdateStatusResponse.OrderNotFound.asEntity()
-
-        orderInformationRepository.save(
-            OrderInformation(
-                number = orderInfo.number,
-                status = labResult.result.asStatus(),
-                hash = labResult.hash,
-                updatedAt = Date.from(Instant.now())
-            )
-        )
-
-        return UpdateStatusResponse.Success.asEntity()
-    }
+    ): ResponseEntity<UpdateStatusResponse> = updateResultUseCase(externalOrderNumber, labResult).asEntity()
 }
 
-data class LabResult(val result: Result, val hash: String)
+data class LabResult(val result: Result)
 
 enum class Result {
     POSITIVE,
@@ -85,6 +53,14 @@ enum class Result {
         POSITIVE -> Status.POSITIVE
         NEGATIVE -> Status.NEGATIVE
         INVALID -> Status.INVALID
+    }
+
+    companion object {
+        fun from(s: String): Result? = try {
+            valueOf(s)
+        } catch (ex: Exception) {
+            null
+        }
     }
 }
 
