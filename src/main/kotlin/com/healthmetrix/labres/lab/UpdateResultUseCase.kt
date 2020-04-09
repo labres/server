@@ -1,20 +1,16 @@
 package com.healthmetrix.labres.lab
 
-import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import java.time.Instant
 import java.util.Date
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import org.springframework.web.reactive.function.client.WebClient
 
 @Component
 class UpdateResultUseCase(
     private val orderInformationRepository: OrderInformationRepository,
-    @Value("\${notification-endpoint}")
-    private val notificationEndpoint: String
+    private val notifier: NotifyUseCase
 ) {
     operator fun invoke(
         orderNumber: String,
@@ -33,14 +29,7 @@ class UpdateResultUseCase(
             )
         )
 
-        try {
-            WebClient.create().post().apply {
-                uri(notificationEndpoint)
-                bodyValue(orderInfo.number)
-            }.retrieve().toBodilessEntity().block()
-        } catch (ex: Exception) {
-            logger.warn("Failed to notify", ex)
-        }
+        notifier(orderInfo.number)
 
         return UpdateStatusResponse.Success
     }
