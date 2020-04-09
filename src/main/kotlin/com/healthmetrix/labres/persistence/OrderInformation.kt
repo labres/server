@@ -10,13 +10,11 @@ import java.util.Date
 data class OrderInformation(
     val number: OrderNumber,
     val status: Status,
-    val hash: String?,
     val updatedAt: Date?
 ) {
     internal fun raw() = RawOrderInformation(
         number.externalOrderNumber,
         status.toString(),
-        hash,
         updatedAt
     )
 }
@@ -29,8 +27,6 @@ data class RawOrderInformation(
     @DynamoDBAttribute
     var status: String? = null,
     @DynamoDBAttribute
-    var hash: String? = null,
-    @DynamoDBAttribute
     var updatedAt: Date? = null
 ) {
     fun cook(): OrderInformation? {
@@ -40,7 +36,7 @@ data class RawOrderInformation(
 
         return orderNumber?.let { n ->
             status?.let { s ->
-                OrderInformation(n, s, hash, updatedAt)
+                OrderInformation(n, s, updatedAt)
             }
         }
     }

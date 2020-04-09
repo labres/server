@@ -41,7 +41,6 @@ class LabController(
             OrderInformation(
                 number = orderInfo.number,
                 status = ldtInfo.status,
-                hash = ldtInfo.hash,
                 updatedAt = Date.from(Instant.now())
             )
         )
@@ -65,7 +64,6 @@ class LabController(
             OrderInformation(
                 number = orderInfo.number,
                 status = labResult.result.asStatus(),
-                hash = labResult.hash,
                 updatedAt = Date.from(Instant.now())
             )
         )
@@ -74,7 +72,7 @@ class LabController(
     }
 }
 
-data class LabResult(val result: Result, val hash: String)
+data class LabResult(val result: Result)
 
 enum class Result {
     POSITIVE,
