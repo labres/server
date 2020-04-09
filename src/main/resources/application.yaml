@@ -2,6 +2,8 @@ dynamo:
   table-name: order_information
   local-endpoint: http://localhost:8000
 
+notification-endpoint: http://localhost:8001
+
 ---
 spring:
   profiles: dev

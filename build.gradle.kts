@@ -21,6 +21,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:2.2.6.RELEASE")
     implementation("org.springframework.boot:spring-boot-starter-actuator:2.2.6.RELEASE")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.3")
+    implementation("org.springframework.boot:spring-boot-starter-webflux:2.2.6.RELEASE")
 
     // swagger
     implementation("io.springfox:springfox-swagger2:2.9.2")
