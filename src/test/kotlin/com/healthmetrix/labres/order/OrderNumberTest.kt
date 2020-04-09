@@ -9,7 +9,7 @@ class OrderNumberTest {
     fun `randomly generated IDs match the form of external order numbers`() {
         val allMatch = (0 until 100)
             .map { OrderNumber.random() }
-            .all { it.externalOrderNumber.matches(Regex("^[0123456789abcdefghikmnpqrstuvwxyz]{8}$")) }
+            .all { it.externalOrderNumber.matches(Regex("^[0123456789]{10}$")) }
 
         assertThat(allMatch).isEqualTo(true)
     }
