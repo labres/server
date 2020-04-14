@@ -1,0 +1,173 @@
+openapi: "3.0.3"
+info:
+  title: lab-res API
+  version: "1"
+  contact:
+    name: Healthmetrix GmbH
+    url: http://www.healthmetrix.com
+    email: admin@healthmetrix.com
+servers:
+  - url: "https://api.labres.dev.healthmetrix.com/{version}"
+    description: development environment for the LabRes apiKey
+    variables:
+      version: 
+        default: v1
+tags:
+  - name: lab_api
+    description: endpoints to be invoked from the lab to upload results
+  - name: orders_api
+    description: endpoints to be invoked by a backend to empower patients to query their lab results
+components:
+  securitySchemes:
+    LabApiKey:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: API key authorizing access for labs to upload results for an external order number
+    OrdersApiKey:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: API key authorizing access for integration to issue a new or query the status of an existing external order number
+  schemas:
+    GeneralError:
+      type: object
+      properties:
+        message:
+          type: string
+  responses:
+    UnauthorizedApiKeyError:
+      description: API key invalid or missing
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+    GeneralError:
+      description: General error response body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeneralError'
+paths:
+  /order:
+    post:
+      summary: issues a new order and returns the created external order number
+      description: Should only be invoked for verified users (logged into account or verified email address)
+      tags:
+        - orders_api
+      responses:
+        '201':
+          description: a new external order number to be returned
+          content: 
+            application/json:
+              schema:
+                type: object
+                properties:
+                  externalOrderNumber:
+                    type: string
+                    format: externalOrderNumber
+                    description: numeric 8-digit-long identifier
+                required:
+                  - externalOrderNumber
+                example:
+                  externalOrderNumber: X72UN3K8
+        '401':
+          $ref: "#/components/responses/UnauthorizedApiKeyError"
+        '500':
+          description: Internal server error
+          $ref: "#/components/responses/GeneralError"
+      security:
+        - OrdersApiKey: []
+  /order/{externalOrderNumber}:
+    get:
+      summary: returns the current status of a lab order
+      description: Should only be invoked for verified users (logged into account or verified email address)
+      tags:
+        - orders_api
+      parameters:
+        - name: externalOrderNumber
+          in: path
+          description: external ID of an order that has been sent to a lab
+          required: true
+          schema:
+            type: string
+            format: externalOrderNumber
+            description: numeric 8-digit-long identifier
+        - name: hash
+          in: query
+          description: hex encoded sha256 hash of the person identifiable data being transmitted via the LTD request (e.g. firstname, name, birthdata) being used to prevent scraping results for all external order numbers
+          required: true
+          schema:
+            type: string
+            format: hex
+      responses:
+        '200':
+          description: returns current status of the lab order
+          content: 
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [POSITIVE, NEGATIVE, INVALID, IN_PROGRESS]
+                    description: Status enum to indicate if the lab order is still in progress, the sample material has been found invalid or if it has a positive or negative result
+                required:
+                  - status
+                example:
+                  status: POSITIVE
+        '401':
+          $ref: "#/components/responses/UnauthorizedApiKeyError"
+        '403':
+          description: Hash did not match the external order number
+          $ref: "#/components/responses/GeneralError"
+        '404':
+          description: no order for external order number found
+        '500':
+          description: Internal server error
+          $ref: "#/components/responses/GeneralError"
+      security:
+        - OrdersApiKey: []
+  /order/{externalOrderNumber}/result:
+    put:
+      summary: allows for uploading a result of a lab order
+      tags:
+        - lab_api
+      parameters:
+        - name: externalOrderNumber
+          in: path
+          description: external ID of an order that has been sent to a lab
+          required: true
+          schema:
+            type: string
+            format: externalOrderNumber
+            description: numeric 8-digit-long identifier
+      requestBody:
+        description: Lab result as OBX message or result in JSON body
+        content:
+          'text/plain':
+            schema:
+              type: string
+              format: OBX
+              description: An OBX Segment of an HL7 ORU R1 message. See https://wiki.hl7.de/index.php?title=Segment_OBX for details.
+          'application/json':
+            schema:
+              type: object
+              properties:
+                result:
+                  type: string
+                  description: The lab result as one of the following strings "Positiv", "Schwach positiv", "Nicht nachweisbar", "Prozessfehler".
+              required:
+                - result
+      responses:
+        '200':
+          description: Result uploaded successfully
+        '401':
+          $ref: "#/components/responses/UnauthorizedApiKeyError"
+        '404':
+          description: no order for external order number found
+        '500':
+          description: Internal server error
+          $ref: "#/components/responses/GeneralError"
+      security:
+        - LabApiKey: []
