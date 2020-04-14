@@ -9,4 +9,4 @@ spring:
   profiles: dev
   profiles.include: dynamo
 
-dynamo.local-endpoint: https://dynamodb.eu-central-1.amazonaws.com
+dynamo.local-endpoint:
