@@ -49,6 +49,9 @@ class DynamoDbConfig {
             .generateCreateTableRequest(clazz)
             .apply {
                 provisionedThroughput = ProvisionedThroughput(1, 1)
+                globalSecondaryIndexes.forEach {
+                    it.provisionedThroughput = ProvisionedThroughput(1, 1)
+                }
             }
 
         try {
