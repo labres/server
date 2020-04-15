@@ -16,9 +16,6 @@ class OrderController(
     private val createOrderUseCase: CreateOrderUseCase,
     private val orderInformationRepository: OrderInformationRepository
 ) {
-
-    // TODO catch errors and return new ones based on the spec
-
     @PostMapping("/v1/orders")
     fun postOrderNumber(): ResponseEntity<CreateOrderResponse> {
         val orderInfo = createOrderUseCase()
