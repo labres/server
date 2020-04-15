@@ -7,9 +7,9 @@ import org.springframework.stereotype.Component
 class UpdateLabOrderUseCase {
 
     // TODO implement actual business logic when Data model exists
-    operator fun invoke(labOrderNumber: String) = Result(
+    operator fun invoke(orderId: String) = Result(
         OrderId.randomUUID(),
-        labOrderNumber
+        orderId
     )
 
     data class Result(val id: OrderId, val labOrderNumber: String)

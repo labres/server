@@ -1,8 +1,8 @@
 package com.healthmetrix.labres.lab
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.healthmetrix.labres.LabResTestApplication
 import com.healthmetrix.labres.OrderId
+import com.healthmetrix.labres.order.Status
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.put
 
 @SpringBootTest(
@@ -24,27 +25,27 @@ class LabOrderControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
     @MockkBean
     private lateinit var updateLabOrderUseCase: UpdateLabOrderUseCase
 
+    @MockkBean
+    private lateinit var getLabOrderUseCase: GetLabOrderUseCase
+
     @Nested
     inner class UpdateLabOrderEndpointTest {
-        private var labOrderNumber = "abc123"
+        private var orderId = "abc123"
 
         @BeforeEach
         fun setup() {
             every { updateLabOrderUseCase(any()) } returns UpdateLabOrderUseCase.Result(
                 OrderId.randomUUID(),
-                labOrderNumber
+                orderId
             )
         }
 
         @Test
         fun `it responds with 200 when updating lab order`() {
-            mockMvc.put("/v1/lab-orders/$labOrderNumber") {
+            mockMvc.put("/v1/lab-orders/$orderId") {
                 contentType = MediaType.APPLICATION_JSON
             }.andExpect {
                 status { isOk }
@@ -53,12 +54,43 @@ class LabOrderControllerTest {
 
         @Test
         fun `success response body contains all necessary fields`() {
-            mockMvc.put("/v1/lab-orders/$labOrderNumber") {
+            mockMvc.put("/v1/lab-orders/$orderId") {
                 contentType = MediaType.APPLICATION_JSON
             }.andExpect {
                 jsonPath("$.id") { isString }
                 jsonPath("$.labOrderNumber") { isString }
                 jsonPath("$.token") { isString }
+            }
+        }
+    }
+
+    @Nested
+    inner class GetLabOrderEndpointTest {
+        private val orderId = "abc123"
+
+        @Test
+        fun `it responds with 200 when lab order is found`() {
+            every { getLabOrderUseCase(any()) } returns GetLabOrderUseCase.Result(Status.POSITIVE)
+
+            mockMvc.get("/v1/lab-orders/$orderId").andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `it responds with status in body when lab order is found`() {
+            every { getLabOrderUseCase(any()) } returns GetLabOrderUseCase.Result(Status.POSITIVE)
+
+            mockMvc.get("/v1/lab-orders/$orderId").andExpect {
+                jsonPath("$.status") { isString }
+            }
+        }
+
+        @Test
+        fun `it responds with 404 when lab order is not found`() {
+            every { getLabOrderUseCase(any()) } returns null
+            mockMvc.get("/v1/lab-orders/$orderId").andExpect {
+                status { isNotFound }
             }
         }
     }
