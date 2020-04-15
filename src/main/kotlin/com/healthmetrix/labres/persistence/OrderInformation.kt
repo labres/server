@@ -3,6 +3,7 @@ package com.healthmetrix.labres.persistence
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
@@ -35,12 +36,10 @@ data class RawOrderInformation(
     @DynamoDBIndexHashKey(globalSecondaryIndexName = "externalOrderNumberIndex")
     var externalOrderNumber: String? = null,
 
-    @DynamoDBAttribute
-//    @DynamoDBIndexHashKey
+    @DynamoDBIndexHashKey(globalSecondaryIndexName = "internalOrderNumberIndex")
     var labId: String? = null,
 
-    @DynamoDBAttribute
-//    @DynamoDBIndexRangeKey
+    @DynamoDBIndexRangeKey(globalSecondaryIndexName = "internalOrderNumberIndex")
     var internalOrderNumber: String? = null,
 
     @DynamoDBAttribute

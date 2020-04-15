@@ -13,12 +13,15 @@ interface OrderInformationRepository {
     fun save(orderInformation: OrderInformation)
 
     fun findByExternalOrderNumber(externalOrderNumber: String): OrderInformation?
+
+    fun findByLabIdAndInternalOrderNumber(labId: String, internalOrderNumber: String): OrderInformation?
 }
 
 @EnableScan
 internal interface RawOrderInformationRepository : CrudRepository<RawOrderInformation, String> {
-    // spring magic
     fun findByExternalOrderNumber(externalOrderNumber: String): List<RawOrderInformation>
+
+    fun findByLabIdAndInternalOrderNumber(labId: String, internalOrderNumber: String): List<RawOrderInformation>
 }
 
 @Component
@@ -35,9 +38,15 @@ class DynamoOrderInformationRepository internal constructor(
         return rawOrderInformationRepository.findByExternalOrderNumber(externalOrderNumber)
             .mapNotNull(RawOrderInformation::cook)
             .let { l ->
-                if (l.size == 1) {
-                    l.first()
-                } else null
+                if (l.size == 1) l.first() else null
+            }
+    }
+
+    override fun findByLabIdAndInternalOrderNumber(labId: String, internalOrderNumber: String): OrderInformation? {
+        return rawOrderInformationRepository.findByLabIdAndInternalOrderNumber(labId, internalOrderNumber)
+            .mapNotNull(RawOrderInformation::cook)
+            .let { l ->
+                if (l.size == 1) l.first() else null
             }
     }
 
@@ -59,7 +68,15 @@ class InMemoryOrderInformationRepository : OrderInformationRepository {
     override fun findByExternalOrderNumber(externalOrderNumber: String) = map.filter {
         it.value.number == OrderNumber.External.from(externalOrderNumber)
     }.entries.toList().let { l ->
-        if (l.size == 1) l[0].value else null
+        if (l.size == 1) l.first().value else null
+    }
+
+    override fun findByLabIdAndInternalOrderNumber(labId: String, internalOrderNumber: String): OrderInformation? {
+        return map.filter {
+            it.value.number == OrderNumber.Internal.from(labId, internalOrderNumber)
+        }.entries.toList().let { l ->
+            if (l.size == 1) l.first().value else null
+        }
     }
 
     override fun save(orderInformation: OrderInformation) {
