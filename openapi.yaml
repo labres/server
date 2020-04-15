@@ -25,10 +25,9 @@ components:
       name: Authorization
       description: API key authorizing access for labs to upload results for an external order number
     OrdersApiKey:
-      type: apiKey
-      in: header
-      name: X-Api-Key
-      description: API key authorizing access for integration to issue a new or query the status of an existing external order number
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     GeneralError:
       type: object
