@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.persistence
 
+import com.healthmetrix.labres.order.OrderNumber
 import java.util.UUID
 import org.socialsignin.spring.data.dynamodb.repository.EnableScan
 import org.springframework.context.annotation.Profile

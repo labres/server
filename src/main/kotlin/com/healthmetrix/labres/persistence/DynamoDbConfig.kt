@@ -5,6 +5,9 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverterFactory
+import com.amazonaws.services.dynamodbv2.model.Projection
+import com.amazonaws.services.dynamodbv2.model.ProjectionType
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput
 import com.amazonaws.services.dynamodbv2.model.ResourceInUseException
 import com.healthmetrix.labres.logger
@@ -51,6 +54,7 @@ class DynamoDbConfig {
                 provisionedThroughput = ProvisionedThroughput(1, 1)
                 globalSecondaryIndexes.forEach {
                     it.provisionedThroughput = ProvisionedThroughput(1, 1)
+                    it.projection = Projection().withProjectionType(ProjectionType.ALL)
                 }
             }
 
@@ -67,5 +71,6 @@ class DynamoDbConfig {
         tableName: String
     ): DynamoDBMapperConfig = DynamoDBMapperConfig.Builder().apply {
         tableNameOverride = DynamoDBMapperConfig.TableNameOverride.withTableNameReplacement(tableName)
+        typeConverterFactory = DynamoDBTypeConverterFactory.standard()
     }.build()
 }
