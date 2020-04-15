@@ -92,7 +92,7 @@ paths:
           $ref: "#/components/responses/GeneralError"
       security:
         - OrdersApiKey: []
-  /{externalOrderNumber}:
+  /orders/{externalOrderNumber}:
     get:
       summary: returns the current status of a lab order
       description: Should only be invoked for verified users (logged into account or verified email address)
