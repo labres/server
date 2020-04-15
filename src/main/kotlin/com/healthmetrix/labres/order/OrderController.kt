@@ -26,9 +26,9 @@ class OrderController(
         ).asEntity()
     }
 
-    @GetMapping("/v1/orders/{orderNumber}")
-    fun getOrderNumber(@PathVariable orderNumber: String): ResponseEntity<StatusResponse> {
-        val orderInfo = orderInformationRepository.findById(orderNumber)
+    @GetMapping("/v1/orders/{orderId}")
+    fun getOrderNumber(@PathVariable orderId: String): ResponseEntity<StatusResponse> {
+        val orderInfo = orderInformationRepository.findById(orderId)
 
         return when (orderInfo) {
             null -> StatusResponse.NotFound

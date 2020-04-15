@@ -5,6 +5,7 @@ import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -45,6 +46,7 @@ class OrderControllerTest {
 
     @Nested
     inner class GetOrderNumberEndpointTest {
+        private val orderId = UUID.randomUUID()
         private val orderNumber = "12345678"
 
         @Test
@@ -55,7 +57,7 @@ class OrderControllerTest {
                 null
             )
 
-            mockMvc.get("/v1/orders/$orderNumber").andExpect {
+            mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isOk }
                 jsonPath("$.status") { exists() }
             }
@@ -64,7 +66,7 @@ class OrderControllerTest {
         @Test
         fun `returns status 404 when no order is found`() {
             every { orderInformationRepository.findById(any()) } returns null
-            mockMvc.get("/v1/orders/$orderNumber").andExpect {
+            mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isNotFound }
             }
         }
