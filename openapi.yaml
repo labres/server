@@ -110,8 +110,8 @@ paths:
                 properties:
                   status:
                     type: string
-                    enum: [POSITIVE, WEAK_POSITIVE, NEGATIVE, INVALID]
-                    description: Status enum to indicate if the sample material has been found invalid or if it has a positive or negative result
+                    enum: [POSITIVE, WEAK_POSITIVE, NEGATIVE, INVALID, IN_PROGRESS]
+                    description: Status enum to indicate if the lab result is in progress, sample material has been found invalid,  or if it has a positive or negative result
                 example:
                   status: POSITIVE
         '401':
