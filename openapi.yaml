@@ -49,12 +49,19 @@ components:
           schema:
             $ref: '#/components/schemas/GeneralError'
 paths:
-  /order:
+  /orders:
     post:
       summary: issues a new order and returns the created external order number
       description: Should only be invoked for verified users (logged into account or verified email address)
       tags:
         - orders_api
+      parameters:
+        - in: header
+          name: X-Api-Key
+          schema:
+            type: string
+          required: true
+          example: "my-api-key"
       responses:
         '201':
           description: a new external order number to be returned
@@ -63,14 +70,21 @@ paths:
               schema:
                 type: object
                 properties:
+                  id:
+                    type: string
+                    description: A unique internal identifier for the order
+                    format: UUID
                   externalOrderNumber:
                     type: string
                     format: externalOrderNumber
                     description: numeric 8-digit-long identifier
-                required:
-                  - externalOrderNumber
+                  token:
+                    type: string
+                    description: Authentication Token
                 example:
+                  id: 65e524cb-7494-4073-ad16-495fed0d79e4
                   externalOrderNumber: X72UN3K8
+                  token: "abc123"
         '401':
           $ref: "#/components/responses/UnauthorizedApiKeyError"
         '500':
@@ -78,7 +92,7 @@ paths:
           $ref: "#/components/responses/GeneralError"
       security:
         - OrdersApiKey: []
-  /order/{externalOrderNumber}:
+  /{externalOrderNumber}:
     get:
       summary: returns the current status of a lab order
       description: Should only be invoked for verified users (logged into account or verified email address)
