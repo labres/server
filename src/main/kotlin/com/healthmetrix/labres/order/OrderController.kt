@@ -1,7 +1,9 @@
 package com.healthmetrix.labres.order
 
+import com.healthmetrix.labres.ApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.persistence.OrderInformationRepository
+import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -18,7 +20,14 @@ class OrderController(
 
     @PostMapping("/v1/order")
     @ResponseStatus(HttpStatus.CREATED)
-    fun postOrderNumber(): OrderNumber = createOrderUseCase().number
+    fun postOrderNumber(): ResponseEntity<CreateOrderResponse> {
+        val orderInfo = createOrderUseCase()
+        return CreateOrderResponse.Created(
+            UUID.randomUUID(), // TODO Fix when implemented
+            orderInfo.number.externalOrderNumber,
+            "fake token" // TODO Fix when implemented
+        ).asEntity()
+    }
 
     @GetMapping("/v1/order/{orderNumber}")
     fun getOrderNumber(@PathVariable orderNumber: String): ResponseEntity<StatusResponse> {
@@ -29,4 +38,8 @@ class OrderController(
             else -> StatusResponse.Found(orderInfo.status)
         }.asEntity()
     }
+}
+
+sealed class CreateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : ApiResponse(httpStatus, hasBody) {
+    data class Created(val id: UUID, val externalOrderNumber: String, val token: String) : CreateOrderResponse(HttpStatus.CREATED)
 }

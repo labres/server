@@ -37,7 +37,7 @@ class OrderControllerTest {
             mockMvc.post("/v1/orders").andExpect {
                 status { isCreated }
                 jsonPath("$.externalOrderNumber") { isString }
-                jsonPath("$.uuid") { isString }
+                jsonPath("$.id") { isString }
                 jsonPath("$.token") { isString }
             }
         }
