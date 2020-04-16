@@ -12,9 +12,9 @@ interface OrderInformationRepository {
 
     fun save(orderInformation: OrderInformation)
 
-    fun findByExternalOrderNumber(externalOrderNumber: String): OrderInformation?
+    fun findByExternalOrderNumber(externalOrderNumber: OrderNumber.External): OrderInformation?
 
-    fun findByLabIdAndInternalOrderNumber(labId: String, internalOrderNumber: String): OrderInformation?
+    fun findByInternalOrderNumber(internalOrderNumber: OrderNumber.Internal): OrderInformation?
 }
 
 @EnableScan
@@ -34,20 +34,21 @@ class DynamoOrderInformationRepository internal constructor(
         .orElse(null)
         ?.cook()
 
-    override fun findByExternalOrderNumber(externalOrderNumber: String): OrderInformation? {
-        return rawOrderInformationRepository.findByExternalOrderNumber(externalOrderNumber)
+    override fun findByExternalOrderNumber(externalOrderNumber: OrderNumber.External): OrderInformation? {
+        return rawOrderInformationRepository.findByExternalOrderNumber(externalOrderNumber.number)
             .mapNotNull(RawOrderInformation::cook)
             .let { l ->
                 if (l.size == 1) l.first() else null
             }
     }
 
-    override fun findByLabIdAndInternalOrderNumber(labId: String, internalOrderNumber: String): OrderInformation? {
-        return rawOrderInformationRepository.findByLabIdAndInternalOrderNumber(labId, internalOrderNumber)
-            .mapNotNull(RawOrderInformation::cook)
-            .let { l ->
-                if (l.size == 1) l.first() else null
-            }
+    override fun findByInternalOrderNumber(internalOrderNumber: OrderNumber.Internal): OrderInformation? {
+        return rawOrderInformationRepository.findByLabIdAndInternalOrderNumber(
+            internalOrderNumber.labId,
+            internalOrderNumber.number
+        ).mapNotNull(RawOrderInformation::cook).let { l ->
+            if (l.size == 1) l.first() else null
+        }
     }
 
     override fun save(orderInformation: OrderInformation) {
@@ -65,15 +66,15 @@ class InMemoryOrderInformationRepository : OrderInformationRepository {
         return map.getOrDefault(id, null)
     }
 
-    override fun findByExternalOrderNumber(externalOrderNumber: String) = map.filter {
-        it.value.number == OrderNumber.External.from(externalOrderNumber)
+    override fun findByExternalOrderNumber(externalOrderNumber: OrderNumber.External) = map.filter {
+        it.value.number == externalOrderNumber
     }.entries.toList().let { l ->
         if (l.size == 1) l.first().value else null
     }
 
-    override fun findByLabIdAndInternalOrderNumber(labId: String, internalOrderNumber: String): OrderInformation? {
+    override fun findByInternalOrderNumber(internalOrderNumber: OrderNumber.Internal): OrderInformation? {
         return map.filter {
-            it.value.number == OrderNumber.Internal.from(labId, internalOrderNumber)
+            it.value.number == internalOrderNumber
         }.entries.toList().let { l ->
             if (l.size == 1) l.first().value else null
         }

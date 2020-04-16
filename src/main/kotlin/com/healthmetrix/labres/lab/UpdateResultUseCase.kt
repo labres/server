@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.lab
 
+import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import java.time.Instant
 import java.util.Date
@@ -15,7 +16,8 @@ class UpdateResultUseCase(
         labResult: LabResult,
         now: Date = Date.from(Instant.now())
     ): UpdateStatusResponse {
-        val orderInfo = orderInformationRepository.findByExternalOrderNumber(externalOrderNumber)
+        val orderInfo = OrderNumber.External.from(externalOrderNumber)
+            ?.let(orderInformationRepository::findByExternalOrderNumber)
             ?: return UpdateStatusResponse.OrderNotFound
 
         orderInformationRepository.save(orderInfo.copy(status = labResult.result.asStatus(), updatedAt = now))

@@ -13,7 +13,7 @@ class CreateOrderUseCase(
 ) {
     operator fun invoke(): Pair<UUID, OrderNumber.External> {
         var orderNumber = OrderNumber.External.random()
-        while (orderInformationRepository.findByExternalOrderNumber(orderNumber.number) != null)
+        while (orderInformationRepository.findByExternalOrderNumber(orderNumber) != null)
             orderNumber = OrderNumber.External.random()
 
         val orderInfo = OrderInformation(
