@@ -28,10 +28,7 @@ class LabOrderController(
 
     @GetMapping("/v1/lab-orders/{orderId}")
     fun getLabOrder(@PathVariable orderId: String): ResponseEntity<GetLabOrderResponse> {
-        val order = getLabOrderUseCase(orderId)
-        if (order == null) {
-            return GetLabOrderResponse.NotFound.asEntity()
-        }
+        val order = getLabOrderUseCase(orderId) ?: return GetLabOrderResponse.NotFound.asEntity()
 
         return GetLabOrderResponse.Success(order.status).asEntity()
     }
