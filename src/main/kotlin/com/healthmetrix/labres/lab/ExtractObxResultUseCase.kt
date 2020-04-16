@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.lab
 
+import com.healthmetrix.labres.order.OrderNumber
 import org.springframework.stereotype.Component
 
 const val RESULT_INDEX = 5
@@ -13,8 +14,8 @@ const val OBX_MESSAGE_SEPARATOR = "|"
  * The lab result status can be found at `OBX-5`, where `OBX-1` is `3` in this example.
  */
 @Component
-class ExtractResultUseCase {
-    operator fun invoke(message: String): Result? {
+class ExtractObxResultUseCase {
+    operator fun invoke(message: String, labId: String): LabResult? {
         /**
          * The following mappings are a WIP, as we still don't know
          * the exact strings they might send over in the result
@@ -26,10 +27,10 @@ class ExtractResultUseCase {
             "Schwach positiv" -> Result.WEAK_POSITIVE
             "Prozessfehler" -> Result.INVALID
             else -> null
-        }
+        }?.let { LabResult(OrderNumber.Internal(labId, "ION"), it) } // TODO when requirements clarified
     }
 
     private fun parseStatus(obxSegment: String): String {
-        return obxSegment.split(OBX_MESSAGE_SEPARATOR)[RESULT_INDEX] ?: ""
+        return obxSegment.split(OBX_MESSAGE_SEPARATOR).getOrNull(RESULT_INDEX) ?: ""
     }
 }

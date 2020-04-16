@@ -28,7 +28,7 @@ class UpdateLabOrderUseCaseTest {
 
     @Test
     fun `it returns a result with id and lab order number when created`() {
-        every { orderInformationRepository.findByInternalOrderNumber(any()) } returns null
+        every { orderInformationRepository.findByOrderNumber(any()) } returns null
         every { orderInformationRepository.save(any()) } returns orderInformation
         val result = underTest("labId", "labOrderNumber")
 
@@ -40,7 +40,7 @@ class UpdateLabOrderUseCaseTest {
 
     @Test
     fun `it returns a result with id and lab order when found`() {
-        every { orderInformationRepository.findByInternalOrderNumber(any()) } returns orderInformation
+        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInformation
 
         val result = underTest("labId", "labOrderNumber")
         assertThat(result).isInstanceOf(UpdateLabOrderUseCase.Result.Found::class.java)

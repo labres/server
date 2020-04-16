@@ -10,7 +10,7 @@ servers:
   - url: "https://api.labres.dev.healthmetrix.com/{version}"
     description: development environment for the LabRes apiKey
     variables:
-      version: 
+      version:
         default: v1
 tags:
   - name: lab_api
@@ -57,7 +57,7 @@ paths:
       responses:
         '201':
           description: a new external order number to be returned
-          content: 
+          content:
             application/json:
               schema:
                 type: object
@@ -102,7 +102,7 @@ paths:
       responses:
         '200':
           description: returns current status of the lab order
-          content: 
+          content:
             application/json:
               schema:
                 type: object
@@ -122,22 +122,21 @@ paths:
           $ref: "#/components/responses/GeneralError"
       security:
         - OrdersApiKey: []
-  /order/{externalOrderNumber}/result:
+  /orders/result/{type}:
     put:
       summary: allows for uploading a result of a lab order
       tags:
         - lab_api
       parameters:
-        - name: externalOrderNumber
+        - name: type
           in: path
-          description: external ID of an order that has been sent to a lab
+          description: Type of result being uploaded
           required: true
           schema:
             type: string
-            format: externalOrderNumber
-            description: numeric 8-digit-long identifier
+            enum: [json, ldt, obx]
       requestBody:
-        description: Lab result as OBX message or result in JSON body
+        description: Lab result as OBX message, LDT document, or JSON object. Body must include either external or internal order numbers.  In the case of external, lab ID is taken from authorization headers.
         content:
           'text/plain':
             schema:

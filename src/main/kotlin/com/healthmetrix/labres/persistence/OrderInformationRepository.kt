@@ -12,9 +12,7 @@ interface OrderInformationRepository {
 
     fun save(orderInformation: OrderInformation): OrderInformation
 
-    fun findByExternalOrderNumber(externalOrderNumber: OrderNumber.External): OrderInformation?
-
-    fun findByInternalOrderNumber(internalOrderNumber: OrderNumber.Internal): OrderInformation?
+    fun findByOrderNumber(orderNumber: OrderNumber): OrderInformation?
 }
 
 @EnableScan
@@ -34,18 +32,12 @@ class DynamoOrderInformationRepository internal constructor(
         .orElse(null)
         ?.cook()
 
-    override fun findByExternalOrderNumber(externalOrderNumber: OrderNumber.External): OrderInformation? {
-        return rawOrderInformationRepository.findByExternalOrderNumber(externalOrderNumber.number)
-            .mapNotNull(RawOrderInformation::cook)
-            .singleOrNull()
-    }
-
-    override fun findByInternalOrderNumber(internalOrderNumber: OrderNumber.Internal): OrderInformation? {
-        return rawOrderInformationRepository.findByLabIdAndInternalOrderNumber(
-            internalOrderNumber.labId,
-            internalOrderNumber.number
-        ).mapNotNull(RawOrderInformation::cook).singleOrNull()
-    }
+    override fun findByOrderNumber(orderNumber: OrderNumber): OrderInformation? = when (orderNumber) {
+        is OrderNumber.External ->
+            rawOrderInformationRepository.findByExternalOrderNumber(orderNumber.number)
+        is OrderNumber.Internal ->
+            rawOrderInformationRepository.findByLabIdAndInternalOrderNumber(orderNumber.labId, orderNumber.number)
+    }.mapNotNull(RawOrderInformation::cook).singleOrNull()
 
     override fun save(orderInformation: OrderInformation) =
         rawOrderInformationRepository.save(orderInformation.raw()).cook()!!
@@ -61,12 +53,8 @@ class InMemoryOrderInformationRepository : OrderInformationRepository {
         return map.getOrDefault(id, null)
     }
 
-    override fun findByExternalOrderNumber(externalOrderNumber: OrderNumber.External) = map.filter {
-        it.value.number == externalOrderNumber
-    }.entries.singleOrNull()?.value
-
-    override fun findByInternalOrderNumber(internalOrderNumber: OrderNumber.Internal) = map.filter {
-        it.value.number == internalOrderNumber
+    override fun findByOrderNumber(orderNumber: OrderNumber) = map.filter {
+        it.value.number == orderNumber
     }.entries.singleOrNull()?.value
 
     override fun save(orderInformation: OrderInformation): OrderInformation {

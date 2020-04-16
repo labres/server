@@ -15,7 +15,7 @@ class UpdateLabOrderUseCase(private val orderInformationRepository: OrderInforma
 
     operator fun invoke(labId: String?, labOrderNumber: String?): Result {
         val internalOrderNumber = OrderNumber.Internal.from(labId, labOrderNumber) ?: return Result.InvalidOrderNumber
-        val labOrder = orderInformationRepository.findByInternalOrderNumber(internalOrderNumber)
+        val labOrder = orderInformationRepository.findByOrderNumber(internalOrderNumber)
 
         if (labOrder != null) {
             return Result.Found(labOrder.id, labOrder.number.ion())

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.put
@@ -38,7 +39,7 @@ class LabControllerTest {
     private lateinit var orderInformationRepository: OrderInformationRepository
 
     @MockkBean
-    private lateinit var extractResultUseCase: ExtractResultUseCase
+    private lateinit var extractObxResultUseCase: ExtractObxResultUseCase
 
     private val now = Date.from(Instant.now())
 
@@ -48,17 +49,19 @@ class LabControllerTest {
     }
 
     @Test
-    fun `uploading a valid json doc returns 200`() {
+    fun `uploading a valid json doc with an external order number returns 200`() {
 
         val orderNumber = OrderNumber.External.random()
 
-        every { orderInformationRepository.findByExternalOrderNumber(any()) } returns
+        every { orderInformationRepository.findByOrderNumber(any()) } returns
                 OrderInformation(UUID.randomUUID(), orderNumber, Status.IN_PROGRESS, now, null)
 
-        mockMvc.put("/v1/order/${orderNumber.number}/result") {
+        mockMvc.put("/v1/orders/result/json") {
+            header(HttpHeaders.AUTHORIZATION, "labId")
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(
                 mapOf(
+                    "externalOrderNumber" to "0123456789",
                     "result" to Status.NEGATIVE
                 )
             )
@@ -75,12 +78,14 @@ class LabControllerTest {
     }
 
     @Test
-    fun `upload a document to an unknown order number returns 404`() {
-        every { orderInformationRepository.findByExternalOrderNumber(any()) } returns null
-        mockMvc.put("/v1/order/${OrderNumber.External.random()}/result") {
+    fun `upload a document to an unknown external order number returns 404`() {
+        every { orderInformationRepository.findByOrderNumber(any()) } returns null
+        mockMvc.put("/v1/orders/result/json") {
             contentType = MediaType.APPLICATION_JSON
+            header(HttpHeaders.AUTHORIZATION, "labId")
             content = objectMapper.writeValueAsBytes(
                 mapOf(
+                    "externalOrderNumber" to "0123456789",
                     "result" to Status.POSITIVE
                 )
             )
@@ -90,12 +95,14 @@ class LabControllerTest {
     }
 
     @Test
-    fun `upload a document to an invalid order number returns 404`() {
-        every { orderInformationRepository.findByExternalOrderNumber(any()) } returns null
-        mockMvc.put("/v1/order/this_is_not_an_order_number/result") {
+    fun `upload a document to an invalid external order number returns 404`() {
+        every { orderInformationRepository.findByOrderNumber(any()) } returns null
+        mockMvc.put("/v1/orders/result/json") {
+            header(HttpHeaders.AUTHORIZATION, "labId")
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsBytes(
                 mapOf(
+                    "externalOrderNumber" to "nonsense",
                     "result" to Status.POSITIVE
                 )
             )
@@ -108,11 +115,13 @@ class LabControllerTest {
     fun `uploading a pretend OBX message returns 200`() {
         val orderNumber = OrderNumber.External.random()
 
-        every { orderInformationRepository.findByExternalOrderNumber(any()) } returns
+        every { orderInformationRepository.findByOrderNumber(any()) } returns
                 OrderInformation(UUID.randomUUID(), orderNumber, Status.IN_PROGRESS, now, null)
-        every { extractResultUseCase(any()) } returns Result.NEGATIVE
+        every { extractObxResultUseCase(any(), "labId") } returns
+                LabResult(OrderNumber.External.random(), Result.NEGATIVE)
 
-        mockMvc.put("/v1/order/${orderNumber.number}/result") {
+        mockMvc.put("/v1/orders/result/obx") {
+            header(HttpHeaders.AUTHORIZATION, "labId")
             contentType = MediaType.TEXT_PLAIN
             content = "NEGATIVE"
         }.andExpect {
@@ -131,11 +140,12 @@ class LabControllerTest {
     fun `uploading an invalid OBX message returns 500`() {
         val orderNumber = OrderNumber.External.random()
 
-        every { orderInformationRepository.findByExternalOrderNumber(any()) } returns
+        every { orderInformationRepository.findByOrderNumber(any()) } returns
                 OrderInformation(UUID.randomUUID(), orderNumber, Status.IN_PROGRESS, now, null)
-        every { extractResultUseCase(any()) } returns null
+        every { extractObxResultUseCase(any(), "labId") } returns null
 
-        mockMvc.put("/v1/order/${orderNumber.number}/result") {
+        mockMvc.put("/v1/orders/result/obx") {
+            header(HttpHeaders.AUTHORIZATION, "labId")
             contentType = MediaType.TEXT_PLAIN
             content = "NOT OBX"
         }.andExpect {
