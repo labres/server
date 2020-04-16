@@ -18,7 +18,10 @@ class LabOrderController(
     private val getLabOrderUseCase: GetLabOrderUseCase
 ) {
     @PutMapping("/v1/lab-orders/{labOrderNumber}")
-    fun updateLabOrder(@PathVariable labOrderNumber: String, @RequestHeader("Authorization") apiKey: String): ResponseEntity<UpdateLabOrderResponse> {
+    fun updateLabOrder(
+        @PathVariable labOrderNumber: String,
+        @RequestHeader("Authorization") apiKey: String
+    ): ResponseEntity<UpdateLabOrderResponse> {
         return when (val result = updateLabOrderUseCase(apiKey, labOrderNumber)) {
             is UpdateLabOrderUseCase.Result.InvalidOrderNumber -> UpdateLabOrderResponse.Invalid
             is UpdateLabOrderUseCase.Result.Created -> UpdateLabOrderResponse.Created(result.id, result.labOrderNumber)
@@ -27,7 +30,10 @@ class LabOrderController(
     }
 
     @GetMapping("/v1/lab-orders/{orderId}")
-    fun getLabOrder(@PathVariable orderId: String, @RequestHeader("Authorization") apiKey: String): ResponseEntity<GetLabOrderResponse> {
+    fun getLabOrder(
+        @PathVariable orderId: String,
+        @RequestHeader("Authorization") apiKey: String
+    ): ResponseEntity<GetLabOrderResponse> {
         val order = getLabOrderUseCase(orderId) ?: return GetLabOrderResponse.NotFound.asEntity()
 
         return GetLabOrderResponse.Success(order.status).asEntity()
