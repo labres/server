@@ -6,11 +6,6 @@ type: docker
   environment:
     GRADLE_USER_HOME: /drone/src/.gradle_user_home
 
-.when_master: &when_master
-  when:
-    branch:
-      - master
-
 steps:
   - name: restore-cache
     image: drillster/drone-volume-cache
@@ -56,36 +51,6 @@ steps:
       - if [ ! -f "build/dependencyUpdates/outdated-dependencies" ]; then exit 0; fi
       - apk add curl
       - 'curl -sS -X POST $WEBHOOK -H "Content-Type: application/json" -d "{\"text\":\"Found outdated dependencies in build ${DRONE_COMMIT_SHA:0:8}\n\`\`\`$(cat build/dependencyUpdates/outdated-dependencies)\`\`\`\"}"'
-
-  - name: create new beanstalk application version
-    image: hashicorp/terraform
-    commands:
-      - cd terraform/application_version
-      - terraform init
-      - terraform validate
-      - terraform plan -var "eb_application_version=${DRONE_COMMIT_SHA:0:8}" -out application_version.tfplan
-      - terraform apply --auto-approve application_version.tfplan
-    <<: *when_master
-
-  - name: dev | update environment
-    image: hashicorp/terraform
-    environment:
-      TF_WORKSPACE: dev
-    commands:
-      - cd terraform/environment
-      - terraform init
-      - terraform validate
-      - terraform plan -out environment.tfplan
-      - terraform apply --auto-approve environment.tfplan
-    <<: *when_master
-
-  - name: dev | deploy application version
-    image: healthmetrixgmbh/aws-cli
-    environment:
-      AWS_DEFAULT_REGION: eu-central-1
-    commands:
-      - aws elasticbeanstalk update-environment --environment-name lab-res-dev --version-label ${DRONE_COMMIT_SHA:0:8}
-    <<: *when_master
 
   - name: slack
     image: plugins/slack
