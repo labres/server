@@ -24,6 +24,7 @@ data class OrderInformation(
         labId = number.labId(),
         internalOrderNumber = number.ion(),
         status = status.toString(),
+        createdAt = createdAt,
         updatedAt = updatedAt
     )
 }

@@ -18,7 +18,7 @@ interface OrderInformationRepository {
 }
 
 @EnableScan
-internal interface RawOrderInformationRepository : CrudRepository<RawOrderInformation, String> {
+internal interface RawOrderInformationRepository : CrudRepository<RawOrderInformation, UUID> {
     fun findByExternalOrderNumber(externalOrderNumber: String): List<RawOrderInformation>
 
     fun findByLabIdAndInternalOrderNumber(labId: String, internalOrderNumber: String): List<RawOrderInformation>
@@ -30,7 +30,7 @@ class DynamoOrderInformationRepository internal constructor(
     private val rawOrderInformationRepository: RawOrderInformationRepository
 ) : OrderInformationRepository {
     override fun findById(id: UUID): OrderInformation? = rawOrderInformationRepository
-        .findById(id.toString())
+        .findById(id)
         .orElse(null)
         ?.cook()
 
