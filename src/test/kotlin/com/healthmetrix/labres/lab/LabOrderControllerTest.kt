@@ -37,7 +37,7 @@ class LabOrderControllerTest {
 
         @BeforeEach
         fun setup() {
-            every { updateLabOrderUseCase(any()) } returns UpdateLabOrderUseCase.Result(
+            every { updateLabOrderUseCase(any(), any()) } returns UpdateLabOrderUseCase.Result.Created(
                 OrderId.randomUUID(),
                 labOrderNumber
             )

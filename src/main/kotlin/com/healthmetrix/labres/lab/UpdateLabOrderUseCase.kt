@@ -13,8 +13,7 @@ import org.springframework.stereotype.Component
 @Component
 class UpdateLabOrderUseCase(private val orderInformationRepository: OrderInformationRepository) {
 
-    // TODO implement actual business logic when Data model exists
-    operator fun invoke(labId: String, labOrderNumber: String): Result {
+    operator fun invoke(labId: String?, labOrderNumber: String?): Result {
         val internalOrderNumber = OrderNumber.Internal.from(labId, labOrderNumber) ?: return Result.InvalidOrderNumber
         val labOrder = orderInformationRepository.findByInternalOrderNumber(internalOrderNumber)
 
