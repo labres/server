@@ -9,6 +9,8 @@ import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.verify
+import java.time.Instant
+import java.util.Date
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,6 +40,8 @@ class LabControllerTest {
     @MockkBean
     private lateinit var extractResultUseCase: ExtractResultUseCase
 
+    private val now = Date.from(Instant.now())
+
     @BeforeEach
     fun beforeEach() {
         every { orderInformationRepository.save(any()) } returns Unit
@@ -49,7 +53,7 @@ class LabControllerTest {
         val orderNumber = OrderNumber.External.random()
 
         every { orderInformationRepository.findByExternalOrderNumber(any()) } returns
-                OrderInformation(UUID.randomUUID(), orderNumber, Status.IN_PROGRESS, null)
+                OrderInformation(UUID.randomUUID(), orderNumber, Status.IN_PROGRESS, now, null)
 
         mockMvc.put("/v1/order/${orderNumber.number}/result") {
             contentType = MediaType.APPLICATION_JSON
@@ -105,7 +109,7 @@ class LabControllerTest {
         val orderNumber = OrderNumber.External.random()
 
         every { orderInformationRepository.findByExternalOrderNumber(any()) } returns
-                OrderInformation(UUID.randomUUID(), orderNumber, Status.IN_PROGRESS, null)
+                OrderInformation(UUID.randomUUID(), orderNumber, Status.IN_PROGRESS, now, null)
         every { extractResultUseCase(any()) } returns Result.NEGATIVE
 
         mockMvc.put("/v1/order/${orderNumber.number}/result") {
@@ -128,7 +132,7 @@ class LabControllerTest {
         val orderNumber = OrderNumber.External.random()
 
         every { orderInformationRepository.findByExternalOrderNumber(any()) } returns
-                OrderInformation(UUID.randomUUID(), orderNumber, Status.IN_PROGRESS, null)
+                OrderInformation(UUID.randomUUID(), orderNumber, Status.IN_PROGRESS, now, null)
         every { extractResultUseCase(any()) } returns null
 
         mockMvc.put("/v1/order/${orderNumber.number}/result") {

@@ -5,6 +5,8 @@ import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import java.time.Instant
+import java.util.Date
 import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -54,6 +56,7 @@ class OrderControllerTest {
                 UUID.randomUUID(),
                 OrderNumber.External(orderNumber),
                 Status.POSITIVE,
+                Date.from(Instant.now()),
                 null
             )
 

@@ -15,6 +15,7 @@ data class OrderInformation(
     val id: UUID,
     val number: OrderNumber,
     val status: Status,
+    val createdAt: Date,
     val updatedAt: Date?
 ) {
     internal fun raw() = RawOrderInformation(
@@ -46,6 +47,9 @@ data class RawOrderInformation(
     var status: String? = null,
 
     @DynamoDBAttribute
+    var createdAt: Date? = null,
+
+    @DynamoDBAttribute
     var updatedAt: Date? = null
 ) {
     fun cook(): OrderInformation? {
@@ -56,8 +60,10 @@ data class RawOrderInformation(
 
         val status = status?.let(Status.Companion::from)
 
-        return if (id != null && orderNumber != null && status != null)
-            OrderInformation(id, orderNumber, status, updatedAt)
+        val createdAt = createdAt
+
+        return if (id != null && orderNumber != null && status != null && createdAt != null)
+            OrderInformation(id, orderNumber, status, createdAt, updatedAt)
         else {
             logger.warn("Unable to cook $id")
             null
