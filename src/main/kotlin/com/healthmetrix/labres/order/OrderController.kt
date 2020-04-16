@@ -3,6 +3,7 @@ package com.healthmetrix.labres.order
 import com.healthmetrix.labres.ApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.persistence.OrderInformationRepository
+import java.lang.IllegalArgumentException
 import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -30,7 +31,7 @@ class OrderController(
     fun getOrderNumber(@PathVariable orderId: String): ResponseEntity<StatusResponse> {
         val id = try {
             UUID.fromString(orderId)
-        } catch (ex: Exception) {
+        } catch (ex: IllegalArgumentException) {
             null
         }
 

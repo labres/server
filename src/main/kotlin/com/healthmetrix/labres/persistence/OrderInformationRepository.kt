@@ -37,18 +37,14 @@ class DynamoOrderInformationRepository internal constructor(
     override fun findByExternalOrderNumber(externalOrderNumber: OrderNumber.External): OrderInformation? {
         return rawOrderInformationRepository.findByExternalOrderNumber(externalOrderNumber.number)
             .mapNotNull(RawOrderInformation::cook)
-            .let { l ->
-                if (l.size == 1) l.first() else null
-            }
+            .singleOrNull()
     }
 
     override fun findByInternalOrderNumber(internalOrderNumber: OrderNumber.Internal): OrderInformation? {
         return rawOrderInformationRepository.findByLabIdAndInternalOrderNumber(
             internalOrderNumber.labId,
             internalOrderNumber.number
-        ).mapNotNull(RawOrderInformation::cook).let { l ->
-            if (l.size == 1) l.first() else null
-        }
+        ).mapNotNull(RawOrderInformation::cook).singleOrNull()
     }
 
     override fun save(orderInformation: OrderInformation) {
@@ -68,17 +64,11 @@ class InMemoryOrderInformationRepository : OrderInformationRepository {
 
     override fun findByExternalOrderNumber(externalOrderNumber: OrderNumber.External) = map.filter {
         it.value.number == externalOrderNumber
-    }.entries.toList().let { l ->
-        if (l.size == 1) l.first().value else null
-    }
+    }.entries.singleOrNull()?.value
 
-    override fun findByInternalOrderNumber(internalOrderNumber: OrderNumber.Internal): OrderInformation? {
-        return map.filter {
-            it.value.number == internalOrderNumber
-        }.entries.toList().let { l ->
-            if (l.size == 1) l.first().value else null
-        }
-    }
+    override fun findByInternalOrderNumber(internalOrderNumber: OrderNumber.Internal) = map.filter {
+        it.value.number == internalOrderNumber
+    }.entries.singleOrNull()?.value
 
     override fun save(orderInformation: OrderInformation) {
         map[orderInformation.id] = orderInformation
