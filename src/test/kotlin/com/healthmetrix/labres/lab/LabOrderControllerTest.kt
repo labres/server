@@ -33,19 +33,19 @@ class LabOrderControllerTest {
 
     @Nested
     inner class UpdateLabOrderEndpointTest {
-        private var orderId = "abc123"
+        private var labOrderNumber = "abc123"
 
         @BeforeEach
         fun setup() {
             every { updateLabOrderUseCase(any()) } returns UpdateLabOrderUseCase.Result(
                 OrderId.randomUUID(),
-                orderId
+                labOrderNumber
             )
         }
 
         @Test
         fun `it responds with 200 when updating lab order`() {
-            mockMvc.put("/v1/lab-orders/$orderId") {
+            mockMvc.put("/v1/lab-orders/$labOrderNumber") {
                 contentType = MediaType.APPLICATION_JSON
             }.andExpect {
                 status { isOk }
@@ -54,12 +54,11 @@ class LabOrderControllerTest {
 
         @Test
         fun `success response body contains all necessary fields`() {
-            mockMvc.put("/v1/lab-orders/$orderId") {
+            mockMvc.put("/v1/lab-orders/$labOrderNumber") {
                 contentType = MediaType.APPLICATION_JSON
             }.andExpect {
                 jsonPath("$.id") { isString }
                 jsonPath("$.labOrderNumber") { isString }
-                jsonPath("$.token") { isString }
             }
         }
     }

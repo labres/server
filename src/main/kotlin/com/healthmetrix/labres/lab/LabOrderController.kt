@@ -16,14 +16,13 @@ class LabOrderController(
     private val updateLabOrderUseCase: UpdateLabOrderUseCase,
     private val getLabOrderUseCase: GetLabOrderUseCase
 ) {
-    @PutMapping("/v1/lab-orders/{orderId}")
-    fun updateLabOrder(@PathVariable orderId: String): ResponseEntity<UpdateLabOrderResponse> {
-        val update = updateLabOrderUseCase(orderId)
+    @PutMapping("/v1/lab-orders/{labOrderNumber}")
+    fun updateLabOrder(@PathVariable labOrderNumber: String): ResponseEntity<UpdateLabOrderResponse> {
+        val update = updateLabOrderUseCase(labOrderNumber)
 
         return UpdateLabOrderResponse.Updated(
             update.id,
-            update.labOrderNumber,
-            "fake token"
+            update.labOrderNumber
         ).asEntity()
     }
 
@@ -44,14 +43,12 @@ sealed class UpdateLabOrderResponse(
 ) : ApiResponse(httpStatus, hasBody) {
     data class Updated(
         val id: OrderId,
-        val labOrderNumber: String,
-        val token: String
+        val labOrderNumber: String
     ) : UpdateLabOrderResponse(HttpStatus.OK)
 
     data class Created(
         val id: OrderId,
-        val labOrderNumber: String,
-        val token: String
+        val labOrderNumber: String
     ) : UpdateLabOrderResponse(HttpStatus.CREATED)
 }
 
