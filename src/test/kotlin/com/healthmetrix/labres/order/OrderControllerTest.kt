@@ -5,6 +5,8 @@ import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import java.time.Instant
+import java.util.Date
 import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -32,7 +34,7 @@ class OrderControllerTest {
     inner class CreateOrderEndpointTest {
         @Test
         fun `asking for an order returns an order and 201`() {
-            every { orderInformationRepository.findById(any()) } returns null
+            every { orderInformationRepository.findByExternalOrderNumber(any()) } returns null
             every { orderInformationRepository.save(any()) } returns Unit
 
             mockMvc.post("/v1/orders").andExpect {
@@ -52,8 +54,10 @@ class OrderControllerTest {
         @Test
         fun `asking for an order number returns status with 200`() {
             every { orderInformationRepository.findById(any()) } returns OrderInformation(
-                OrderNumber(orderNumber),
+                UUID.randomUUID(),
+                OrderNumber.External(orderNumber),
                 Status.POSITIVE,
+                Date.from(Instant.now()),
                 null
             )
 

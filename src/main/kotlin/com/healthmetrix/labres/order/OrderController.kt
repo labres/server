@@ -3,6 +3,7 @@ package com.healthmetrix.labres.order
 import com.healthmetrix.labres.ApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.persistence.OrderInformationRepository
+import java.lang.IllegalArgumentException
 import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -18,17 +19,23 @@ class OrderController(
 ) {
     @PostMapping("/v1/orders")
     fun postOrderNumber(): ResponseEntity<CreateOrderResponse> {
-        val orderInfo = createOrderUseCase()
+        val (id, eon) = createOrderUseCase()
         return CreateOrderResponse.Created(
-            UUID.randomUUID(), // TODO Fix when implemented in #7
-            orderInfo.number.externalOrderNumber,
-            "fake token" // TODO Fix when implemented in #7
+            id,
+            eon.number,
+            "fake token" // TODO Fix when implemented in future ticket
         ).asEntity()
     }
 
     @GetMapping("/v1/orders/{orderId}")
     fun getOrderNumber(@PathVariable orderId: String): ResponseEntity<StatusResponse> {
-        val orderInfo = orderInformationRepository.findById(orderId)
+        val id = try {
+            UUID.fromString(orderId)
+        } catch (ex: IllegalArgumentException) {
+            null
+        }
+
+        val orderInfo = id?.let(orderInformationRepository::findById)
 
         return when (orderInfo) {
             null -> StatusResponse.NotFound
