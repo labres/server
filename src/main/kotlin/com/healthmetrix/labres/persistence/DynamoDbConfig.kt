@@ -26,8 +26,7 @@ import org.springframework.core.env.Environment
 @Profile("dynamo")
 class DynamoDbConfig {
 
-    // WARNING this function must have this name
-    @Bean
+    @Bean("amazonDynamoDB")
     fun amazonDynamoDB(
         env: Environment,
         @Value("\${dynamo.local-endpoint}")

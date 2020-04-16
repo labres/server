@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component
 class CreateOrderUseCase(
     private val orderInformationRepository: OrderInformationRepository
 ) {
-    operator fun invoke(): Pair<OrderInformation, OrderNumber.External> {
+    operator fun invoke(): Pair<UUID, OrderNumber.External> {
         var orderNumber = OrderNumber.External.random()
         while (orderInformationRepository.findByExternalOrderNumber(orderNumber.number) != null)
             orderNumber = OrderNumber.External.random()
@@ -26,6 +26,6 @@ class CreateOrderUseCase(
 
         orderInformationRepository.save(orderInfo)
 
-        return orderInfo to orderNumber
+        return orderInfo.id to orderNumber
     }
 }

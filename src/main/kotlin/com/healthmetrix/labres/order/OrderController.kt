@@ -18,17 +18,23 @@ class OrderController(
 ) {
     @PostMapping("/v1/orders")
     fun postOrderNumber(): ResponseEntity<CreateOrderResponse> {
-        val (orderInfo, eon) = createOrderUseCase()
+        val (id, eon) = createOrderUseCase()
         return CreateOrderResponse.Created(
-            orderInfo.id,
+            id,
             eon.number,
             "fake token" // TODO Fix when implemented in future ticket
         ).asEntity()
     }
 
     @GetMapping("/v1/orders/{orderId}")
-    fun getOrderNumber(@PathVariable orderId: UUID): ResponseEntity<StatusResponse> {
-        val orderInfo = orderInformationRepository.findById(orderId)
+    fun getOrderNumber(@PathVariable orderId: String): ResponseEntity<StatusResponse> {
+        val id = try {
+            UUID.fromString(orderId)
+        } catch (ex: Exception) {
+            null
+        }
+
+        val orderInfo = id?.let(orderInformationRepository::findById)
 
         return when (orderInfo) {
             null -> StatusResponse.NotFound
