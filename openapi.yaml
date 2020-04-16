@@ -165,3 +165,76 @@ paths:
           $ref: "#/components/responses/GeneralError"
       security:
         - LabApiKey: []
+  /lab-orders/{labOrderNumber}:
+    put:
+      summary: Creates an Internal Order Number (ION)
+      description: Should only be invoked for verified users (logged into account or verified email address)
+      tags:
+        - lab_api
+      parameters:
+        - name: labOrderNumber
+          in: path
+          description: Laboratory Order Number
+          required: true
+          schema:
+            type: string
+            format: alphanumeric identifier
+      responses:
+        '201':
+          description: Lab Order Number created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    description: uuid identifier of the lab order number
+                  labOrderNumber:
+                    type: string
+                    description: the lab order number just created
+                example:
+                  id: f8aeb720-23a8-42f5-9be2-176d672c13a7
+                  labOrderNumber: 1234abcd
+        '401':
+          $ref: "#/components/responses/UnauthorizedApiKeyError"
+        '500':
+          description: Internal server error
+          $ref: "#/components/responses/GeneralError"
+      security:
+        - LabApiKey: []
+  /lab-orders/{orderId}:
+    get:
+        summary: Fetches a lab order's status
+        description: Fetches an lab order's result status based on the order id (not the lab order number)
+        tags:
+          - lab_api
+        parameters:
+          - name: orderId
+            in: path
+            description: Lab Order ID
+            required: true
+            schema:
+              type: string
+              format: uuid
+        responses:
+          '200':
+            description: Lab Order Number found
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
+                      enum: [POSITIVE, WEAK_POSITIVE, NEGATIVE, INVALID, IN_PROGRESS]
+                      description: Status enum to indicate if the lab result is in progress, sample material has been found invalid,  or if it has a positive or negative result
+                  example:
+                    status: POSITIVE
+          '401':
+            $ref: "#/components/responses/UnauthorizedApiKeyError"
+          '500':
+            description: Internal server error
+            $ref: "#/components/responses/GeneralError"
+        security:
+          - LabApiKey: []
