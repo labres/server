@@ -48,11 +48,12 @@ class OrderControllerTest {
 
     @Nested
     inner class GetOrderNumberEndpointTest {
+        private val orderId = UUID.randomUUID()
         private val orderNumber = "12345678"
 
         @Test
         fun `asking for an order number returns status with 200`() {
-            every { orderInformationRepository.findByExternalOrderNumber(any()) } returns OrderInformation(
+            every { orderInformationRepository.findById(any()) } returns OrderInformation(
                 UUID.randomUUID(),
                 OrderNumber.External(orderNumber),
                 Status.POSITIVE,
@@ -60,7 +61,7 @@ class OrderControllerTest {
                 null
             )
 
-            mockMvc.get("/v1/orders/$orderNumber").andExpect {
+            mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isOk }
                 jsonPath("$.status") { exists() }
             }
@@ -68,8 +69,8 @@ class OrderControllerTest {
 
         @Test
         fun `returns status 404 when no order is found`() {
-            every { orderInformationRepository.findByExternalOrderNumber(any()) } returns null
-            mockMvc.get("/v1/orders/$orderNumber").andExpect {
+            every { orderInformationRepository.findById(any()) } returns null
+            mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isNotFound }
             }
         }

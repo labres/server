@@ -25,10 +25,9 @@ components:
       name: Authorization
       description: API key authorizing access for labs to upload results for an external order number
     OrdersApiKey:
-      type: apiKey
-      in: header
-      name: Authorization
-      description: API key authorizing access for integration to issue a new or query the status of an existing external order number
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     GeneralError:
       type: object
@@ -55,13 +54,6 @@ paths:
       description: Should only be invoked for verified users (logged into account or verified email address)
       tags:
         - orders_api
-      parameters:
-        - in: header
-          name: X-Api-Key
-          schema:
-            type: string
-          required: true
-          example: "my-api-key"
       responses:
         '201':
           description: a new external order number to be returned
@@ -92,28 +84,21 @@ paths:
           $ref: "#/components/responses/GeneralError"
       security:
         - OrdersApiKey: []
-  /orders/{externalOrderNumber}:
+  /orders/{orderId}:
     get:
       summary: returns the current status of a lab order
       description: Should only be invoked for verified users (logged into account or verified email address)
       tags:
         - orders_api
       parameters:
-        - name: externalOrderNumber
+        - name: orderId
           in: path
-          description: external ID of an order that has been sent to a lab
+          description: UUID of an order that has been sent to a lab
           required: true
           schema:
             type: string
-            format: externalOrderNumber
-            description: numeric 8-digit-long identifier
-        - name: hash
-          in: query
-          description: hex encoded sha256 hash of the person identifiable data being transmitted via the LTD request (e.g. firstname, name, birthdata) being used to prevent scraping results for all external order numbers
-          required: true
-          schema:
-            type: string
-            format: hex
+            format: uuid
+            description: unique identifier of a lab order (NOT the external order number)
       responses:
         '200':
           description: returns current status of the lab order
@@ -124,19 +109,14 @@ paths:
                 properties:
                   status:
                     type: string
-                    enum: [POSITIVE, NEGATIVE, INVALID, IN_PROGRESS]
-                    description: Status enum to indicate if the lab order is still in progress, the sample material has been found invalid or if it has a positive or negative result
-                required:
-                  - status
+                    enum: [POSITIVE, WEAK_POSITIVE, NEGATIVE, INVALID, IN_PROGRESS]
+                    description: Status enum to indicate if the lab result is in progress, sample material has been found invalid,  or if it has a positive or negative result
                 example:
                   status: POSITIVE
         '401':
           $ref: "#/components/responses/UnauthorizedApiKeyError"
-        '403':
-          description: Hash did not match the external order number
-          $ref: "#/components/responses/GeneralError"
         '404':
-          description: no order for external order number found
+          description: no order for the given id found
         '500':
           description: Internal server error
           $ref: "#/components/responses/GeneralError"
