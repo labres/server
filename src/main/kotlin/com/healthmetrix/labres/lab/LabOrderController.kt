@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -17,13 +18,12 @@ class LabOrderController(
     private val getLabOrderUseCase: GetLabOrderUseCase
 ) {
     @PutMapping("/v1/lab-orders/{labOrderNumber}")
-    fun updateLabOrder(@PathVariable labOrderNumber: String): ResponseEntity<UpdateLabOrderResponse> {
-        val update = updateLabOrderUseCase(labOrderNumber)
-
-        return UpdateLabOrderResponse.Updated(
-            update.id,
-            update.labOrderNumber
-        ).asEntity()
+    fun updateLabOrder(@PathVariable labOrderNumber: String, @RequestHeader("Authorization") apiKey: String): ResponseEntity<UpdateLabOrderResponse> {
+        return when (val result = updateLabOrderUseCase(apiKey, labOrderNumber)) {
+            is UpdateLabOrderUseCase.Result.InvalidOrderNumber -> UpdateLabOrderResponse.Invalid
+            is UpdateLabOrderUseCase.Result.Created -> UpdateLabOrderResponse.Created(result.id, result.labOrderNumber)
+            is UpdateLabOrderUseCase.Result.Found -> UpdateLabOrderResponse.Updated(result.id, result.labOrderNumber)
+        }.asEntity()
     }
 
     @GetMapping("/v1/lab-orders/{orderId}")
@@ -47,6 +47,8 @@ sealed class UpdateLabOrderResponse(
         val id: OrderId,
         val labOrderNumber: String
     ) : UpdateLabOrderResponse(HttpStatus.CREATED)
+
+    object Invalid : UpdateLabOrderResponse(HttpStatus.BAD_REQUEST)
 }
 
 sealed class GetLabOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : ApiResponse(httpStatus, hasBody) {
