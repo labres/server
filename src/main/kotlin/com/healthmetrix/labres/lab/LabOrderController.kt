@@ -16,7 +16,7 @@ class LabOrderController(
     private val updateLabOrderUseCase: UpdateLabOrderUseCase,
     private val getLabOrderUseCase: GetLabOrderUseCase
 ) {
-    @PutMapping("/v1/lab-orders/{orderId}")
+    @PutMapping("/v1/lab/orders/{orderId}")
     fun updateLabOrder(@PathVariable orderId: String): ResponseEntity<UpdateLabOrderResponse> {
         val update = updateLabOrderUseCase(orderId)
 
@@ -27,7 +27,7 @@ class LabOrderController(
         ).asEntity()
     }
 
-    @GetMapping("/v1/lab-orders/{orderId}")
+    @GetMapping("/v1/lab/orders/{orderId}")
     fun getLabOrder(@PathVariable orderId: String): ResponseEntity<GetLabOrderResponse> {
         val order = getLabOrderUseCase(orderId)
         if (order == null) {
