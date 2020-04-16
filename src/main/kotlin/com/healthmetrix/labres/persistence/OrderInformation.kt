@@ -20,9 +20,9 @@ data class OrderInformation(
 ) {
     internal fun raw() = RawOrderInformation(
         id = id,
-        externalOrderNumber = number.eon(),
-        labId = number.labId(),
-        internalOrderNumber = number.ion(),
+        externalOrderNumber = number.eonOrNull(),
+        labId = number.labIdOrNull(),
+        internalOrderNumber = number.ionOrNull(),
         status = status.toString(),
         createdAt = createdAt,
         updatedAt = updatedAt
