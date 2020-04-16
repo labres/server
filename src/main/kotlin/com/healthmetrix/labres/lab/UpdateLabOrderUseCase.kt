@@ -20,19 +20,17 @@ class UpdateLabOrderUseCase(private val orderInformationRepository: OrderInforma
         if (labOrder != null) {
             return Result.Found(labOrder.id, labOrder.number.ion())
         }
-        val created = create(internalOrderNumber)
+        val created = orderInformationRepository.save(
+            OrderInformation(
+                UUID.randomUUID(),
+                internalOrderNumber,
+                Status.IN_PROGRESS,
+                createdAt = Date.from(Instant.now()),
+                updatedAt = null
+            )
+        )
         return Result.Created(created.id, created.number.ion())
     }
-
-    private fun create(internalOrderNumber: OrderNumber): OrderInformation = orderInformationRepository.save(
-        OrderInformation(
-            UUID.randomUUID(),
-            internalOrderNumber,
-            Status.IN_PROGRESS,
-            createdAt = Date.from(Instant.now()),
-            updatedAt = null
-        )
-    )
 
     sealed class Result {
         object InvalidOrderNumber : Result()
