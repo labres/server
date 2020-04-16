@@ -44,11 +44,14 @@ class LabOrderControllerTest {
         }
 
         @Test
-        fun `it responds with 200 when updating lab order`() {
+        fun `it responds with 201 when updating lab order`() {
             mockMvc.put("/v1/lab-orders/$labOrderNumber") {
                 contentType = MediaType.APPLICATION_JSON
+                headers {
+                    setBasicAuth("credential")
+                }
             }.andExpect {
-                status { isOk }
+                status { isCreated }
             }
         }
 
@@ -56,6 +59,9 @@ class LabOrderControllerTest {
         fun `success response body contains all necessary fields`() {
             mockMvc.put("/v1/lab-orders/$labOrderNumber") {
                 contentType = MediaType.APPLICATION_JSON
+                headers {
+                    setBasicAuth("credential")
+                }
             }.andExpect {
                 jsonPath("$.id") { isString }
                 jsonPath("$.labOrderNumber") { isString }
@@ -71,7 +77,11 @@ class LabOrderControllerTest {
         fun `it responds with 200 when lab order is found`() {
             every { getLabOrderUseCase(any()) } returns GetLabOrderUseCase.Result(Status.POSITIVE)
 
-            mockMvc.get("/v1/lab-orders/$orderId").andExpect {
+            mockMvc.get("/v1/lab-orders/$orderId") {
+                headers {
+                    setBasicAuth("credential")
+                }
+            }.andExpect {
                 status { isOk }
             }
         }
@@ -80,7 +90,11 @@ class LabOrderControllerTest {
         fun `it responds with status in body when lab order is found`() {
             every { getLabOrderUseCase(any()) } returns GetLabOrderUseCase.Result(Status.POSITIVE)
 
-            mockMvc.get("/v1/lab-orders/$orderId").andExpect {
+            mockMvc.get("/v1/lab-orders/$orderId") {
+                headers {
+                    setBasicAuth("credential")
+                }
+            }.andExpect {
                 jsonPath("$.status") { isString }
             }
         }
@@ -88,7 +102,11 @@ class LabOrderControllerTest {
         @Test
         fun `it responds with 404 when lab order is not found`() {
             every { getLabOrderUseCase(any()) } returns null
-            mockMvc.get("/v1/lab-orders/$orderId").andExpect {
+            mockMvc.get("/v1/lab-orders/$orderId") {
+                headers {
+                    setBasicAuth("credential")
+                }
+            }.andExpect {
                 status { isNotFound }
             }
         }
