@@ -32,8 +32,13 @@ class GetLabOrderUseCaseTest {
     }
 
     @Test
-    fun `it returns NotFound when no order is found`() {
+    fun `it returns null when no order is found`() {
         every { orderInformationRepository.findById(any()) } returns null
         assertThat(underTest(UUID.randomUUID().toString())).isNull()
+    }
+
+    @Test
+    fun `it returns NotFound if uuid is invalid`() {
+        assertThat(underTest("not a uuid")).isNull()
     }
 }

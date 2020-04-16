@@ -11,8 +11,12 @@ class GetLabOrderUseCase(
     private val orderInformationRepository: OrderInformationRepository
 ) {
     operator fun invoke(orderId: String): Result? {
-        val id = UUID.fromString(orderId)
-        return when (val order = orderInformationRepository.findById(id)) {
+        val id = try {
+            UUID.fromString(orderId)
+        } catch (ex: IllegalArgumentException) {
+            null
+        }
+        return when (val order = id?.let(orderInformationRepository::findById)) {
             is OrderInformation -> Result(order.status)
             else -> null
         }
