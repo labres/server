@@ -5,20 +5,17 @@ const val LENGTH = 10
 
 sealed class OrderNumber {
 
-    fun eon() = when (this) {
-        is External -> this.number
-        is Internal -> null
-    }
+    fun eon() = (this as External).number
 
-    fun labId() = when (this) {
-        is External -> null
-        is Internal -> this.labId
-    }
+    fun eonOrNull() = (this as? External)?.number
 
-    fun ion() = when (this) {
-        is External -> null
-        is Internal -> this.number
-    }
+    fun labId() = (this as Internal).labId
+
+    fun labIdOrNull() = (this as? Internal)?.labId
+
+    fun ion() = (this as Internal).number
+
+    fun ionOrNull() = (this as? Internal)?.number
 
     data class External(val number: String) : OrderNumber() {
         companion object {

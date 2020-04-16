@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 interface OrderInformationRepository {
     fun findById(id: UUID): OrderInformation?
 
-    fun save(orderInformation: OrderInformation)
+    fun save(orderInformation: OrderInformation): OrderInformation
 
     fun findByExternalOrderNumber(externalOrderNumber: OrderNumber.External): OrderInformation?
 
@@ -47,9 +47,8 @@ class DynamoOrderInformationRepository internal constructor(
         ).mapNotNull(RawOrderInformation::cook).singleOrNull()
     }
 
-    override fun save(orderInformation: OrderInformation) {
-        rawOrderInformationRepository.save(orderInformation.raw())
-    }
+    override fun save(orderInformation: OrderInformation) =
+        rawOrderInformationRepository.save(orderInformation.raw()).cook()!!
 }
 
 @Component
@@ -70,7 +69,8 @@ class InMemoryOrderInformationRepository : OrderInformationRepository {
         it.value.number == internalOrderNumber
     }.entries.singleOrNull()?.value
 
-    override fun save(orderInformation: OrderInformation) {
+    override fun save(orderInformation: OrderInformation): OrderInformation {
         map[orderInformation.id] = orderInformation
+        return orderInformation
     }
 }

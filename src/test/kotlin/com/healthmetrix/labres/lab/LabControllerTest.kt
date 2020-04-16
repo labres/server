@@ -44,7 +44,7 @@ class LabControllerTest {
 
     @BeforeEach
     fun beforeEach() {
-        every { orderInformationRepository.save(any()) } returns Unit
+        every { orderInformationRepository.save(any()) } answers { this.value }
     }
 
     @Test

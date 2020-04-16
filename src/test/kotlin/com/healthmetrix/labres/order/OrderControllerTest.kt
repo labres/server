@@ -35,7 +35,7 @@ class OrderControllerTest {
         @Test
         fun `asking for an order returns an order and 201`() {
             every { orderInformationRepository.findByExternalOrderNumber(any()) } returns null
-            every { orderInformationRepository.save(any()) } returns Unit
+            every { orderInformationRepository.save(any()) } answers { this.value }
 
             mockMvc.post("/v1/orders").andExpect {
                 status { isCreated }
