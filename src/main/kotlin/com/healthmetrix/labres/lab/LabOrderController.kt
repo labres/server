@@ -4,7 +4,9 @@ import com.healthmetrix.labres.ApiResponse
 import com.healthmetrix.labres.OrderId
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.order.Status
+import org.apache.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -15,14 +17,19 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class LabOrderController(
     private val updateLabOrderUseCase: UpdateLabOrderUseCase,
-    private val getLabOrderUseCase: GetLabOrderUseCase
+    private val getLabOrderUseCase: GetLabOrderUseCase,
+    private val extractLabIdUseCase: ExtractLabIdUseCase
 ) {
-    @PutMapping("/v1/lab-orders/{labOrderNumber}")
+    @PutMapping(
+        path = ["/v1/lab-orders/{labOrderNumber}"],
+        consumes = [MediaType.APPLICATION_JSON_VALUE]
+    )
     fun updateLabOrder(
         @PathVariable labOrderNumber: String,
-        @RequestHeader("Authorization") apiKey: String
+        @RequestHeader(HttpHeaders.AUTHORIZATION) labIdHeader: String
     ): ResponseEntity<UpdateLabOrderResponse> {
-        return when (val result = updateLabOrderUseCase(apiKey, labOrderNumber)) {
+        val labId = extractLabIdUseCase(labIdHeader)
+        return when (val result = updateLabOrderUseCase(labId, labOrderNumber)) {
             is UpdateLabOrderUseCase.Result.InvalidOrderNumber -> UpdateLabOrderResponse.Invalid
             is UpdateLabOrderUseCase.Result.Created -> UpdateLabOrderResponse.Created(result.id, result.labOrderNumber)
             is UpdateLabOrderUseCase.Result.Found -> UpdateLabOrderResponse.Updated(result.id, result.labOrderNumber)
@@ -32,7 +39,7 @@ class LabOrderController(
     @GetMapping("/v1/lab-orders/{orderId}")
     fun getLabOrder(
         @PathVariable orderId: String,
-        @RequestHeader("Authorization") apiKey: String
+        @RequestHeader(HttpHeaders.AUTHORIZATION) labIdHeader: String
     ): ResponseEntity<GetLabOrderResponse> {
         val order = getLabOrderUseCase(orderId) ?: return GetLabOrderResponse.NotFound.asEntity()
 
