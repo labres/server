@@ -14,17 +14,17 @@ servers:
         default: v1
 tags:
   - name: lab_api
-    description: endpoints to be invoked from the lab to upload results
+    description: endpoints to allow labs to upload and fetch results
   - name: orders_api
-    description: endpoints to be invoked by a backend to empower patients to query their lab results
+    description: endpoints to empower patients to query their lab results
 components:
   securitySchemes:
-    LabApiKey:
+    LabCredential:
       type: apiKey
       in: header
       name: Authorization
-      description: API key authorizing access for labs to upload results for an external order number
-    OrdersApiKey:
+      description: Base-64 encoded basic auth credential, the username of which is the Client ID used to authorize labs to upload results for an external or internal order number
+    OrdersApiToken:
       type: http
       scheme: bearer
       bearerFormat: JWT
@@ -83,7 +83,7 @@ paths:
           description: Internal server error
           $ref: "#/components/responses/GeneralError"
       security:
-        - OrdersApiKey: []
+        - OrdersApiToken: []
   /orders/{orderId}:
     get:
       summary: returns the current status of a lab order
@@ -121,7 +121,7 @@ paths:
           description: Internal server error
           $ref: "#/components/responses/GeneralError"
       security:
-        - OrdersApiKey: []
+        - OrdersApiToken: []
   /orders/result/{type}:
     put:
       summary: allows for uploading a result of a lab order
@@ -163,7 +163,7 @@ paths:
           description: Internal server error
           $ref: "#/components/responses/GeneralError"
       security:
-        - LabApiKey: []
+        - LabCredential: []
   /lab-orders/{labOrderNumber}:
     put:
       summary: Creates an Internal Order Number (ION)
@@ -204,7 +204,7 @@ paths:
           description: Internal server error
           $ref: "#/components/responses/GeneralError"
       security:
-        - LabApiKey: []
+        - LabCredential: []
   /lab-orders/{orderId}:
     get:
         summary: Fetches a lab order's status
@@ -238,4 +238,4 @@ paths:
             description: Internal server error
             $ref: "#/components/responses/GeneralError"
         security:
-          - LabApiKey: []
+          - LabCredential: []
