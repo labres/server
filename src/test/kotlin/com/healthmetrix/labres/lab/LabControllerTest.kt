@@ -46,7 +46,7 @@ class LabControllerTest {
 
             every { updateResultUseCase(any(), any()) } returns UpdateStatusResponse.Success
 
-            mockMvc.put("/v1/orders/result/json") {
+            mockMvc.put("/v1/results/json") {
                 header(HttpHeaders.AUTHORIZATION, "labId")
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
@@ -64,7 +64,7 @@ class LabControllerTest {
         fun `upload a document to an unknown external order number returns 404`() {
             every { updateResultUseCase(any(), any()) } returns UpdateStatusResponse.OrderNotFound
 
-            mockMvc.put("/v1/orders/result/json") {
+            mockMvc.put("/v1/results/json") {
                 contentType = MediaType.APPLICATION_JSON
                 header(HttpHeaders.AUTHORIZATION, "labId")
                 content = objectMapper.writeValueAsBytes(
@@ -80,7 +80,7 @@ class LabControllerTest {
 
         @Test
         fun `upload a document to an invalid external order number returns 404`() {
-            mockMvc.put("/v1/orders/result/json") {
+            mockMvc.put("/v1/results/json") {
                 header(HttpHeaders.AUTHORIZATION, "labId")
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
@@ -105,7 +105,7 @@ class LabControllerTest {
             every { extractObxResultUseCase(any(), any()) } returns
                     LabResult(OrderNumber.External.random(), Result.NEGATIVE)
 
-            mockMvc.put("/v1/orders/result/obx") {
+            mockMvc.put("/v1/results/obx") {
                 header(HttpHeaders.AUTHORIZATION, "Basic ${"user:pass".encodeBase64()}")
                 contentType = MediaType.TEXT_PLAIN
                 content = "NEGATIVE"
@@ -118,7 +118,7 @@ class LabControllerTest {
         fun `uploading an invalid OBX message returns 500`() {
             every { extractObxResultUseCase(any(), any()) } returns null
 
-            mockMvc.put("/v1/orders/result/obx") {
+            mockMvc.put("/v1/results/obx") {
                 header(HttpHeaders.AUTHORIZATION, "Basic ${"user:pass".encodeBase64()}")
                 contentType = MediaType.TEXT_PLAIN
                 content = "NOT OBX"
@@ -134,7 +134,7 @@ class LabControllerTest {
         fun `uploading an invalid ldt document returns 500`() {
             every { extractLdtResultUseCase(any(), any()) } returns null
 
-            mockMvc.put("/v1/orders/result/ldt") {
+            mockMvc.put("/v1/results/ldt") {
                 header(HttpHeaders.AUTHORIZATION, "Basic ${"user:pass".encodeBase64()}")
                 contentType = MediaType.TEXT_PLAIN
                 content = "NOT LDT"
