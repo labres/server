@@ -29,13 +29,13 @@ class LabController(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
         labIdHeader: String,
         @RequestBody
-        jsonResult: JsonResult
+        result: JsonResult
     ): ResponseEntity<UpdateStatusResponse> {
-        val orderNumber = OrderNumber.Internal.from(extractLabIdUseCase(labIdHeader), jsonResult.internalOrderNumber)
-            ?: OrderNumber.External.from(jsonResult.externalOrderNumber)
+        val orderNumber = OrderNumber.Internal.from(extractLabIdUseCase(labIdHeader), result.internalOrderNumber)
+            ?: OrderNumber.External.from(result.externalOrderNumber)
             ?: return UpdateStatusResponse.OrderNotFound.asEntity()
 
-        return updateResultUseCase(LabResult(orderNumber, jsonResult.result)).asEntity()
+        return updateResultUseCase(LabResult(orderNumber, result.result)).asEntity()
     }
 
     @PutMapping(

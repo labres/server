@@ -136,13 +136,13 @@ paths:
             type: string
             enum: [json, ldt, obx]
       requestBody:
-        description: Lab result as OBX message, LDT document, or JSON object. Body must include either external or internal order numbers.  In the case of external, lab ID is taken from authorization headers.
+        description: Lab result as OBX message, LDT document, or JSON object. Body must include either external or internal order numbers.  In the case of internal, lab ID is taken from authorization headers.
         content:
           'text/plain':
             schema:
               type: string
-              format: OBX
-              description: An OBX Segment of an HL7 ORU R1 message. See https://wiki.hl7.de/index.php?title=Segment_OBX for details.
+              format: OBX or LDT
+              description: An OBX Segment of an HL7 ORU R1 message (see https://wiki.hl7.de/index.php?title=Segment_OBX for details), or an LDT message
           'application/json':
             schema:
               type: object
