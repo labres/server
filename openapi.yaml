@@ -122,7 +122,7 @@ paths:
           $ref: "#/components/responses/GeneralError"
       security:
         - OrdersApiToken: []
-  /orders/result/{type}:
+  /results/{type}:
     put:
       summary: allows for uploading a result of a lab order
       tags:

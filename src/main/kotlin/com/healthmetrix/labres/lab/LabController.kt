@@ -22,7 +22,7 @@ class LabController(
 ) {
 
     @PutMapping(
-        path = ["/v1/orders/result/json"],
+        path = ["/v1/results/json"],
         consumes = [MediaType.APPLICATION_JSON_VALUE]
     )
     fun jsonResult(
@@ -39,7 +39,7 @@ class LabController(
     }
 
     @PutMapping(
-        path = ["/v1/orders/result/obx"],
+        path = ["/v1/results/obx"],
         consumes = [MediaType.TEXT_PLAIN_VALUE]
     )
     fun obxResult(
@@ -58,7 +58,7 @@ class LabController(
     }
 
     @PutMapping(
-        path = ["/v1/orders/result/ldt"],
+        path = ["/v1/results/ldt"],
         consumes = [MediaType.TEXT_PLAIN_VALUE]
     )
     fun ldtResult(
