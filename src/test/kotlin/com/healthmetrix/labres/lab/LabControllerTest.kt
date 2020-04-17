@@ -2,6 +2,7 @@ package com.healthmetrix.labres.lab
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.healthmetrix.labres.LabResTestApplication
+import com.healthmetrix.labres.encodeBase64
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
 import com.healthmetrix.labres.persistence.OrderInformation
@@ -117,11 +118,11 @@ class LabControllerTest {
 
         every { orderInformationRepository.findByOrderNumber(any()) } returns
                 OrderInformation(UUID.randomUUID(), orderNumber, Status.IN_PROGRESS, now, null)
-        every { extractObxResultUseCase(any(), "labId") } returns
+        every { extractObxResultUseCase(any(), any()) } returns
                 LabResult(OrderNumber.External.random(), Result.NEGATIVE)
 
         mockMvc.put("/v1/orders/result/obx") {
-            header(HttpHeaders.AUTHORIZATION, "labId")
+            header(HttpHeaders.AUTHORIZATION, "Basic ${"user:pass".encodeBase64()}")
             contentType = MediaType.TEXT_PLAIN
             content = "NEGATIVE"
         }.andExpect {
@@ -145,7 +146,7 @@ class LabControllerTest {
         every { extractObxResultUseCase(any(), "labId") } returns null
 
         mockMvc.put("/v1/orders/result/obx") {
-            header(HttpHeaders.AUTHORIZATION, "labId")
+            header(HttpHeaders.AUTHORIZATION, "Basic ${"user:pass".encodeBase64()}")
             contentType = MediaType.TEXT_PLAIN
             content = "NOT OBX"
         }.andExpect {
