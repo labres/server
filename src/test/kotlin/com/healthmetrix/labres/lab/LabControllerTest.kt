@@ -36,6 +36,9 @@ class LabControllerTest {
     @MockkBean
     private lateinit var extractObxResultUseCase: ExtractObxResultUseCase
 
+    @MockkBean
+    private lateinit var extractLdtResultUseCase: ExtractLdtResultUseCase
+
     @Nested
     inner class JSON {
         @Test
@@ -113,15 +116,28 @@ class LabControllerTest {
 
         @Test
         fun `uploading an invalid OBX message returns 500`() {
-            every { updateResultUseCase(any(), any()) } returns
-                    UpdateStatusResponse.InfoUnreadable
-
             every { extractObxResultUseCase(any(), any()) } returns null
 
             mockMvc.put("/v1/orders/result/obx") {
                 header(HttpHeaders.AUTHORIZATION, "Basic ${"user:pass".encodeBase64()}")
                 contentType = MediaType.TEXT_PLAIN
                 content = "NOT OBX"
+            }.andExpect {
+                status { isInternalServerError }
+            }
+        }
+    }
+
+    @Nested
+    inner class LDT {
+        @Test
+        fun `uploading an invalid ldt document returns 500`() {
+            every { extractLdtResultUseCase(any(), any()) } returns null
+
+            mockMvc.put("/v1/orders/result/ldt") {
+                header(HttpHeaders.AUTHORIZATION, "Basic ${"user:pass".encodeBase64()}")
+                contentType = MediaType.TEXT_PLAIN
+                content = "NOT LDT"
             }.andExpect {
                 status { isInternalServerError }
             }
