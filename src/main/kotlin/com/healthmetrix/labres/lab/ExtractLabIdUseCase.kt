@@ -13,11 +13,8 @@ class ExtractLabIdUseCase {
         if (basic != "Basic")
             return null
 
-        val decoded = try {
-            encoded.decodeBase64()?.split(":")
-        } catch (ex: IllegalArgumentException) {
-            null
-        } ?: return null
+        val decoded = encoded.decodeBase64()?.split(":")
+            ?: return null
 
         if (decoded.size != 2)
             return null
