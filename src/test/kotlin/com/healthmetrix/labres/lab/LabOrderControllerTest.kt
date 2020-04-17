@@ -31,20 +31,24 @@ class LabOrderControllerTest {
     @MockkBean
     private lateinit var getLabOrderUseCase: GetLabOrderUseCase
 
+    @MockkBean
+    private lateinit var extractLabIdUseCase: ExtractLabIdUseCase
+
     @Nested
     inner class UpdateLabOrderEndpointTest {
         private var labOrderNumber = "abc123"
 
         @BeforeEach
         fun setup() {
-            every { updateLabOrderUseCase(any(), any()) } returns UpdateLabOrderUseCase.Result.Created(
-                OrderId.randomUUID(),
-                labOrderNumber
-            )
+            every { extractLabIdUseCase(any()) } returns "labId"
         }
 
         @Test
         fun `it responds with 201 when updating lab order`() {
+            every { updateLabOrderUseCase(any(), any()) } returns UpdateLabOrderUseCase.Result.Created(
+                OrderId.randomUUID(),
+                labOrderNumber
+            )
             mockMvc.put("/v1/lab-orders/$labOrderNumber") {
                 contentType = MediaType.APPLICATION_JSON
                 headers {
@@ -57,6 +61,10 @@ class LabOrderControllerTest {
 
         @Test
         fun `success response body contains all necessary fields`() {
+            every { updateLabOrderUseCase(any(), any()) } returns UpdateLabOrderUseCase.Result.Created(
+                OrderId.randomUUID(),
+                labOrderNumber
+            )
             mockMvc.put("/v1/lab-orders/$labOrderNumber") {
                 contentType = MediaType.APPLICATION_JSON
                 headers {
@@ -65,6 +73,19 @@ class LabOrderControllerTest {
             }.andExpect {
                 jsonPath("$.id") { isString }
                 jsonPath("$.labOrderNumber") { isString }
+            }
+        }
+
+        @Test
+        fun `responds with 400 when invalid order number`() {
+            every { updateLabOrderUseCase(any(), any()) } returns UpdateLabOrderUseCase.Result.InvalidOrderNumber
+            mockMvc.put("/v1/lab-orders/$labOrderNumber") {
+                contentType = MediaType.APPLICATION_JSON
+                headers {
+                    setBasicAuth("credential")
+                }
+            }.andExpect {
+                status { isBadRequest }
             }
         }
     }

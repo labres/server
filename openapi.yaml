@@ -196,6 +196,8 @@ paths:
                 example:
                   id: f8aeb720-23a8-42f5-9be2-176d672c13a7
                   labOrderNumber: 1234abcd
+        '400':
+          description: Invalid Order Number
         '401':
           $ref: "#/components/responses/UnauthorizedApiKeyError"
         '500':
