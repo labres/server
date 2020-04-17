@@ -2,45 +2,88 @@ package com.healthmetrix.labres.lab
 
 import com.healthmetrix.labres.ApiResponse
 import com.healthmetrix.labres.asEntity
+import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class LabController(
-    private val extractResultUseCase: ExtractResultUseCase,
+    private val extractLabIdUseCase: ExtractLabIdUseCase,
+    private val extractObxResultUseCase: ExtractObxResultUseCase,
+    private val extractLdtResultUseCase: ExtractLdtResultUseCase,
     private val updateResultUseCase: UpdateResultUseCase
 ) {
 
     @PutMapping(
-        path = ["/v1/order/{externalOrderNumber}/result"],
-        consumes = [MediaType.TEXT_PLAIN_VALUE]
-    )
-    fun obxResult(
-        @PathVariable externalOrderNumber: String,
-        @RequestBody obxMessage: String
-    ): ResponseEntity<UpdateStatusResponse> {
-        val result = extractResultUseCase(obxMessage) ?: return UpdateStatusResponse.InfoUnreadable.asEntity()
-
-        return updateResultUseCase(externalOrderNumber, LabResult(result)).asEntity()
-    }
-
-    @PutMapping(
-        path = ["/v1/order/{externalOrderNumber}/result"],
+        path = ["/v1/orders/result/json"],
         consumes = [MediaType.APPLICATION_JSON_VALUE]
     )
     fun jsonResult(
-        @PathVariable externalOrderNumber: String,
-        @RequestBody labResult: LabResult
-    ): ResponseEntity<UpdateStatusResponse> = updateResultUseCase(externalOrderNumber, labResult).asEntity()
+        @RequestHeader(HttpHeaders.AUTHORIZATION)
+        labIdHeader: String,
+        @RequestBody
+        result: JsonResult
+    ): ResponseEntity<UpdateStatusResponse> {
+        val orderNumber = OrderNumber.Internal.from(extractLabIdUseCase(labIdHeader), result.internalOrderNumber)
+            ?: OrderNumber.External.from(result.externalOrderNumber)
+            ?: return UpdateStatusResponse.OrderNotFound.asEntity()
+
+        return updateResultUseCase(LabResult(orderNumber, result.result)).asEntity()
+    }
+
+    @PutMapping(
+        path = ["/v1/orders/result/obx"],
+        consumes = [MediaType.TEXT_PLAIN_VALUE]
+    )
+    fun obxResult(
+        @RequestHeader(HttpHeaders.AUTHORIZATION)
+        labIdHeader: String,
+        @RequestBody
+        obxMessage: String
+    ): ResponseEntity<UpdateStatusResponse> {
+        val labId = extractLabIdUseCase(labIdHeader)
+            ?: return UpdateStatusResponse.OrderNotFound.asEntity()
+
+        val labResult = extractObxResultUseCase(obxMessage, labId)
+            ?: return UpdateStatusResponse.InfoUnreadable.asEntity()
+
+        return updateResultUseCase(labResult).asEntity()
+    }
+
+    @PutMapping(
+        path = ["/v1/orders/result/ldt"],
+        consumes = [MediaType.TEXT_PLAIN_VALUE]
+    )
+    fun ldtResult(
+        @RequestHeader(HttpHeaders.AUTHORIZATION)
+        labIdHeader: String,
+        @RequestBody
+        ldtMessage: String
+    ): ResponseEntity<UpdateStatusResponse> {
+        val labId = extractLabIdUseCase(labIdHeader)
+            ?: return UpdateStatusResponse.OrderNotFound.asEntity()
+
+        val labResult = extractLdtResultUseCase(ldtMessage, labId)
+            ?: return UpdateStatusResponse.InfoUnreadable.asEntity()
+
+        return updateResultUseCase(labResult).asEntity()
+    }
 }
 
-data class LabResult(val result: Result)
+data class JsonResult(
+    val externalOrderNumber: String? = null,
+    val internalOrderNumber: String? = null,
+    val result: Result
+)
+
+data class LabResult(val orderNumber: OrderNumber, val result: Result)
 
 enum class Result {
     POSITIVE,
