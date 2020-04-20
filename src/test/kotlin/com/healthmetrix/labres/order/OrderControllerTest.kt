@@ -1,6 +1,5 @@
 package com.healthmetrix.labres.order
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.healthmetrix.labres.LabResTestApplication
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
@@ -31,9 +30,6 @@ class OrderControllerTest {
 
     @MockkBean
     private lateinit var orderInformationRepository: OrderInformationRepository
-
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
 
     @Nested
     inner class CreateOrderEndpointTest {

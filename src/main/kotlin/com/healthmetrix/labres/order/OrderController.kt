@@ -47,7 +47,7 @@ class OrderController(
     }
 }
 
-data class CreateOrderRequestBody(val notificationId: String? = null)
+data class CreateOrderRequestBody(val notificationId: String)
 
 sealed class CreateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : ApiResponse(httpStatus, hasBody) {
     data class Created(
