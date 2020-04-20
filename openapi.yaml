@@ -130,6 +130,44 @@ paths:
           $ref: "#/components/responses/GeneralError"
       security:
         - OrdersApiToken: []
+    put:
+      summary: Updates an order with the notification id
+      description: Should only be invoked for verified users (logged into account or verified email address)
+      tags:
+        - External Order Number API
+      parameters:
+        - name: orderId
+          in: path
+          description: UUID of an order that has been sent to a lab
+          required: true
+          schema:
+            type: string
+            format: uuid
+            description: A Version 4 UUID
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notificationId:
+                    type: string
+                    description: Notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.
+                required:
+                  - notificationId
+      responses:
+        '200':
+          description: Successful update
+        '401':
+          $ref: "#/components/responses/UnauthorizedApiKeyError"
+        '404':
+          description: no order for the given id found
+        '500':
+          description: Internal server error
+          $ref: "#/components/responses/GeneralError"
+      security:
+        - OrdersApiToken: []
   /results/{type}:
     put:
       summary: allows for uploading a result of a lab order

@@ -61,7 +61,7 @@ class OrderController(
         return when (updateOrderUseCase(orderId, updateOrderRequestBody.notificationId)) {
             is UpdateOrderUseCase.Result.Success -> UpdateOrderResponse.Updated
             is UpdateOrderUseCase.Result.NotFound -> UpdateOrderResponse.NotFound
-            is UpdateOrderUseCase.Result.InvalidOrderId -> UpdateOrderResponse.InvalidUpdate
+            is UpdateOrderUseCase.Result.InvalidOrderId -> UpdateOrderResponse.NotFound
         }.asEntity()
     }
 }

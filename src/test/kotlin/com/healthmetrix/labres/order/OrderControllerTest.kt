@@ -6,9 +6,6 @@ import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
-import java.time.Instant
-import java.util.Date
-import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,6 +16,9 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
+import java.time.Instant
+import java.util.Date
+import java.util.UUID
 
 @SpringBootTest(
     classes = [LabResTestApplication::class],
@@ -122,7 +122,7 @@ class OrderControllerTest {
         }
 
         @Test
-        fun `it returns 400 if invalid order id`() {
+        fun `it returns 404 if invalid order id`() {
             every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.InvalidOrderId
             mockMvc.put("/v1/orders/nonexistentOrder") {
                 contentType = MediaType.APPLICATION_JSON
@@ -132,7 +132,7 @@ class OrderControllerTest {
                     )
                 )
             }.andExpect {
-                status { isBadRequest }
+                status { isNotFound }
             }
         }
     }
