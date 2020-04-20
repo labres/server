@@ -168,27 +168,14 @@ paths:
           $ref: "#/components/responses/GeneralError"
       security:
         - OrdersApiToken: []
-  /results/{type}:
+  /results/json:
     put:
       summary: allows for uploading a result of a lab order
       tags:
         - Laboratory API
-      parameters:
-        - name: type
-          in: path
-          description: Type of result being uploaded
-          required: true
-          schema:
-            type: string
-            enum: [json, ldt, obx]
       requestBody:
-        description: Lab result as OBX message, LDT document, or JSON object. Body must include either external or internal order numbers.  In the case of internal, lab ID is taken from authorization headers.
+        description: Lab result as JSON object. Body must include either external or internal order numbers. In the case of internal, lab ID is taken from authorization headers.
         content:
-          'text/plain':
-            schema:
-              type: string
-              format: OBX or LDT
-              description: An OBX Segment of an HL7 ORU R1 message (see https://wiki.hl7.de/index.php?title=Segment_OBX for details), or an LDT message
           'application/json':
             schema:
               type: object
@@ -199,6 +186,55 @@ paths:
                   description: The lab result.
               required:
                 - result
+      responses:
+        '200':
+          description: Result uploaded successfully
+        '401':
+          $ref: "#/components/responses/UnauthorizedApiKeyError"
+        '404':
+          description: no order for external order number found
+        '500':
+          description: Internal server error
+          $ref: "#/components/responses/GeneralError"
+      security:
+        - LabCredential: []
+  /results/obx:
+    put:
+      summary: allows for uploading a result of a lab order
+      tags:
+        - Laboratory API
+      requestBody:
+        description: Lab result as OBX message. The message must include either external or internal order numbers. In the case of internal, lab ID is taken from authorization headers.
+        content:
+          'text/plain':
+            schema:
+              type: string
+              format: LDT
+              description: An OBX Segment of an HL7 ORU R1 message (see https://wiki.hl7.de/index.php?title=Segment_OBX for details), or an LDT message
+      responses:
+        '200':
+          description: Result uploaded successfully
+        '401':
+          $ref: "#/components/responses/UnauthorizedApiKeyError"
+        '404':
+          description: no order for external order number found
+        '500':
+          description: Internal server error
+          $ref: "#/components/responses/GeneralError"
+      security:
+        - LabCredential: []
+  /results/ldt:
+    put:
+      summary: allows for uploading a result of a lab order
+      tags:
+        - Laboratory API
+      requestBody:
+        description: Lab result as LDT document.
+        content:
+          'text/plain':
+            schema:
+              type: string
+              format: LDT
       responses:
         '200':
           description: Result uploaded successfully
