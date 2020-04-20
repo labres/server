@@ -17,9 +17,10 @@ class CreateOrderUseCase(
             orderNumber = OrderNumber.External.random()
 
         val orderInfo = OrderInformation(
-            UUID.randomUUID(),
-            orderNumber,
-            Status.IN_PROGRESS,
+            id = UUID.randomUUID(),
+            number = orderNumber,
+            status = Status.IN_PROGRESS,
+            notificationId = notificationId,
             issuedAt = Date.from(Instant.now())
         )
 
