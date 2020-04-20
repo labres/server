@@ -1,6 +1,7 @@
 package com.healthmetrix.labres.lab
 
 import com.healthmetrix.labres.ApiResponse
+import com.healthmetrix.labres.OrderId
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
@@ -18,7 +19,8 @@ class LabController(
     private val extractLabIdUseCase: ExtractLabIdUseCase,
     private val extractObxResultUseCase: ExtractObxResultUseCase,
     private val extractLdtResultUseCase: ExtractLdtResultUseCase,
-    private val updateResultUseCase: UpdateResultUseCase
+    private val updateResultUseCase: UpdateResultUseCase,
+    private val notifyUseCase: NotifyUseCase
 ) {
 
     @PutMapping(
@@ -73,6 +75,10 @@ class LabController(
             ?: return UpdateStatusResponse.InfoUnreadable.asEntity()
 
         return updateResultUseCase(labResult).asEntity()
+    }
+
+    private fun notify(orderId: OrderId) {
+        notifyUseCase(orderId) // TODO: Implement once D4L sets up an endpoint
     }
 }
 
