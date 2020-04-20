@@ -14,11 +14,11 @@ data class OrderInformation(
     val id: UUID,
     val number: OrderNumber,
     val status: Status,
-    val labId: String?,
     val issuedAt: Date,
-    val reportedAt: Date?,
-    val notifiedAt: Date?,
-    val notificatonId: String?
+    val labId: String? = null,
+    val reportedAt: Date? = null,
+    val notifiedAt: Date? = null,
+    val notificationId: String? = null
 ) {
     internal fun raw() = RawOrderInformation(
         id = id,
@@ -27,7 +27,7 @@ data class OrderInformation(
         issuedAt = issuedAt,
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
-        notificationId = notificatonId
+        notificationId = notificationId
     )
 }
 
@@ -69,14 +69,14 @@ data class RawOrderInformation(
 
         return if (id != null && orderNumber != null && status != null && createdAt != null)
             OrderInformation(
-                id,
-                orderNumber,
-                status,
-                labId,
-                createdAt,
-                reportedAt,
-                notifiedAt,
-                notificationId
+                id = id,
+                number = orderNumber,
+                status = status,
+                issuedAt = createdAt,
+                labId = labId,
+                reportedAt = reportedAt,
+                notifiedAt = notifiedAt,
+                notificationId = notificationId
             )
         else {
             logger.warn("Unable to cook $id")
