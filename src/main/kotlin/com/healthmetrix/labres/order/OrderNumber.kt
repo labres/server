@@ -9,14 +9,6 @@ sealed class OrderNumber {
 
     fun eonOrNull() = (this as? External)?.number
 
-    fun labId() = (this as Internal).labId
-
-    fun labIdOrNull() = (this as? Internal)?.labId
-
-    fun ion() = (this as Internal).number
-
-    fun ionOrNull() = (this as? Internal)?.number
-
     data class External(val number: String) : OrderNumber() {
         companion object {
             fun random(): External = (0 until LENGTH).map {
@@ -28,15 +20,6 @@ sealed class OrderNumber {
                     External(num)
                 else
                     null
-            }
-        }
-    }
-
-    data class Internal(val labId: String, val number: String) : OrderNumber() {
-        companion object {
-            fun from(labId: String?, number: String?) = when {
-                labId == null || number == null -> null
-                else -> Internal(labId, number)
             }
         }
     }

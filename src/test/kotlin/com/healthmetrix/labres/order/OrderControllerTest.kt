@@ -58,6 +58,8 @@ class OrderControllerTest {
                 OrderNumber.External(orderNumber),
                 Status.POSITIVE,
                 Date.from(Instant.now()),
+                null,
+                null,
                 null
             )
 

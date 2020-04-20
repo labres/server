@@ -20,8 +20,10 @@ class CreateOrderUseCase(
             UUID.randomUUID(),
             orderNumber,
             Status.IN_PROGRESS,
-            createdAt = Date.from(Instant.now()),
-            updatedAt = null
+            issuedAt = Date.from(Instant.now()),
+            reportedAt = null,
+            notifiedAt = null,
+            notificatonId = null
         )
 
         orderInformationRepository.save(orderInfo)
