@@ -41,7 +41,6 @@ class OrderControllerTest {
                 status { isCreated }
                 jsonPath("$.externalOrderNumber") { isString }
                 jsonPath("$.id") { isString }
-                jsonPath("$.token") { isString }
             }
         }
     }

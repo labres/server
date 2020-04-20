@@ -22,8 +22,7 @@ class OrderController(
         val (id, eon) = createOrderUseCase()
         return CreateOrderResponse.Created(
             id,
-            eon.number,
-            "fake token" // TODO Fix when implemented in future ticket
+            eon.number
         ).asEntity()
     }
 
@@ -47,7 +46,6 @@ class OrderController(
 sealed class CreateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : ApiResponse(httpStatus, hasBody) {
     data class Created(
         val id: UUID,
-        val externalOrderNumber: String,
-        val token: String
+        val externalOrderNumber: String
     ) : CreateOrderResponse(HttpStatus.CREATED)
 }

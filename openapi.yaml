@@ -72,9 +72,6 @@ paths:
                     type: string
                     format: externalOrderNumber
                     description: numeric 8-digit-long identifier
-                  token:
-                    type: string
-                    description: Authentication Token
                 example:
                   id: 65e524cb-7494-4073-ad16-495fed0d79e4
                   externalOrderNumber: X72UN3K8
