@@ -56,6 +56,16 @@ paths:
       description: Should only be invoked for verified users (logged into account or verified email address)
       tags:
         - External Order Number API
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notificationId:
+                  type: string
+                  description: Optional notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.
       responses:
         '201':
           description: OK
