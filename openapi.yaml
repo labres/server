@@ -209,7 +209,7 @@ paths:
           'text/plain':
             schema:
               type: string
-              format: LDT
+              format: OBX
               description: An OBX Segment of an HL7 ORU R1 message (see https://wiki.hl7.de/index.php?title=Segment_OBX for details), or an LDT message
       responses:
         '200':
