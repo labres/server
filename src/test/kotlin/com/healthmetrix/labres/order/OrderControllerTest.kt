@@ -6,6 +6,9 @@ import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import java.time.Instant
+import java.util.Date
+import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,9 +19,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
-import java.time.Instant
-import java.util.Date
-import java.util.UUID
 
 @SpringBootTest(
     classes = [LabResTestApplication::class],
