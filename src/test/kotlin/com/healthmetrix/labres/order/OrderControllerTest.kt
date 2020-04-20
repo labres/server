@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.order
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.healthmetrix.labres.LabResTestApplication
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
@@ -30,6 +32,9 @@ class OrderControllerTest {
     @MockkBean
     private lateinit var orderInformationRepository: OrderInformationRepository
 
+    @Autowired
+    private lateinit var objectMapper: ObjectMapper
+
     @Nested
     inner class CreateOrderEndpointTest {
         @Test
@@ -37,9 +42,11 @@ class OrderControllerTest {
             every { orderInformationRepository.findByOrderNumber(any()) } returns null
             every { orderInformationRepository.save(any()) } answers { this.value }
 
-            mockMvc.post("/v1/orders").andExpect {
+            mockMvc.post("/v1/orders") {
+                contentType = MediaType.APPLICATION_JSON
+            }.andExpect {
                 status { isCreated }
-                jsonPath("$.externalOrderNumber") { isString }
+                jsonPath("$.orderNumber") { isString }
                 jsonPath("$.id") { isString }
             }
         }

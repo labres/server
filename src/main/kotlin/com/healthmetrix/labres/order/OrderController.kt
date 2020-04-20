@@ -22,8 +22,8 @@ class OrderController(
         path = ["/v1/orders"],
         consumes = [MediaType.APPLICATION_JSON_VALUE]
     )
-    fun postOrderNumber(@RequestBody createOrderRequestBody: CreateOrderRequestBody): ResponseEntity<CreateOrderResponse> {
-        val (id, orderNumber) = createOrderUseCase(createOrderRequestBody.notificationId)
+    fun postOrderNumber(@RequestBody(required = false) createOrderRequestBody: CreateOrderRequestBody?): ResponseEntity<CreateOrderResponse> {
+        val (id, orderNumber) = createOrderUseCase(createOrderRequestBody?.notificationId)
         return CreateOrderResponse.Created(
             id,
             orderNumber.number
