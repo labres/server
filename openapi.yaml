@@ -144,18 +144,18 @@ paths:
             type: string
             format: uuid
             description: A Version 4 UUID
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  notificationId:
-                    type: string
-                    description: Notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.
-                required:
-                  - notificationId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notificationId:
+                  type: string
+                  description: Notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.
+              required:
+                - notificationId
       responses:
         '200':
           description: Successful update
