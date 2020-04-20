@@ -57,6 +57,7 @@ class OrderControllerTest {
                 UUID.randomUUID(),
                 OrderNumber.External(orderNumber),
                 Status.POSITIVE,
+                null,
                 Date.from(Instant.now()),
                 null,
                 null,

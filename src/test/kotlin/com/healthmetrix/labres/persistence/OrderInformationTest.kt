@@ -26,6 +26,7 @@ class OrderInformationTest {
                 id = baseRawOrderInformation.id!!,
                 number = OrderNumber.External(baseRawOrderInformation.externalOrderNumber!!),
                 status = Status.NEGATIVE,
+                labId = null,
                 issuedAt = baseRawOrderInformation.issuedAt!!,
                 reportedAt = null,
                 notifiedAt = null,

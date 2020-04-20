@@ -14,6 +14,7 @@ data class OrderInformation(
     val id: UUID,
     val number: OrderNumber,
     val status: Status,
+    val labId: String?,
     val issuedAt: Date,
     val reportedAt: Date?,
     val notifiedAt: Date?,
@@ -43,6 +44,9 @@ data class RawOrderInformation(
     var status: String? = null,
 
     @DynamoDBAttribute
+    var labId: String? = null,
+
+    @DynamoDBAttribute
     var issuedAt: Date? = null,
 
     @DynamoDBAttribute
@@ -68,6 +72,7 @@ data class RawOrderInformation(
                 id,
                 orderNumber,
                 status,
+                labId,
                 createdAt,
                 reportedAt,
                 notifiedAt,
