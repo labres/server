@@ -29,7 +29,7 @@ class UpdateOrderUseCaseTest {
         every { orderInformationRepository.save(any()) } returns orderInfo
 
         val result = underTest(orderId.toString(), "notificationId")
-        assertThat(result).isInstanceOf(UpdateOrderUseCase.Result.Success::class.java)
+        assertThat(result).isEqualTo(UpdateOrderUseCase.Result.SUCCESS)
     }
 
     @Test
@@ -39,7 +39,7 @@ class UpdateOrderUseCaseTest {
                 "notAnId",
                 "notification"
             )
-        ).isInstanceOf(UpdateOrderUseCase.Result.InvalidOrderId::class.java)
+        ).isEqualTo(UpdateOrderUseCase.Result.INVALID_ORDER_ID)
     }
 
     @Test
@@ -50,6 +50,6 @@ class UpdateOrderUseCaseTest {
                 UUID.randomUUID().toString(),
                 "notification"
             )
-        ).isInstanceOf(UpdateOrderUseCase.Result.NotFound::class.java)
+        ).isEqualTo(UpdateOrderUseCase.Result.NOT_FOUND)
     }
 }

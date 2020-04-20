@@ -57,23 +57,20 @@ class OrderController(
         orderId: String,
         @RequestBody
         updateOrderRequestBody: UpdateOrderRequestBody
-    ): ResponseEntity<UpdateOrderResponse> {
-        return when (updateOrderUseCase(orderId, updateOrderRequestBody.notificationId)) {
-            is UpdateOrderUseCase.Result.Success -> UpdateOrderResponse.Updated
-            is UpdateOrderUseCase.Result.NotFound -> UpdateOrderResponse.NotFound
-            is UpdateOrderUseCase.Result.InvalidOrderId -> UpdateOrderResponse.NotFound
-        }.asEntity()
-    }
+    ): ResponseEntity<UpdateOrderResponse> = when (updateOrderUseCase(orderId, updateOrderRequestBody.notificationId)) {
+        UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
+        UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
+        UpdateOrderUseCase.Result.INVALID_ORDER_ID -> UpdateOrderResponse.NotFound
+    }.asEntity()
 }
 
 data class CreateOrderRequestBody(val notificationId: String)
 
 data class UpdateOrderRequestBody(val notificationId: String)
 
-sealed class UpdateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : ApiResponse(httpStatus, hasBody) {
+sealed class UpdateOrderResponse(httpStatus: HttpStatus) : ApiResponse(httpStatus, false) {
     object Updated : UpdateOrderResponse(HttpStatus.OK)
     object NotFound : UpdateOrderResponse(HttpStatus.NOT_FOUND)
-    object InvalidUpdate : UpdateOrderResponse(HttpStatus.BAD_REQUEST)
 }
 
 sealed class CreateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : ApiResponse(httpStatus, hasBody) {

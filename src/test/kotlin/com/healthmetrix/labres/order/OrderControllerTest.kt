@@ -92,7 +92,7 @@ class OrderControllerTest {
 
         @Test
         fun `it updates an order with the notification id`() {
-            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.Success
+            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.SUCCESS
 
             mockMvc.put("/v1/orders/$orderId") {
                 contentType = MediaType.APPLICATION_JSON
@@ -108,7 +108,7 @@ class OrderControllerTest {
 
         @Test
         fun `it returns 404 if order cant be found`() {
-            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.NotFound
+            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.NOT_FOUND
             mockMvc.put("/v1/orders/nonexistentOrder") {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
@@ -123,7 +123,7 @@ class OrderControllerTest {
 
         @Test
         fun `it returns 404 if invalid order id`() {
-            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.InvalidOrderId
+            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.INVALID_ORDER_ID
             mockMvc.put("/v1/orders/nonexistentOrder") {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(

@@ -12,23 +12,19 @@ class UpdateOrderUseCase(
         val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
-            return Result.InvalidOrderId
+            return Result.INVALID_ORDER_ID
         }
 
-        val order = orderInformationRepository.findById(id) ?: return Result.NotFound
+        val order = orderInformationRepository.findById(id) ?: return Result.NOT_FOUND
 
-        orderInformationRepository.save(
-            order.copy(
-                notificationId = notificationId
-            )
-        )
+        orderInformationRepository.save(order.copy(notificationId = notificationId))
 
-        return Result.Success
+        return Result.SUCCESS
     }
 
-    sealed class Result {
-        object InvalidOrderId : Result()
-        object NotFound : Result()
-        object Success : Result()
+    enum class Result {
+        INVALID_ORDER_ID,
+        NOT_FOUND,
+        SUCCESS
     }
 }
