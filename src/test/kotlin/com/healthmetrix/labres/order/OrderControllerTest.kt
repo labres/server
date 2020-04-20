@@ -54,11 +54,10 @@ class OrderControllerTest {
         @Test
         fun `asking for an order number returns status with 200`() {
             every { orderInformationRepository.findById(any()) } returns OrderInformation(
-                UUID.randomUUID(),
-                OrderNumber.External(orderNumber),
-                Status.POSITIVE,
-                Date.from(Instant.now()),
-                null
+                id = UUID.randomUUID(),
+                number = OrderNumber.External(orderNumber),
+                status = Status.POSITIVE,
+                issuedAt = Date.from(Instant.now())
             )
 
             mockMvc.get("/v1/orders/$orderId").andExpect {

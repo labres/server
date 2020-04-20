@@ -33,10 +33,7 @@ class DynamoOrderInformationRepository internal constructor(
         ?.cook()
 
     override fun findByOrderNumber(orderNumber: OrderNumber): OrderInformation? = when (orderNumber) {
-        is OrderNumber.External ->
-            rawOrderInformationRepository.findByExternalOrderNumber(orderNumber.number)
-        is OrderNumber.Internal ->
-            rawOrderInformationRepository.findByLabIdAndInternalOrderNumber(orderNumber.labId, orderNumber.number)
+        is OrderNumber.External -> rawOrderInformationRepository.findByExternalOrderNumber(orderNumber.eon())
     }.mapNotNull(RawOrderInformation::cook).singleOrNull()
 
     override fun save(orderInformation: OrderInformation) =

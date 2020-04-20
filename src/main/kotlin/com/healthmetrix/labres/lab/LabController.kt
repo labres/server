@@ -31,8 +31,7 @@ class LabController(
         @RequestBody
         result: JsonResult
     ): ResponseEntity<UpdateStatusResponse> {
-        val orderNumber = OrderNumber.Internal.from(extractLabIdUseCase(labIdHeader), result.internalOrderNumber)
-            ?: OrderNumber.External.from(result.externalOrderNumber)
+        val orderNumber = OrderNumber.External.from(result.orderNumber)
             ?: return UpdateStatusResponse.OrderNotFound.asEntity()
 
         return updateResultUseCase(LabResult(orderNumber, result.result)).asEntity()
@@ -78,8 +77,7 @@ class LabController(
 }
 
 data class JsonResult(
-    val externalOrderNumber: String? = null,
-    val internalOrderNumber: String? = null,
+    val orderNumber: String,
     val result: Result
 )
 

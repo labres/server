@@ -51,7 +51,7 @@ class LabControllerTest {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
                     mapOf(
-                        "externalOrderNumber" to "0123456789",
+                        "orderNumber" to "0123456789",
                         "result" to Status.NEGATIVE
                     )
                 )
@@ -69,7 +69,7 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, "labId")
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
-                        "externalOrderNumber" to "0123456789",
+                        "orderNumber" to "0123456789",
                         "result" to Status.POSITIVE
                     )
                 )
@@ -85,7 +85,7 @@ class LabControllerTest {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
-                        "externalOrderNumber" to "nonsense",
+                        "orderNumber" to "nonsense",
                         "result" to Status.POSITIVE
                     )
                 )
