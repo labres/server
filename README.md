@@ -1,4 +1,4 @@
-# HMX LabRes
+# LabRes Server
 
 A little service to receive and store lab results.
 
