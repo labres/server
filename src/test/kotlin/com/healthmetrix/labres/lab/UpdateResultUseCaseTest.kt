@@ -22,7 +22,8 @@ class UpdateResultUseCaseTest {
         id = UUID.randomUUID(),
         issuedAt = Date.from(Instant.now()),
         number = orderNumber,
-        status = Status.IN_PROGRESS
+        status = Status.IN_PROGRESS,
+        notificationId = "notificationId"
     )
 
     private val labResult = LabResult(orderNumber, "labId", Result.POSITIVE)
@@ -65,6 +66,29 @@ class UpdateResultUseCaseTest {
                     labId = "labId"
                 )
             )
+        }
+    }
+
+    @Test
+    fun `orderInfos updated with a status of IN_PROGRESS do not notify`() {
+        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
+        every { orderInformationRepository.save(any()) } returns orderInfo.copy(status = Status.IN_PROGRESS)
+
+        underTest(labResult, Date.from(Instant.now()))
+
+        verify(exactly = 0) {
+            notifier(any())
+        }
+    }
+    @Test
+    fun `orderInfos updated with no notification id do not notify`() {
+        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
+        every { orderInformationRepository.save(any()) } returns orderInfo.copy(notificationId = null)
+
+        underTest(labResult, Date.from(Instant.now()))
+
+        verify(exactly = 0) {
+            notifier(any())
         }
     }
 }

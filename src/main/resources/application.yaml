@@ -2,7 +2,12 @@ dynamo:
   table-name: order_information
   local-endpoint: http://localhost:8000
 
-notification-endpoint: http://localhost:8001
+notification:
+  host: http://localhost:8001
+  path: /notifications/{notificationId}
+  basic-auth:
+    user: # empty
+    pass: # empty
 
 ---
 spring:
