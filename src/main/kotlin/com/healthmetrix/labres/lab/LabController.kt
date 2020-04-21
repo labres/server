@@ -89,6 +89,7 @@ enum class Result {
     POSITIVE,
     WEAK_POSITIVE,
     NEGATIVE,
+    IN_PROGRESS,
     INVALID;
 
     fun asStatus() = when (this) {
@@ -96,6 +97,7 @@ enum class Result {
         WEAK_POSITIVE -> Status.WEAK_POSITIVE
         NEGATIVE -> Status.NEGATIVE
         INVALID -> Status.INVALID
+        IN_PROGRESS -> Status.IN_PROGRESS
     }
 
     companion object {
