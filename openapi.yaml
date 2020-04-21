@@ -174,7 +174,7 @@ paths:
       tags:
         - Laboratory API
       requestBody:
-        description: Lab result as JSON object. Body must include either external or internal order numbers. In the case of internal, lab ID is taken from authorization headers.
+        description: Lab result as JSON object. Body must include order number.
         content:
           'application/json':
             schema:
@@ -184,8 +184,15 @@ paths:
                   type: string
                   enum: [ POSITIVE, WEAK_POSITIVE, NEGATIVE, INVALID, IN_PROGRESS ]
                   description: The lab result.
+                orderNumber:
+                  type: string
+                  description: The order number.
               required:
                 - result
+                - orderNumber
+            example:
+              result: "POSITIVE"
+              orderNumber: "1234567890"
       responses:
         '200':
           description: Result uploaded successfully
@@ -204,13 +211,15 @@ paths:
       tags:
         - Laboratory API
       requestBody:
-        description: Lab result as OBX message. The message must include either external or internal order numbers. In the case of internal, lab ID is taken from authorization headers.
+        description: Lab result as OBX message. The message must include the order number.
         content:
           'text/plain':
             schema:
               type: string
               format: OBX
-              description: An OBX Segment of an HL7 ORU R1 message (see https://wiki.hl7.de/index.php?title=Segment_OBX for details), or an LDT message
+              description: An OBX Segment of an HL7 ORU R1 message (see https://wiki.hl7.de/index.php?title=Segment_OBX for details).
+            example:
+              "OBX|3|ST|21300^2019-nCoronav.-RNA Sonst (PCR)|0061749799|Positiv|||N|||S|||20200406101220|Extern|||||||||Extern"
       responses:
         '200':
           description: Result uploaded successfully
