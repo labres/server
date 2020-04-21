@@ -108,7 +108,7 @@ enum class Result {
 sealed class UpdateStatusResponse(httpStatus: HttpStatus, hasBody: Boolean = false) : ApiResponse(httpStatus, hasBody) {
     object Success : UpdateStatusResponse(HttpStatus.OK)
     object OrderNotFound : UpdateStatusResponse(HttpStatus.NOT_FOUND)
-    object InfoUnreadable : UpdateStatusResponse(HttpStatus.INTERNAL_SERVER_ERROR, true) {
+    object InfoUnreadable : UpdateStatusResponse(HttpStatus.BAD_REQUEST, true) {
         val message = "Unable to read status"
     }
 }
