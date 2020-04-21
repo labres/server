@@ -19,18 +19,16 @@ class UpdateResultUseCase(
         val orderInfo = orderInformationRepository.findByOrderNumber(labResult.orderNumber)
             ?: return UpdateStatusResponse.OrderNotFound
 
-        val saved = orderInformationRepository.save(
-            orderInfo.copy(
-                status = labResult.result.asStatus(),
-                reportedAt = now,
-                labId = labResult.labId
-            )
-        )
-
-        if (saved.notificationId != null && saved.status != Status.IN_PROGRESS)
-            notifier(saved.notificationId)
-        else if (saved.notificationId == null)
-            logger.warn("No notification id for ${saved.id}")
+        val update = orderInfo.copy(status = labResult.result.asStatus(), labId = labResult.labId)
+        if (update.status == Status.IN_PROGRESS) {
+            orderInformationRepository.save(update.copy(enteredLabAt = now))
+        } else {
+            orderInformationRepository.save(update.copy(reportedAt = now))
+            if (update.notificationId != null)
+                notifier(update.notificationId)
+            else
+                logger.warn("No notification id for ${update.id}")
+        }
 
         return UpdateStatusResponse.Success
     }
