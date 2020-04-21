@@ -123,7 +123,7 @@ class LabControllerTest {
                 contentType = MediaType.TEXT_PLAIN
                 content = "NOT OBX"
             }.andExpect {
-                status { isInternalServerError }
+                status { isBadRequest }
             }
         }
     }

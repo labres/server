@@ -214,6 +214,8 @@ paths:
       responses:
         '200':
           description: Result uploaded successfully
+        '400':
+          description: Invalid OBX message
         '401':
           $ref: "#/components/responses/UnauthorizedApiKeyError"
         '404':
@@ -238,6 +240,8 @@ paths:
       responses:
         '200':
           description: Result uploaded successfully
+        '400':
+          description: invalid LDT Document
         '401':
           $ref: "#/components/responses/UnauthorizedApiKeyError"
         '404':
