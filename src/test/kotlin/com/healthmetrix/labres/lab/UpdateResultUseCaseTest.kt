@@ -41,7 +41,7 @@ class UpdateResultUseCaseTest {
 
     @Test
     fun `returns OrderNotFound if no orderNumber found`() {
-        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
+        every { orderInformationRepository.findByOrderNumber(any()) } returns null
         assertThat(underTest(labResult)).isInstanceOf(UpdateStatusResponse.OrderNotFound::class.java)
     }
 

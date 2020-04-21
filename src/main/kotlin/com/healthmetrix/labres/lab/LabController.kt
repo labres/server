@@ -34,7 +34,9 @@ class LabController(
         val orderNumber = OrderNumber.External.from(result.orderNumber)
             ?: return UpdateStatusResponse.OrderNotFound.asEntity()
 
-        return updateResultUseCase(LabResult(orderNumber, labIdHeader, result.result)).asEntity()
+        val labId = extractLabIdUseCase(labIdHeader) ?: return UpdateStatusResponse.OrderNotFound.asEntity()
+
+        return updateResultUseCase(LabResult(orderNumber, labId, result.result)).asEntity()
     }
 
     @PutMapping(

@@ -39,13 +39,16 @@ class LabControllerTest {
     @MockkBean
     private lateinit var extractLdtResultUseCase: ExtractLdtResultUseCase
 
+    @MockkBean
+    private lateinit var extractLabIdUseCase: ExtractLabIdUseCase
+
     private val labIdHeader = "Basic ${"user:pass".encodeBase64()}"
 
     @Nested
     inner class JSON {
         @Test
         fun `uploading a valid json request body with an external order number returns 200`() {
-
+            every { extractLabIdUseCase(any()) } returns "labId"
             every { updateResultUseCase(any(), any()) } returns UpdateStatusResponse.Success
 
             mockMvc.put("/v1/results/json") {
@@ -64,6 +67,7 @@ class LabControllerTest {
 
         @Test
         fun `upload a document to an unknown external order number returns 404`() {
+            every { extractLabIdUseCase(any()) } returns "labId"
             every { updateResultUseCase(any(), any()) } returns UpdateStatusResponse.OrderNotFound
 
             mockMvc.put("/v1/results/json") {
@@ -88,6 +92,23 @@ class LabControllerTest {
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
                         "orderNumber" to "nonsense",
+                        "result" to Status.POSITIVE
+                    )
+                )
+            }.andExpect {
+                status { isNotFound }
+            }
+        }
+
+        @Test
+        fun `upload document with invalid auth header returns 404`() {
+            every { extractLabIdUseCase(any()) } returns null
+            mockMvc.put("/v1/results/json") {
+                contentType = MediaType.APPLICATION_JSON
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                content = objectMapper.writeValueAsBytes(
+                    mapOf(
+                        "orderNumber" to "0123456789",
                         "result" to Status.POSITIVE
                     )
                 )
