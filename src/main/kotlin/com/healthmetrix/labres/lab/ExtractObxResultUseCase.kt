@@ -27,7 +27,7 @@ class ExtractObxResultUseCase {
             "Schwach positiv" -> Result.WEAK_POSITIVE
             "Prozessfehler" -> Result.INVALID
             else -> null
-        }?.let { LabResult(OrderNumber.External("TODO"), it) } // TODO when requirements clarified
+        }?.let { LabResult(OrderNumber.External("TODO"), labId, it) } // TODO when requirements clarified
     }
 
     private fun parseStatus(obxSegment: String): String {

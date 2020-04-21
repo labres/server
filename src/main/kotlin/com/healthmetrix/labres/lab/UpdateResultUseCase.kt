@@ -17,7 +17,11 @@ class UpdateResultUseCase(
         val orderInfo = orderInformationRepository.findByOrderNumber(labResult.orderNumber)
             ?: return UpdateStatusResponse.OrderNotFound
 
-        orderInformationRepository.save(orderInfo.copy(status = labResult.result.asStatus(), reportedAt = now))
+        orderInformationRepository.save(orderInfo.copy(
+            status = labResult.result.asStatus(),
+            reportedAt = now,
+            labId = labResult.labId
+        ))
 
         notifier(orderInfo.id)
 

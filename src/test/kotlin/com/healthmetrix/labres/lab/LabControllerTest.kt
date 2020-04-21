@@ -39,15 +39,20 @@ class LabControllerTest {
     @MockkBean
     private lateinit var extractLdtResultUseCase: ExtractLdtResultUseCase
 
+    @MockkBean
+    private lateinit var extractLabIdUseCase: ExtractLabIdUseCase
+
+    private val labIdHeader = "Basic ${"user:pass".encodeBase64()}"
+
     @Nested
     inner class JSON {
         @Test
         fun `uploading a valid json request body with an external order number returns 200`() {
-
+            every { extractLabIdUseCase(any()) } returns "labId"
             every { updateResultUseCase(any(), any()) } returns UpdateStatusResponse.Success
 
             mockMvc.put("/v1/results/json") {
-                header(HttpHeaders.AUTHORIZATION, "labId")
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
                     mapOf(
@@ -62,11 +67,12 @@ class LabControllerTest {
 
         @Test
         fun `upload a document to an unknown external order number returns 404`() {
+            every { extractLabIdUseCase(any()) } returns "labId"
             every { updateResultUseCase(any(), any()) } returns UpdateStatusResponse.OrderNotFound
 
             mockMvc.put("/v1/results/json") {
                 contentType = MediaType.APPLICATION_JSON
-                header(HttpHeaders.AUTHORIZATION, "labId")
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
                         "orderNumber" to "0123456789",
@@ -81,11 +87,28 @@ class LabControllerTest {
         @Test
         fun `upload a document to an invalid external order number returns 404`() {
             mockMvc.put("/v1/results/json") {
-                header(HttpHeaders.AUTHORIZATION, "labId")
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
                         "orderNumber" to "nonsense",
+                        "result" to Status.POSITIVE
+                    )
+                )
+            }.andExpect {
+                status { isNotFound }
+            }
+        }
+
+        @Test
+        fun `upload document with invalid auth header returns 404`() {
+            every { extractLabIdUseCase(any()) } returns null
+            mockMvc.put("/v1/results/json") {
+                contentType = MediaType.APPLICATION_JSON
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                content = objectMapper.writeValueAsBytes(
+                    mapOf(
+                        "orderNumber" to "0123456789",
                         "result" to Status.POSITIVE
                     )
                 )
@@ -103,10 +126,10 @@ class LabControllerTest {
             every { updateResultUseCase(any(), any()) } returns
                     UpdateStatusResponse.Success
             every { extractObxResultUseCase(any(), any()) } returns
-                    LabResult(OrderNumber.External.random(), Result.NEGATIVE)
+                    LabResult(OrderNumber.External.random(), labIdHeader, Result.NEGATIVE)
 
             mockMvc.put("/v1/results/obx") {
-                header(HttpHeaders.AUTHORIZATION, "Basic ${"user:pass".encodeBase64()}")
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.TEXT_PLAIN
                 content = "NEGATIVE"
             }.andExpect {
@@ -119,7 +142,7 @@ class LabControllerTest {
             every { extractObxResultUseCase(any(), any()) } returns null
 
             mockMvc.put("/v1/results/obx") {
-                header(HttpHeaders.AUTHORIZATION, "Basic ${"user:pass".encodeBase64()}")
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.TEXT_PLAIN
                 content = "NOT OBX"
             }.andExpect {
@@ -135,11 +158,11 @@ class LabControllerTest {
             every { extractLdtResultUseCase(any(), any()) } returns null
 
             mockMvc.put("/v1/results/ldt") {
-                header(HttpHeaders.AUTHORIZATION, "Basic ${"user:pass".encodeBase64()}")
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.TEXT_PLAIN
                 content = "NOT LDT"
             }.andExpect {
-                status { isInternalServerError }
+                status { isBadRequest }
             }
         }
     }
