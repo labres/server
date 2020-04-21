@@ -7,11 +7,11 @@ import com.healthmetrix.labres.persistence.OrderInformationRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 
 class UpdateResultUseCaseTest {
     private val orderInformationRepository: OrderInformationRepository = mockk()
