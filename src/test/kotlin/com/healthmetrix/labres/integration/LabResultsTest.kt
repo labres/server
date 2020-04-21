@@ -23,9 +23,7 @@ import org.springframework.test.web.servlet.put
 
 @SpringBootTest(
     classes = [LabResApplication::class],
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = [
-    ]
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @AutoConfigureMockMvc
 class LabResultsTest {
