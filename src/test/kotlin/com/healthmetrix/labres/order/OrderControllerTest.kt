@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.order
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.healthmetrix.labres.LabResTestApplication
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
@@ -17,6 +18,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import org.springframework.test.web.servlet.put
 
 @SpringBootTest(
     classes = [LabResTestApplication::class],
@@ -30,6 +32,12 @@ class OrderControllerTest {
 
     @MockkBean
     private lateinit var orderInformationRepository: OrderInformationRepository
+
+    @MockkBean
+    private lateinit var updateOrderUseCase: UpdateOrderUseCase
+
+    @Autowired
+    private lateinit var objectMapper: ObjectMapper
 
     @Nested
     inner class CreateOrderEndpointTest {
@@ -72,6 +80,58 @@ class OrderControllerTest {
         fun `returns status 404 when no order is found`() {
             every { orderInformationRepository.findById(any()) } returns null
             mockMvc.get("/v1/orders/$orderId").andExpect {
+                status { isNotFound }
+            }
+        }
+    }
+
+    @Nested
+    inner class UpdateOrderEndpointTest {
+        private val orderId = UUID.randomUUID()
+        private val notificationId = "123"
+
+        @Test
+        fun `it updates an order with the notification id`() {
+            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.SUCCESS
+
+            mockMvc.put("/v1/orders/$orderId") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsBytes(
+                    mapOf(
+                        "notificationId" to notificationId
+                    )
+                )
+            }.andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `it returns 404 if order cant be found`() {
+            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.NOT_FOUND
+            mockMvc.put("/v1/orders/nonexistentOrder") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsBytes(
+                    mapOf(
+                        "notificationId" to notificationId
+                    )
+                )
+            }.andExpect {
+                status { isNotFound }
+            }
+        }
+
+        @Test
+        fun `it returns 404 if invalid order id`() {
+            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.INVALID_ORDER_ID
+            mockMvc.put("/v1/orders/nonexistentOrder") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsBytes(
+                    mapOf(
+                        "notificationId" to notificationId
+                    )
+                )
+            }.andExpect {
                 status { isNotFound }
             }
         }

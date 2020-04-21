@@ -10,13 +10,15 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class OrderController(
     private val createOrderUseCase: CreateOrderUseCase,
-    private val orderInformationRepository: OrderInformationRepository
+    private val orderInformationRepository: OrderInformationRepository,
+    private val updateOrderUseCase: UpdateOrderUseCase
 ) {
     @PostMapping(
         path = ["/v1/orders"],
@@ -45,9 +47,31 @@ class OrderController(
             else -> StatusResponse.Found(orderInfo.status)
         }.asEntity()
     }
+
+    @PutMapping(
+        path = ["/v1/orders/{orderId}"],
+        consumes = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    fun updateOrder(
+        @PathVariable
+        orderId: String,
+        @RequestBody
+        updateOrderRequestBody: UpdateOrderRequestBody
+    ): ResponseEntity<UpdateOrderResponse> = when (updateOrderUseCase(orderId, updateOrderRequestBody.notificationId)) {
+        UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
+        UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
+        UpdateOrderUseCase.Result.INVALID_ORDER_ID -> UpdateOrderResponse.NotFound
+    }.asEntity()
 }
 
 data class CreateOrderRequestBody(val notificationId: String)
+
+data class UpdateOrderRequestBody(val notificationId: String)
+
+sealed class UpdateOrderResponse(httpStatus: HttpStatus) : ApiResponse(httpStatus, false) {
+    object Updated : UpdateOrderResponse(HttpStatus.OK)
+    object NotFound : UpdateOrderResponse(HttpStatus.NOT_FOUND)
+}
 
 sealed class CreateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : ApiResponse(httpStatus, hasBody) {
     data class Created(
