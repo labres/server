@@ -18,7 +18,8 @@ data class OrderInformation(
     val labId: String? = null,
     val reportedAt: Date? = null,
     val notifiedAt: Date? = null,
-    val notificationId: String? = null
+    val notificationId: String? = null,
+    val enteredLabAt: Date? = null
 ) {
     internal fun raw() = RawOrderInformation(
         id = id,
@@ -27,7 +28,8 @@ data class OrderInformation(
         issuedAt = issuedAt,
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
-        notificationId = notificationId
+        notificationId = notificationId,
+        enteredLabAt = enteredLabAt
     )
 }
 
@@ -56,7 +58,10 @@ data class RawOrderInformation(
     var notifiedAt: Date? = null,
 
     @DynamoDBAttribute
-    var notificationId: String? = null
+    var notificationId: String? = null,
+
+    @DynamoDBAttribute
+    var enteredLabAt: Date? = null
 ) {
     fun cook(): OrderInformation? {
         val id = id
@@ -76,7 +81,8 @@ data class RawOrderInformation(
                 labId = labId,
                 reportedAt = reportedAt,
                 notifiedAt = notifiedAt,
-                notificationId = notificationId
+                notificationId = notificationId,
+                enteredLabAt = enteredLabAt
             )
         else {
             logger.warn("Unable to cook $id")

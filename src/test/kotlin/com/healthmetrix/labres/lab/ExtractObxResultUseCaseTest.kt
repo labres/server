@@ -33,6 +33,12 @@ class ExtractObxResultUseCaseTest {
     }
 
     @Test
+    fun `it returns IN_PROGRESS when result is InArbeit`() {
+        val obx = obxSegment.format("InArbeit")
+        assertThat(underTest(obx, "labId")?.result).isEqualTo(Result.IN_PROGRESS)
+    }
+
+    @Test
     fun `it returns null when the result is not accounted for`() {
         val obx = obxSegment.format("Not a value")
         assertThat(underTest(obx, "labId")?.result).isNull()

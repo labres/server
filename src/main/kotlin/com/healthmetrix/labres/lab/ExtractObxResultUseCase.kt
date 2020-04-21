@@ -26,6 +26,7 @@ class ExtractObxResultUseCase {
             "Nicht nachweisbar" -> Result.NEGATIVE
             "Schwach positiv" -> Result.WEAK_POSITIVE
             "Prozessfehler" -> Result.INVALID
+            "InArbeit" -> Result.IN_PROGRESS
             else -> null
         }?.let { LabResult(OrderNumber.External("TODO"), labId, it) } // TODO when requirements clarified
     }
