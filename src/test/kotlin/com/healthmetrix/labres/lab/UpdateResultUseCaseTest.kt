@@ -67,4 +67,16 @@ class UpdateResultUseCaseTest {
             )
         }
     }
+
+    @Test
+    fun `orderInfos updated with a status of IN_PROGRESS do not notify`() {
+        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
+        every { orderInformationRepository.save(any()) } returns orderInfo.copy(status = Status.IN_PROGRESS)
+
+        underTest(labResult, Date.from(Instant.now()))
+
+        verify(exactly = 0) {
+            notifier(any())
+        }
+    }
 }

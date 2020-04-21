@@ -1,6 +1,7 @@
 package com.healthmetrix.labres.lab
 
 import com.healthmetrix.labres.logger
+import com.healthmetrix.labres.order.Status
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import java.time.Instant
 import java.util.Date
@@ -26,9 +27,9 @@ class UpdateResultUseCase(
             )
         )
 
-        if (saved.notificationId != null)
+        if (saved.notificationId != null && saved.status != Status.IN_PROGRESS)
             notifier(saved.notificationId)
-        else
+        else if (saved.notificationId == null)
             logger.warn("No notification id for ${saved.id}")
 
         return UpdateStatusResponse.Success
