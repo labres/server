@@ -8,6 +8,15 @@ springdoc:
   api-docs:
     path: /docs
 
+documentation-info:
+  title: lab-res API - Beta
+  version: 1
+  description: LabRes provides an API to establish a direct connection between laboratory results and citizens.
+  contact:
+    name: Healthmetrix GmbH
+    url: https://www.labres.de
+    email: admin@healthmetrix.com
+
 notification:
   host: http://localhost:8001
   path: /notifications/{notificationId}
