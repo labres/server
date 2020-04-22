@@ -1,6 +1,6 @@
 package com.healthmetrix.labres.lab
 
-import com.healthmetrix.labres.ApiResponse
+import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
@@ -109,7 +109,7 @@ enum class Result {
     }
 }
 
-sealed class UpdateStatusResponse(httpStatus: HttpStatus, hasBody: Boolean = false) : ApiResponse(httpStatus, hasBody) {
+sealed class UpdateStatusResponse(httpStatus: HttpStatus, hasBody: Boolean = false) : LabResApiResponse(httpStatus, hasBody) {
     object Success : UpdateStatusResponse(HttpStatus.OK)
     object OrderNotFound : UpdateStatusResponse(HttpStatus.NOT_FOUND)
     object InfoUnreadable : UpdateStatusResponse(HttpStatus.BAD_REQUEST, true) {

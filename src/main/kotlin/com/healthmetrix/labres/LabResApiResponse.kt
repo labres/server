@@ -5,7 +5,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 
-abstract class ApiResponse(
+abstract class LabResApiResponse(
     @JsonIgnore
     val httpStatus: HttpStatus,
 
@@ -16,7 +16,7 @@ abstract class ApiResponse(
     val headers: HttpHeaders = HttpHeaders()
 )
 
-fun <T : ApiResponse> T.asEntity(): ResponseEntity<T> {
+fun <T : LabResApiResponse> T.asEntity(): ResponseEntity<T> {
     return ResponseEntity
         .status(this.httpStatus)
         .headers(headers)

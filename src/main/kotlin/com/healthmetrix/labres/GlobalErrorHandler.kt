@@ -16,5 +16,5 @@ class GlobalErrorHandler {
         return InternalServerError("$id").asEntity()
     }
 
-    data class InternalServerError(val message: String) : ApiResponse(HttpStatus.INTERNAL_SERVER_ERROR)
+    data class InternalServerError(val message: String) : LabResApiResponse(HttpStatus.INTERNAL_SERVER_ERROR)
 }

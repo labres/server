@@ -24,7 +24,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux:2.2.6.RELEASE")
 
     // swagger
-    implementation("org.springdoc:springdoc-openapi-ui:1.3.4")
+    val springdocVersion = "1.3.4"
+    implementation("org.springdoc:springdoc-openapi-ui:$springdocVersion")
+    implementation("org.springdoc:springdoc-openapi-kotlin:$springdocVersion")
 
     // spring data
     implementation("org.springframework.data:spring-data-commons:2.2.6.RELEASE")
@@ -88,5 +90,5 @@ tasks {
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
-    setProperty("archiveFileName", "lab-res.jar")
+    setProperty("archiveFilename", "lab-res.jar")
 }
