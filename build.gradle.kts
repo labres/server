@@ -90,5 +90,5 @@ tasks {
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
-    setProperty("archiveFilename", "lab-res.jar")
+    setProperty("archiveFileName", "lab-res.jar")
 }
