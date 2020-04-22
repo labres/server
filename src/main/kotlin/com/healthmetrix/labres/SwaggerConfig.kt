@@ -1,19 +1,27 @@
 package com.healthmetrix.labres
 
+import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.oas.models.info.Contact
+import io.swagger.v3.oas.models.info.Info
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import springfox.documentation.builders.PathSelectors
-import springfox.documentation.builders.RequestHandlerSelectors
-import springfox.documentation.spi.DocumentationType
-import springfox.documentation.spring.web.plugins.Docket
-import springfox.documentation.swagger2.annotations.EnableSwagger2
 
 @Configuration
-@EnableSwagger2
 class SwaggerConfig {
     @Bean
-    fun api(): Docket = Docket(DocumentationType.SWAGGER_2).select().apply {
-        apis(RequestHandlerSelectors.any())
-        paths(PathSelectors.any())
-    }.build()
+    fun api(): OpenAPI {
+        return OpenAPI()
+            .info(apiInfo())
+    }
+
+    private fun apiInfo(): Info {
+        return Info()
+            .title("lab-res API - Beta")
+            .version("1")
+            .description("LabRes provides an API to establish a direct connection between laboratory results and citizens.")
+            .contact(Contact()
+                .name("Healthmetrix GmbH")
+                .url("https://www.labres.de")
+                .email("admin@healthmetrix.com"))
+    }
 }

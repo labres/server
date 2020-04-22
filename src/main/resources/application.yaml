@@ -2,6 +2,12 @@ dynamo:
   table-name: order_information
   local-endpoint: http://localhost:8000
 
+springdoc:
+  swagger-ui:
+    path: docs-ui.html
+  api-docs:
+    path: /docs
+
 notification:
   host: http://localhost:8001
   path: /notifications/{notificationId}

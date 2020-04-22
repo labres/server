@@ -24,8 +24,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux:2.2.6.RELEASE")
 
     // swagger
-    implementation("io.springfox:springfox-swagger2:2.9.2")
-    implementation("io.springfox:springfox-swagger-ui:2.9.2")
+    implementation("org.springdoc:springdoc-openapi-ui:1.3.4")
 
     // spring data
     implementation("org.springframework.data:spring-data-commons:2.2.6.RELEASE")
