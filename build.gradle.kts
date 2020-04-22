@@ -2,8 +2,8 @@ import com.github.benmanes.gradle.versions.reporter.result.Result
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
 plugins {
-    kotlin("jvm") version "1.3.71"
-    kotlin("plugin.spring") version "1.3.71"
+    kotlin("jvm") version "1.3.72"
+    kotlin("plugin.spring") version "1.3.72"
     id("org.springframework.boot") version "2.2.6.RELEASE"
     id("com.github.ben-manes.versions") version "0.28.0"
 }
@@ -32,13 +32,13 @@ dependencies {
     implementation("io.github.boostchicken:spring-data-dynamodb:5.2.3")
 
     // dynamodb
-    implementation(platform("com.amazonaws:aws-java-sdk-bom:1.11.760"))
-    implementation("com.amazonaws:aws-java-sdk-dynamodb:1.11.760")
+    implementation(platform("com.amazonaws:aws-java-sdk-bom:1.11.766"))
+    implementation("com.amazonaws:aws-java-sdk-dynamodb:1.11.766")
 
     // testing
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.1")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.1")
-    testImplementation("com.ninja-squad:springmockk:2.0.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.2")
+    testImplementation("com.ninja-squad:springmockk:2.0.1")
     testImplementation("org.assertj:assertj-core:3.15.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test:2.2.6.RELEASE") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
