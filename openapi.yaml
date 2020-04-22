@@ -78,13 +78,12 @@ paths:
                     type: string
                     description: A unique internal identifier for the order
                     format: UUID
-                  externalOrderNumber:
+                  orderNumber:
                     type: string
-                    format: externalOrderNumber
-                    description: numeric 8-digit-long identifier
+                    description: numeric 10-digit-long identifier
                 example:
                   id: 65e524cb-7494-4073-ad16-495fed0d79e4
-                  externalOrderNumber: X72UN3K8
+                  orderNumber: X72UN3K8
         '401':
           $ref: "#/components/responses/UnauthorizedApiKeyError"
         '500':
@@ -199,7 +198,7 @@ paths:
         '401':
           $ref: "#/components/responses/UnauthorizedApiKeyError"
         '404':
-          description: no order for external order number found
+          description: no order for order number found
         '500':
           description: Internal server error
           $ref: "#/components/responses/GeneralError"
@@ -228,7 +227,7 @@ paths:
         '401':
           $ref: "#/components/responses/UnauthorizedApiKeyError"
         '404':
-          description: no order for external order number found
+          description: no order for order number found
         '500':
           description: Internal server error
           $ref: "#/components/responses/GeneralError"
@@ -254,7 +253,7 @@ paths:
         '401':
           $ref: "#/components/responses/UnauthorizedApiKeyError"
         '404':
-          description: no order for external order number found
+          description: no order for order number found
         '500':
           description: Internal server error
           $ref: "#/components/responses/GeneralError"
