@@ -1,102 +1,154 @@
-openapi: "3.0.3"
+openapi: 3.0.1
 info:
   title: lab-res API - Beta
-  version: "1"
-  description: LabRes provides an API to establish a direct connection between laboratory results and citizens.
+  description: LabRes provides an API to establish a direct connection between laboratory
+    results and citizens.
   contact:
     name: Healthmetrix GmbH
     url: https://www.labres.de
     email: admin@healthmetrix.com
+  version: "1"
 servers:
-  - url: "https://api.labres.dev.healthmetrix.com/{version}"
-    description: development environment for the LabRes apiKey
-    variables:
-      version:
-        default: v1
+  - url: http://localhost:8080
+    description: Generated server url
 tags:
-  - name: External Order Number API
-    description: Endpoints to support External Order Numbers (EONs)
   - name: Laboratory API
     description: Endpoints to be invoked by laboratories to report results
-components:
-  securitySchemes:
-    LabCredential:
-      type: apiKey
-      in: header
-      name: Authorization
-      description: Base-64 encoded basic auth credential, the username of which is the Client ID used to authorize labs to upload results for an external or internal order number
-    OrdersApiToken:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: validated by JWKS
-  schemas:
-    GeneralError:
-      type: object
-      properties:
-        message:
-          type: string
-  responses:
-    UnauthorizedApiKeyError:
-      description: API key invalid or missing
-      headers:
-        WWW-Authenticate:
+  - name: External Order Number API
+    description: Endpoints to support External Order Numbers (EONs)
+paths:
+  /v1/results/json:
+    put:
+      tags:
+        - Laboratory API
+      summary: Upload lab result via JSON
+      operationId: jsonResult
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
           schema:
             type: string
-    GeneralError:
-      description: General error response body
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/GeneralError'
-paths:
-  /orders:
-    post:
-      summary: Issues a new globally unique External Order Number (EON). The number of issuing  EONs is limited to 3 per subject.
-      description: Should only be invoked for verified users (logged into account or verified email address)
-      tags:
-        - External Order Number API
       requestBody:
-        required: false
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                notificationId:
-                  type: string
-                  description: Optional notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.
+              $ref: '#/components/schemas/JsonResult'
+        required: true
       responses:
-        '201':
-          description: OK
+        "500":
+          description: default response
           content:
-            application/json:
+            '*/*':
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: A unique internal identifier for the order
-                    format: UUID
-                  orderNumber:
-                    type: string
-                    description: numeric 10-digit-long identifier
-                example:
-                  id: 65e524cb-7494-4073-ad16-495fed0d79e4
-                  orderNumber: X72UN3K8
-        '401':
-          $ref: "#/components/responses/UnauthorizedApiKeyError"
-        '500':
-          description: Internal server error
-          $ref: "#/components/responses/GeneralError"
+                $ref: '#/components/schemas/InternalServerError'
+        "200":
+          description: Result uploaded successfully
+        "404":
+          description: No order for order number found
+        "401":
+          description: API key invalid or missing
+          headers:
+            WWW-Authenticate:
+              style: simple
+              schema:
+                type: string
       security:
-        - OrdersApiToken: []
-  /orders/{orderId}:
+        - LabCredential: []
+  /v1/results/obx:
+    put:
+      tags:
+        - Laboratory API
+      summary: Upload lab result via OBX text message
+      operationId: obxResult
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: An OBX Segment of an HL7 ORU R1 message (see https://wiki.hl7.de/index.php?title=Segment_OBX
+                for details).
+              format: string
+              example: OBX|3|ST|21300^2019-nCoronav.-RNA Sonst (PCR)|0061749799|Positiv|||N|||S|||20200406101220|Extern|||||||||Extern
+        required: true
+      responses:
+        "500":
+          description: default response
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+        "200":
+          description: Result uploaded successfully
+        "404":
+          description: No order for order number found
+        "400":
+          description: Invalid OBX Message. See https://wiki.hl7.de/index.php?title=Segment_OBX
+            for a description of acceptable fields
+        "401":
+          description: API key invalid or missing
+          headers:
+            WWW-Authenticate:
+              style: simple
+              schema:
+                type: string
+      security:
+        - LabCredential: []
+  /v1/results/ldt:
+    put:
+      tags:
+        - Laboratory API
+      summary: Upload lab result via LDT Document
+      operationId: ldtResult
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: An LDT Document
+        required: true
+      responses:
+        "500":
+          description: default response
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+        "200":
+          description: Result uploaded successfully
+        "400":
+          description: Invalid LDT Document
+        "404":
+          description: No order for order number found
+        "401":
+          description: API key invalid or missing
+          headers:
+            WWW-Authenticate:
+              style: simple
+              schema:
+                type: string
+      security:
+        - LabCredential: []
+  /v1/orders/{orderId}:
     get:
-      summary: returns the current status of a given lab order
-      description: Should only be invoked for verified users (logged into account or verified email address)
       tags:
         - External Order Number API
+      summary: Returns the current status of a given lab order
+      description: Should only be invoked for verified users (logged into account
+        or verified email address)
+      operationId: getOrderNumber
       parameters:
         - name: orderId
           in: path
@@ -104,36 +156,39 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
             description: A Version 4 UUID
+            format: uuid
       responses:
-        '200':
+        "500":
+          description: default response
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+        "401":
+          description: Unauthorized
+          headers:
+            WWW-Authenticate:
+              style: simple
+              schema:
+                type: string
+        "200":
           description: returns current status of the lab order
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    enum: [POSITIVE, WEAK_POSITIVE, NEGATIVE, INVALID, IN_PROGRESS]
-                    description: Status enum to indicate if the lab result is in progress, sample material has been found invalid,  or if it has a positive or negative result
-                example:
-                  status: POSITIVE
-        '401':
-          $ref: "#/components/responses/UnauthorizedApiKeyError"
-        '404':
-          description: no order for the given id found
-        '500':
-          description: Internal server error
-          $ref: "#/components/responses/GeneralError"
+                $ref: '#/components/schemas/Found'
+        "404":
+          description: No order for the given id found
       security:
         - OrdersApiToken: []
     put:
-      summary: Updates an order with the notification id
-      description: Should only be invoked for verified users (logged into account or verified email address)
       tags:
         - External Order Number API
+      summary: Updates an order with the notification id
+      description: Should only be invoked for verified users (logged into account
+        or verified email address)
+      operationId: updateOrder
       parameters:
         - name: orderId
           in: path
@@ -141,125 +196,165 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
             description: A Version 4 UUID
+            format: uuid
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                notificationId:
-                  type: string
-                  description: Notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.
-              required:
-                - notificationId
+              $ref: '#/components/schemas/UpdateOrderRequestBody'
+        required: true
       responses:
-        '200':
+        "500":
+          description: default response
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+        "401":
+          description: Unauthorized
+          headers:
+            WWW-Authenticate:
+              style: simple
+              schema:
+                type: string
+        "200":
           description: Successful update
-        '401':
-          $ref: "#/components/responses/UnauthorizedApiKeyError"
-        '404':
+        "404":
           description: no order for the given id found
-        '500':
-          description: Internal server error
-          $ref: "#/components/responses/GeneralError"
       security:
         - OrdersApiToken: []
-  /results/json:
-    put:
-      summary: allows for uploading a result of a lab order
+  /v1/orders:
+    post:
       tags:
-        - Laboratory API
+        - External Order Number API
+      summary: Issues a new globally unique External Order Number (EON). The number
+        of issuing  EONs is limited to 3 per subject.
+      description: Should only be invoked for verified users (logged into account
+        or verified email address)
+      operationId: postOrderNumber
       requestBody:
-        description: Lab result as JSON object. Body must include order number.
         content:
-          'application/json':
+          application/json:
             schema:
-              type: object
-              properties:
-                result:
-                  type: string
-                  enum: [ POSITIVE, WEAK_POSITIVE, NEGATIVE, INVALID, IN_PROGRESS ]
-                  description: The lab result.
-                orderNumber:
-                  type: string
-                  description: The order number.
-                type:
-                  type: string
-                  description: The kind of test used to generate the given result.  The example is a LOINC code
-                  example: 94500-6
-              required:
-                - result
-                - orderNumber
-            example:
-              result: "POSITIVE"
-              orderNumber: "1234567890"
+              $ref: '#/components/schemas/CreateOrderRequestBody'
+        required: true
       responses:
-        '200':
-          description: Result uploaded successfully
-        '401':
-          $ref: "#/components/responses/UnauthorizedApiKeyError"
-        '404':
-          description: no order for order number found
-        '500':
-          description: Internal server error
-          $ref: "#/components/responses/GeneralError"
+        "500":
+          description: default response
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+        "401":
+          description: Unauthorized
+          headers:
+            WWW-Authenticate:
+              style: simple
+              schema:
+                type: string
+        "201":
+          description: External Order Number Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Created'
       security:
-        - LabCredential: []
-  /results/obx:
-    put:
-      summary: allows for uploading a result of a lab order
-      tags:
-        - Laboratory API
-      requestBody:
-        description: Lab result as OBX message. The message must include the order number.
-        content:
-          'text/plain':
-            schema:
-              type: string
-              format: OBX
-              description: An OBX Segment of an HL7 ORU R1 message (see https://wiki.hl7.de/index.php?title=Segment_OBX for details).
-            example:
-              "OBX|3|ST|21300^2019-nCoronav.-RNA Sonst (PCR)|0061749799|Positiv|||N|||S|||20200406101220|Extern|||||||||Extern"
-      responses:
-        '200':
-          description: Result uploaded successfully
-        '400':
-          description: Invalid OBX message
-        '401':
-          $ref: "#/components/responses/UnauthorizedApiKeyError"
-        '404':
-          description: no order for order number found
-        '500':
-          description: Internal server error
-          $ref: "#/components/responses/GeneralError"
-      security:
-        - LabCredential: []
-  /results/ldt:
-    put:
-      summary: allows for uploading a result of a lab order
-      tags:
-        - Laboratory API
-      requestBody:
-        description: Lab result as LDT document.
-        content:
-          'text/plain':
-            schema:
-              type: string
-              format: LDT
-      responses:
-        '200':
-          description: Result uploaded successfully
-        '400':
-          description: invalid LDT Document
-        '401':
-          $ref: "#/components/responses/UnauthorizedApiKeyError"
-        '404':
-          description: no order for order number found
-        '500':
-          description: Internal server error
-          $ref: "#/components/responses/GeneralError"
-      security:
-        - LabCredential: []
+        - OrdersApiToken: []
+components:
+  schemas:
+    InternalServerError:
+      required:
+        - message
+      type: object
+      properties:
+        message:
+          type: string
+          description: A summary of the error that occurred with an incident ID
+          example: 'Exception caught incidentId=1234 Error: Internal Server Error'
+      description: General error response body
+    JsonResult:
+      required:
+        - orderNumber
+        - result
+      type: object
+      properties:
+        orderNumber:
+          type: string
+          description: The external order number
+          example: "1234567890"
+        type:
+          type: string
+          description: The kind of test used to generate the given result as a LOINC
+            code.
+          example: 94500-6
+        result:
+          type: string
+          description: The test result
+          enum:
+            - POSITIVE
+            - WEAK_POSITIVE
+            - NEGATIVE
+            - IN_PROGRESS
+            - INVALID
+    Found:
+      required:
+        - status
+      type: object
+      properties:
+        status:
+          type: string
+          description: Status enum to indicate if the lab result is in progress, sample
+            material has been found invalid,  or if it has a positive or negative
+            result
+          enum:
+            - POSITIVE
+            - WEAK_POSITIVE
+            - NEGATIVE
+            - INVALID
+            - IN_PROGRESS
+    UpdateOrderRequestBody:
+      required:
+        - notificationId
+      type: object
+      properties:
+        notificationId:
+          type: string
+          description: Notification ID sent from Data4Life that can be used later
+            to notify them that lab results have been uploaded.
+    CreateOrderRequestBody:
+      required:
+        - notificationId
+      type: object
+      properties:
+        notificationId:
+          type: string
+          description: Notification ID sent from Data4Life that can be used later
+            to notify them that lab results have been uploaded.
+    Created:
+      required:
+        - id
+        - orderNumber
+      type: object
+      properties:
+        id:
+          type: string
+          description: A unique internal identifier for the order
+          format: uuid
+          example: 65e524cb-7494-4073-ad16-495fed0d79e4
+        orderNumber:
+          type: string
+          description: numeric 10-digit-long external order number
+          example: "1234567890"
+  securitySchemes:
+    OrdersApiToken:
+      type: http
+      description: validated by JWKS
+      scheme: bearer
+      bearerFormat: JWT
+    LabCredential:
+      type: http
+      description: Base-64 encoded basic auth credential, the username of which is
+        the Client ID used to authorize labs to upload results for an external or
+        internal order number
+      scheme: basic
