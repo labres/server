@@ -4,6 +4,7 @@ import com.healthmetrix.labres.order.OrderNumber
 import org.springframework.stereotype.Component
 
 const val RESULT_INDEX = 5
+const val TEST_TYPE_INDEX = 1000 // TODO when specified
 const val OBX_MESSAGE_SEPARATOR = "|"
 
 /**
@@ -15,23 +16,29 @@ const val OBX_MESSAGE_SEPARATOR = "|"
  */
 @Component
 class ExtractObxResultUseCase {
-    operator fun invoke(message: String, labId: String): LabResult? {
+    operator fun invoke(message: String, labId: String): LabResult? = with(Obx(message)) {
+        result?.let { r -> LabResult(orderNumber, labId, r, testType) }
+    }
+
+    private class Obx(message: String) {
+        private val fields = message.split(OBX_MESSAGE_SEPARATOR)
+
         /**
          * The following mappings are a WIP, as we still don't know
          * the exact strings they might send over in the result
          * part of the OBX segment
          */
-        return when (parseStatus(message)) {
+        val result = when (fields.getOrNull(RESULT_INDEX) ?: "") {
             "Positiv" -> Result.POSITIVE
             "Nicht nachweisbar" -> Result.NEGATIVE
             "Schwach positiv" -> Result.WEAK_POSITIVE
             "Prozessfehler" -> Result.INVALID
             "InArbeit" -> Result.IN_PROGRESS
             else -> null
-        }?.let { LabResult(OrderNumber.External("TODO"), labId, it) } // TODO when requirements clarified
-    }
+        }
 
-    private fun parseStatus(obxSegment: String): String {
-        return obxSegment.split(OBX_MESSAGE_SEPARATOR).getOrNull(RESULT_INDEX) ?: ""
+        val testType = fields.getOrNull(TEST_TYPE_INDEX)
+
+        val orderNumber = OrderNumber.External("TODO") // TODO when specified
     }
 }

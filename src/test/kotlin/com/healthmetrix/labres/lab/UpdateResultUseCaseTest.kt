@@ -26,7 +26,7 @@ class UpdateResultUseCaseTest {
         notificationId = "notificationId"
     )
 
-    private val labResult = LabResult(orderNumber, "labId", Result.POSITIVE)
+    private val labResult = LabResult(orderNumber, "labId", Result.POSITIVE, null)
 
     @Test
     fun `returns Success result`() {

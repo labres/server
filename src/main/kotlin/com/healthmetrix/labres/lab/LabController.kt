@@ -36,7 +36,14 @@ class LabController(
 
         val labId = extractLabIdUseCase(labIdHeader) ?: return UpdateStatusResponse.OrderNotFound.asEntity()
 
-        return updateResultUseCase(LabResult(orderNumber, labId, result.result)).asEntity()
+        val labResult = LabResult(
+            orderNumber = orderNumber,
+            labId = labId,
+            result = result.result,
+            testType = result.type
+        )
+
+        return updateResultUseCase(labResult).asEntity()
     }
 
     @PutMapping(
@@ -80,10 +87,16 @@ class LabController(
 
 data class JsonResult(
     val orderNumber: String,
-    val result: Result
+    val result: Result,
+    val type: String? = null
 )
 
-data class LabResult(val orderNumber: OrderNumber, val labId: String, val result: Result)
+data class LabResult(
+    val orderNumber: OrderNumber,
+    val labId: String,
+    val result: Result,
+    val testType: String?
+)
 
 enum class Result {
     POSITIVE,

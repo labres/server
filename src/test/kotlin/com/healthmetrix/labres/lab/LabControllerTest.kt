@@ -116,6 +116,26 @@ class LabControllerTest {
                 status { isNotFound }
             }
         }
+
+        @Test
+        fun `uploading a document with the optional test type returns 200`() {
+            every { extractLabIdUseCase(any()) } returns "labId"
+            every { updateResultUseCase(any(), any()) } returns UpdateStatusResponse.Success
+
+            mockMvc.put("/v1/results/json") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(
+                    mapOf(
+                        "orderNumber" to "0123456789",
+                        "result" to Status.NEGATIVE,
+                        "type" to "94500-6"
+                    )
+                )
+            }.andExpect {
+                status { isOk }
+            }
+        }
     }
 
     @Nested
@@ -126,7 +146,7 @@ class LabControllerTest {
             every { updateResultUseCase(any(), any()) } returns
                     UpdateStatusResponse.Success
             every { extractObxResultUseCase(any(), any()) } returns
-                    LabResult(OrderNumber.External.random(), labIdHeader, Result.NEGATIVE)
+                    LabResult(OrderNumber.External.random(), labIdHeader, Result.NEGATIVE, null)
 
             mockMvc.put("/v1/results/obx") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
