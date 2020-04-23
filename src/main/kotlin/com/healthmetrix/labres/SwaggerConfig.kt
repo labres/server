@@ -5,6 +5,9 @@ import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Contact
 import io.swagger.v3.oas.models.info.Info
 import io.swagger.v3.oas.models.security.SecurityScheme
+import io.swagger.v3.oas.models.servers.Server
+import io.swagger.v3.oas.models.servers.ServerVariable
+import io.swagger.v3.oas.models.servers.ServerVariables
 import io.swagger.v3.oas.models.tags.Tag
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
@@ -23,6 +26,7 @@ class SwaggerConfig(
             .info(documentationInfo.toApiInfo())
             .addTagsItem(labApiTag)
             .addTagsItem(externalOrderNumberApiTag)
+            .servers(documentationInfo.toServers())
             .components(
                 Components()
                     .addSecuritySchemes("OrdersApiToken", bearerSecurityScheme)
@@ -53,13 +57,31 @@ data class DocumentationInfo(
     val title: String,
     val version: String,
     val description: String,
-    val contact: DocumentationContact
+    val contact: DocumentationContact,
+    val servers: List<Server>
 ) {
     data class DocumentationContact(
         val name: String,
         val url: String,
         val email: String
     )
+
+    data class Server(
+        val url: String,
+        val description: String,
+        val version: String
+    )
+
+    fun toServers(): List<io.swagger.v3.oas.models.servers.Server> {
+        return servers.map { server ->
+            Server()
+                .url(server.url)
+                .description(server.description)
+                .variables(
+                    ServerVariables().addServerVariable("version", ServerVariable()._default(server.version))
+                )
+        }
+    }
 
     fun toApiInfo(): Info {
         return Info()
