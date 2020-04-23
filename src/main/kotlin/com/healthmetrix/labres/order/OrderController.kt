@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -33,6 +34,8 @@ import org.springframework.web.bind.annotation.RestController
         )
     ]
 )
+@SecurityRequirement(name = "OrdersApiToken")
+@Tag(name = EXTERNAL_ORDER_NUMBER_API_TAG)
 class OrderController(
     private val createOrderUseCase: CreateOrderUseCase,
     private val orderInformationRepository: OrderInformationRepository,
@@ -45,9 +48,7 @@ class OrderController(
     )
     @Operation(
         summary = "Issues a new globally unique External Order Number (EON). The number of issuing  EONs is limited to 3 per subject.",
-        description = "Should only be invoked for verified users (logged into account or verified email address)",
-        tags = [EXTERNAL_ORDER_NUMBER_API_TAG],
-        security = [SecurityRequirement(name = "OrdersApiToken")]
+        description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
     @ApiResponses(
         value = [
@@ -70,10 +71,12 @@ class OrderController(
 
     @GetMapping("/v1/orders/{orderId}")
     @Operation(
-        tags = ["External Order Number API"],
-        security = [SecurityRequirement(name = "OrdersApiToken")]
+        summary = "returns the current status of a given lab order",
+        description = "description: Should only be invoked for verified users (logged into account or verified email address)"
     )
-    fun getOrderNumber(@PathVariable orderId: String): ResponseEntity<StatusResponse> {
+    fun getOrderNumber(
+        @PathVariable orderId: String
+    ): ResponseEntity<StatusResponse> {
         val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
@@ -91,10 +94,6 @@ class OrderController(
     @PutMapping(
         path = ["/v1/orders/{orderId}"],
         consumes = [MediaType.APPLICATION_JSON_VALUE]
-    )
-    @Operation(
-        tags = ["External Order Number API"],
-        security = [SecurityRequirement(name = "OrdersApiToken")]
     )
     fun updateOrder(
         @PathVariable
