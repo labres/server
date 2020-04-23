@@ -1,15 +1,18 @@
 package com.healthmetrix.labres.order
 
+import com.healthmetrix.labres.EXTERNAL_ORDER_NUMBER_API_TAG
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -21,13 +24,19 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
-@ApiResponse(
-    responseCode = "401",
-    description = "API key invalid or missing",
-    headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))]
-)
-
 @RestController
+@ApiResponses(
+    value = [
+        ApiResponse(
+            responseCode = "401",
+            description = "API key invalid or missing",
+            headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))],
+            content = [Content()]
+        )
+    ]
+)
+@SecurityRequirement(name = "OrdersApiToken")
+@Tag(name = EXTERNAL_ORDER_NUMBER_API_TAG)
 class OrderController(
     private val createOrderUseCase: CreateOrderUseCase,
     private val orderInformationRepository: OrderInformationRepository,
@@ -40,9 +49,7 @@ class OrderController(
     )
     @Operation(
         summary = "Issues a new globally unique External Order Number (EON). The number of issuing  EONs is limited to 3 per subject.",
-        description = "Should only be invoked for verified users (logged into account or verified email address)",
-        tags = ["External Order Number API"],
-        security = [SecurityRequirement(name = "OrdersApiToken")]
+        description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
     @ApiResponses(
         value = [
@@ -52,15 +59,13 @@ class OrderController(
                 content = [
                     Content(schema = Schema(type = "object", implementation = CreateOrderResponse.Created::class))
                 ]
-            ),
-            ApiResponse(
-                responseCode = "401",
-                description = "API key invalid or missing",
-                headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))]
             )
         ]
     )
-    fun postOrderNumber(@RequestBody(required = false) createOrderRequestBody: CreateOrderRequestBody?): ResponseEntity<CreateOrderResponse> {
+    fun postOrderNumber(
+        @RequestBody(required = false) // TODO: springdoc-openapi does not correctly infer this. see https://github.com/springdoc/springdoc-openapi/issues/603
+        createOrderRequestBody: CreateOrderRequestBody?
+    ): ResponseEntity<CreateOrderResponse> {
         val (id, orderNumber) = createOrderUseCase(createOrderRequestBody?.notificationId)
         return CreateOrderResponse.Created(
             id,
@@ -68,12 +73,41 @@ class OrderController(
         ).asEntity()
     }
 
-    @GetMapping("/v1/orders/{orderId}")
+    @GetMapping(path = ["/v1/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
-        tags = ["External Order Number API"],
-        security = [SecurityRequirement(name = "OrdersApiToken")]
+        summary = "Returns the current status of a given lab order",
+        description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
-    fun getOrderNumber(@PathVariable orderId: String): ResponseEntity<StatusResponse> {
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "returns current status of the lab order",
+                content = [
+                    Content(schema = Schema(type = "object", implementation = StatusResponse.Found::class))
+                ]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No order for the given id found",
+                content = [Content(
+                    schema = Schema(
+                        type = "object",
+                        implementation = StatusResponse.NotFound::class,
+                        hidden = true
+                    )
+                )]
+            )
+        ]
+    )
+    fun getOrderNumber(
+        @Parameter(
+            description = "UUID of an order that has been sent to a lab",
+            required = true,
+            schema = Schema(type = "string", format = "uuid", description = "A Version 4 UUID")
+        )
+        @PathVariable orderId: String
+    ): ResponseEntity<StatusResponse> {
         val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
@@ -90,13 +124,48 @@ class OrderController(
 
     @PutMapping(
         path = ["/v1/orders/{orderId}"],
-        consumes = [MediaType.APPLICATION_JSON_VALUE]
+        consumes = [MediaType.APPLICATION_JSON_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @Operation(
-        tags = ["External Order Number API"],
-        security = [SecurityRequirement(name = "OrdersApiToken")]
+        summary = "Updates an order with the notification id",
+        description = "Should only be invoked for verified users (logged into account or verified email address)"
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Successful update",
+                content = [
+                    Content(
+                        schema = Schema(
+                            type = "object",
+                            implementation = UpdateOrderResponse.Updated::class,
+                            hidden = true
+                        )
+                    )
+                ]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "no order for the given id found",
+                content = [
+                    Content(
+                        schema = Schema(
+                            type = "object",
+                            implementation = UpdateOrderResponse.NotFound::class,
+                            hidden = true
+                        )
+                    )]
+            )
+        ]
     )
     fun updateOrder(
+        @Parameter(
+            description = "UUID of an order that has been sent to a lab",
+            required = true,
+            schema = Schema(type = "string", format = "uuid", description = "A Version 4 UUID")
+        )
         @PathVariable
         orderId: String,
         @RequestBody
@@ -108,9 +177,23 @@ class OrderController(
     }.asEntity()
 }
 
-data class CreateOrderRequestBody(val notificationId: String)
+data class CreateOrderRequestBody(
+    @Schema(
+        type = "string",
+        description = "Notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.",
+        required = true
+    )
+    val notificationId: String
+)
 
-data class UpdateOrderRequestBody(val notificationId: String)
+data class UpdateOrderRequestBody(
+    @Schema(
+        type = "string",
+        description = "Notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.",
+        required = true
+    )
+    val notificationId: String
+)
 
 sealed class UpdateOrderResponse(httpStatus: HttpStatus) : LabResApiResponse(httpStatus, false) {
     object Updated : UpdateOrderResponse(HttpStatus.OK)

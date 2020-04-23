@@ -11,6 +11,9 @@ import org.springframework.boot.context.properties.ConstructorBinding
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
+const val EXTERNAL_ORDER_NUMBER_API_TAG = "External Order Number API"
+const val LABORATORY_API_TAG = "Laboratory API"
+
 @Configuration
 class SwaggerConfig(
     private val documentationInfo: DocumentationInfo
@@ -29,10 +32,10 @@ class SwaggerConfig(
     }
 
     private val externalOrderNumberApiTag = Tag()
-        .name("External Order Number API")
+        .name(EXTERNAL_ORDER_NUMBER_API_TAG)
         .description("Endpoints to support External Order Numbers (EONs)")
     private val labApiTag = Tag()
-        .name("Laboratory API")
+        .name(LABORATORY_API_TAG)
         .description("Endpoints to be invoked by laboratories to report results")
     private val basicAuthSecurityScheme = SecurityScheme()
         .type(SecurityScheme.Type.APIKEY)
