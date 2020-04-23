@@ -22,8 +22,8 @@ class GlobalErrorHandler {
     @Schema(description = "General error response body")
     data class InternalServerError(
         @Schema(
-            description = "A summary of the error that occurred",
-            example = "There was an error processing your request"
+            description = "A summary of the error that occurred with an incident ID",
+            example = "Exception caught incidentId=1234 Error: Internal Server Error"
         )
         val message: String
     ) : LabResApiResponse(HttpStatus.INTERNAL_SERVER_ERROR)
