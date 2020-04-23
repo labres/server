@@ -21,13 +21,17 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
-@ApiResponse(
-    responseCode = "401",
-    description = "API key invalid or missing",
-    headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))]
-)
-
 @RestController
+@ApiResponses(
+    value = [
+        ApiResponse(
+            responseCode = "401",
+            description = "API key invalid or missing",
+            headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))],
+            content = [Content()]
+        )
+    ]
+)
 class OrderController(
     private val createOrderUseCase: CreateOrderUseCase,
     private val orderInformationRepository: OrderInformationRepository,
@@ -52,11 +56,6 @@ class OrderController(
                 content = [
                     Content(schema = Schema(type = "object", implementation = CreateOrderResponse.Created::class))
                 ]
-            ),
-            ApiResponse(
-                responseCode = "401",
-                description = "API key invalid or missing",
-                headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))]
             )
         ]
     )
