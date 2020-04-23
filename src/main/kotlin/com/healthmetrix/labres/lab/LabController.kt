@@ -91,12 +91,46 @@ class LabController(
 
     @PutMapping(
         path = ["/v1/results/obx"],
-        consumes = [MediaType.TEXT_PLAIN_VALUE]
+        consumes = [MediaType.TEXT_PLAIN_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    @Operation(
+        summary = "Upload lab result via OBX text message"
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Result uploaded successfully",
+                content = [
+                    Content(schema = Schema(implementation = UpdateStatusResponse.Success::class, hidden = true))
+                ]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid OBX Message. See https://wiki.hl7.de/index.php?title=Segment_OBX for a description of acceptable fields",
+                content = [
+                    Content(schema = Schema(implementation = UpdateStatusResponse.InfoUnreadable::class, hidden = true))
+                ]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No order for order number found",
+                content = [
+                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNotFound::class, hidden = true))
+                ]
+            )
+        ]
     )
     fun obxResult(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
         labIdHeader: String,
         @RequestBody
+        @Schema(
+            description = "An OBX Segment of an HL7 ORU R1 message (see https://wiki.hl7.de/index.php?title=Segment_OBX for details).",
+            example = "OBX|3|ST|21300^2019-nCoronav.-RNA Sonst (PCR)|0061749799|Positiv|||N|||S|||20200406101220|Extern|||||||||Extern",
+            format = "string"
+        )
         obxMessage: String
     ): ResponseEntity<UpdateStatusResponse> {
         val labId = extractLabIdUseCase(labIdHeader)
