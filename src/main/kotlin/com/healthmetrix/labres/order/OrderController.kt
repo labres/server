@@ -62,7 +62,10 @@ class OrderController(
             )
         ]
     )
-    fun postOrderNumber(@RequestBody(required = false) createOrderRequestBody: CreateOrderRequestBody?): ResponseEntity<CreateOrderResponse> {
+    fun postOrderNumber(
+        @RequestBody(required = false) // TODO: springdoc-openapi does not correctly infer this. see https://github.com/springdoc/springdoc-openapi/issues/603
+        createOrderRequestBody: CreateOrderRequestBody?
+    ): ResponseEntity<CreateOrderResponse> {
         val (id, orderNumber) = createOrderUseCase(createOrderRequestBody?.notificationId)
         return CreateOrderResponse.Created(
             id,
@@ -72,8 +75,8 @@ class OrderController(
 
     @GetMapping(path = ["/v1/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
-        summary = "returns the current status of a given lab order",
-        description = "description: Should only be invoked for verified users (logged into account or verified email address)"
+        summary = "Returns the current status of a given lab order",
+        description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
     @ApiResponses(
         value = [
@@ -87,7 +90,13 @@ class OrderController(
             ApiResponse(
                 responseCode = "404",
                 description = "No order for the given id found",
-                content = [Content(schema = Schema(type = "object", implementation = StatusResponse.NotFound::class, hidden = true))]
+                content = [Content(
+                    schema = Schema(
+                        type = "object",
+                        implementation = StatusResponse.NotFound::class,
+                        hidden = true
+                    )
+                )]
             )
         ]
     )
@@ -115,9 +124,48 @@ class OrderController(
 
     @PutMapping(
         path = ["/v1/orders/{orderId}"],
-        consumes = [MediaType.APPLICATION_JSON_VALUE]
+        consumes = [MediaType.APPLICATION_JSON_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    @Operation(
+        summary = "Updates an order with the notification id",
+        description = "Should only be invoked for verified users (logged into account or verified email address)"
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Successful update",
+                content = [
+                    Content(
+                        schema = Schema(
+                            type = "object",
+                            implementation = UpdateOrderResponse.Updated::class,
+                            hidden = true
+                        )
+                    )
+                ]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "no order for the given id found",
+                content = [
+                    Content(
+                        schema = Schema(
+                            type = "object",
+                            implementation = UpdateOrderResponse.NotFound::class,
+                            hidden = true
+                        )
+                    )]
+            )
+        ]
     )
     fun updateOrder(
+        @Parameter(
+            description = "UUID of an order that has been sent to a lab",
+            required = true,
+            schema = Schema(type = "string", format = "uuid", description = "A Version 4 UUID")
+        )
         @PathVariable
         orderId: String,
         @RequestBody
@@ -129,9 +177,23 @@ class OrderController(
     }.asEntity()
 }
 
-data class CreateOrderRequestBody(val notificationId: String)
+data class CreateOrderRequestBody(
+    @Schema(
+        type = "string",
+        description = "Notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.",
+        required = true
+    )
+    val notificationId: String
+)
 
-data class UpdateOrderRequestBody(val notificationId: String)
+data class UpdateOrderRequestBody(
+    @Schema(
+        type = "string",
+        description = "Notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.",
+        required = true
+    )
+    val notificationId: String
+)
 
 sealed class UpdateOrderResponse(httpStatus: HttpStatus) : LabResApiResponse(httpStatus, false) {
     object Updated : UpdateOrderResponse(HttpStatus.OK)
