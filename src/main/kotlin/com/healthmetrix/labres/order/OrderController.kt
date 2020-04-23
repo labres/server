@@ -127,7 +127,7 @@ sealed class CreateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true
         )
         val id: UUID,
         @Schema(
-            description = "numeric 10-digit-long identifier",
+            description = "numeric 10-digit-long order number",
             example = "1234567890"
         )
         val orderNumber: String
