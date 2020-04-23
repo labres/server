@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController
     value = [
         ApiResponse(
             responseCode = "401",
-            description = "API key invalid or missing",
+            description = "Unauthorized",
             headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))],
             content = [Content()]
         )

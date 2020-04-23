@@ -1,9 +1,18 @@
 package com.healthmetrix.labres.lab
 
+import com.healthmetrix.labres.LABORATORY_API_TAG
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.headers.Header
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -14,6 +23,18 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@ApiResponses(
+    value = [
+        ApiResponse(
+            responseCode = "401",
+            description = "API key invalid or missing",
+            headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))],
+            content = [Content()]
+        )
+    ]
+)
+@SecurityRequirement(name = "LabCredential")
+@Tag(name = LABORATORY_API_TAG)
 class LabController(
     private val extractLabIdUseCase: ExtractLabIdUseCase,
     private val extractObxResultUseCase: ExtractObxResultUseCase,
@@ -23,7 +44,29 @@ class LabController(
 
     @PutMapping(
         path = ["/v1/results/json"],
-        consumes = [MediaType.APPLICATION_JSON_VALUE]
+        consumes = [MediaType.APPLICATION_JSON_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    @Operation(
+        summary = "Upload lab result via JSON"
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Result uploaded successfully",
+                content = [
+                    Content(schema = Schema(implementation = UpdateStatusResponse.Success::class, hidden = true))
+                ]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No order for order number found",
+                content = [
+                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNotFound::class, hidden = true))
+                ]
+            )
+        ]
     )
     fun jsonResult(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
@@ -86,9 +129,11 @@ class LabController(
 }
 
 data class JsonResult(
+    @Schema(description = "The external order number")
     val orderNumber: String,
-    val result: Result,
-    val type: String? = null
+    val type: String? = null,
+    @Schema(description = "The test result")
+    val result: Result
 )
 
 data class LabResult(
@@ -122,7 +167,8 @@ enum class Result {
     }
 }
 
-sealed class UpdateStatusResponse(httpStatus: HttpStatus, hasBody: Boolean = false) : LabResApiResponse(httpStatus, hasBody) {
+sealed class UpdateStatusResponse(httpStatus: HttpStatus, hasBody: Boolean = false) :
+    LabResApiResponse(httpStatus, hasBody) {
     object Success : UpdateStatusResponse(HttpStatus.OK)
     object OrderNotFound : UpdateStatusResponse(HttpStatus.NOT_FOUND)
     object InfoUnreadable : UpdateStatusResponse(HttpStatus.BAD_REQUEST, true) {
