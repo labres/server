@@ -3,9 +3,9 @@ package com.healthmetrix.labres.lab
 import com.healthmetrix.labres.order.OrderNumber
 import org.springframework.stereotype.Component
 
-const val RESULT_INDEX = 5
-const val TEST_TYPE_INDEX = 1000 // TODO when specified
-const val OBX_MESSAGE_SEPARATOR = "|"
+private const val RESULT_INDEX = 5
+private const val TEST_TYPE_INDEX = 1000 // TODO when specified
+private const val OBX_MESSAGE_SEPARATOR = "|"
 
 /**
  * A typical OBX Message looks like the following:
