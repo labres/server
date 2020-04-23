@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration
 
 const val EXTERNAL_ORDER_NUMBER_API_TAG = "External Order Number API"
 const val LABORATORY_API_TAG = "Laboratory API"
+
 @Configuration
 class SwaggerConfig(
     private val documentationInfo: DocumentationInfo
@@ -57,22 +58,22 @@ data class DocumentationInfo(
     val title: String,
     val version: String,
     val description: String,
-    val contact: DocumentationContact,
-    val servers: List<Server>
+    val contact: ContactConfig,
+    val servers: List<ServerConfig>
 ) {
-    data class DocumentationContact(
+    data class ContactConfig(
         val name: String,
         val url: String,
         val email: String
     )
 
-    data class Server(
+    data class ServerConfig(
         val url: String,
         val description: String,
         val version: String
     )
 
-    fun toServers(): List<io.swagger.v3.oas.models.servers.Server> {
+    fun toServers(): List<Server> {
         return servers.map { server ->
             Server()
                 .url(server.url)
