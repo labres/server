@@ -144,12 +144,42 @@ class LabController(
 
     @PutMapping(
         path = ["/v1/results/ldt"],
-        consumes = [MediaType.TEXT_PLAIN_VALUE]
+        consumes = [MediaType.TEXT_PLAIN_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    @Operation(
+        summary = "Upload lab result via LDT Document"
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Result uploaded successfully",
+                content = [
+                    Content(schema = Schema(implementation = UpdateStatusResponse.Success::class, hidden = true))
+                ]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid LDT Document",
+                content = [
+                    Content(schema = Schema(implementation = UpdateStatusResponse.InfoUnreadable::class, hidden = true))
+                ]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No order for order number found",
+                content = [
+                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNotFound::class, hidden = true))
+                ]
+            )
+        ]
     )
     fun ldtResult(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
         labIdHeader: String,
         @RequestBody
+        @Schema(description = "An LDT Document")
         ldtMessage: String
     ): ResponseEntity<UpdateStatusResponse> {
         val labId = extractLabIdUseCase(labIdHeader)
