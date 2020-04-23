@@ -19,7 +19,11 @@ class UpdateResultUseCase(
         val orderInfo = orderInformationRepository.findByOrderNumber(labResult.orderNumber)
             ?: return UpdateStatusResponse.OrderNotFound
 
-        val update = orderInfo.copy(status = labResult.result.asStatus(), labId = labResult.labId)
+        val update = orderInfo.copy(
+            status = labResult.result.asStatus(),
+            labId = labResult.labId,
+            testType = labResult.testType
+        )
         if (update.status == Status.IN_PROGRESS) {
             orderInformationRepository.save(update.copy(enteredLabAt = now))
         } else {

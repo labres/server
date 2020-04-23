@@ -186,6 +186,10 @@ paths:
                 orderNumber:
                   type: string
                   description: The order number.
+                type:
+                  type: string
+                  description: The kind of test used to generate the given result.  The example is a LOINC code
+                  example: 94500-6
               required:
                 - result
                 - orderNumber

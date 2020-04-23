@@ -19,7 +19,8 @@ data class OrderInformation(
     val reportedAt: Date? = null,
     val notifiedAt: Date? = null,
     val notificationId: String? = null,
-    val enteredLabAt: Date? = null
+    val enteredLabAt: Date? = null,
+    val testType: String? = null
 ) {
     internal fun raw() = RawOrderInformation(
         id = id,
@@ -29,7 +30,8 @@ data class OrderInformation(
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
         notificationId = notificationId,
-        enteredLabAt = enteredLabAt
+        enteredLabAt = enteredLabAt,
+        testType = testType
     )
 }
 
@@ -61,7 +63,10 @@ data class RawOrderInformation(
     var notificationId: String? = null,
 
     @DynamoDBAttribute
-    var enteredLabAt: Date? = null
+    var enteredLabAt: Date? = null,
+
+    @DynamoDBAttribute
+    var testType: String? = null
 ) {
     fun cook(): OrderInformation? {
         val id = id
