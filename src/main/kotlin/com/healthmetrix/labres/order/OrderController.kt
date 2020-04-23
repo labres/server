@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.order
 
+import com.healthmetrix.labres.EXTERNAL_ORDER_NUMBER_API_TAG
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.persistence.OrderInformationRepository
@@ -45,7 +46,7 @@ class OrderController(
     @Operation(
         summary = "Issues a new globally unique External Order Number (EON). The number of issuing  EONs is limited to 3 per subject.",
         description = "Should only be invoked for verified users (logged into account or verified email address)",
-        tags = ["External Order Number API"],
+        tags = [EXTERNAL_ORDER_NUMBER_API_TAG],
         security = [SecurityRequirement(name = "OrdersApiToken")]
     )
     @ApiResponses(
