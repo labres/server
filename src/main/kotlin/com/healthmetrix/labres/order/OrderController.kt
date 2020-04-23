@@ -5,6 +5,7 @@ import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -69,12 +70,33 @@ class OrderController(
         ).asEntity()
     }
 
-    @GetMapping("/v1/orders/{orderId}")
+    @GetMapping(path = ["/v1/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
         summary = "returns the current status of a given lab order",
         description = "description: Should only be invoked for verified users (logged into account or verified email address)"
     )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "returns current status of the lab order",
+                content = [
+                    Content(schema = Schema(type = "object", implementation = StatusResponse.Found::class))
+                ]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No order for the given id found",
+                content = [Content(schema = Schema(type = "object", implementation = StatusResponse.NotFound::class, hidden = true))]
+            )
+        ]
+    )
     fun getOrderNumber(
+        @Parameter(
+            description = "UUID of an order that has been sent to a lab",
+            required = true,
+            schema = Schema(type = "string", format = "uuid", description = "A Version 4 UUID")
+        )
         @PathVariable orderId: String
     ): ResponseEntity<StatusResponse> {
         val id = try {
