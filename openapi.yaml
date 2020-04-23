@@ -9,8 +9,11 @@ info:
     email: admin@healthmetrix.com
   version: "1"
 servers:
-  - url: http://localhost:8080
-    description: Generated server url
+  - url: https://api.labres.dev.healthmetrix.com/{version}
+    description: development environment for the LabRes apiKey
+    variables:
+      version:
+        default: v1
 tags:
   - name: Laboratory API
     description: Endpoints to be invoked by laboratories to report results
@@ -42,10 +45,10 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/InternalServerError'
-        "200":
-          description: Result uploaded successfully
         "404":
           description: No order for order number found
+        "200":
+          description: Result uploaded successfully
         "401":
           description: API key invalid or missing
           headers:
@@ -84,13 +87,13 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/InternalServerError'
-        "200":
-          description: Result uploaded successfully
         "404":
           description: No order for order number found
         "400":
           description: Invalid OBX Message. See https://wiki.hl7.de/index.php?title=Segment_OBX
             for a description of acceptable fields
+        "200":
+          description: Result uploaded successfully
         "401":
           description: API key invalid or missing
           headers:
@@ -126,12 +129,12 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/InternalServerError'
-        "200":
-          description: Result uploaded successfully
         "400":
           description: Invalid LDT Document
         "404":
           description: No order for order number found
+        "200":
+          description: Result uploaded successfully
         "401":
           description: API key invalid or missing
           headers:
@@ -218,10 +221,10 @@ paths:
               style: simple
               schema:
                 type: string
-        "200":
-          description: Successful update
         "404":
           description: no order for the given id found
+        "200":
+          description: Successful update
       security:
         - OrdersApiToken: []
   /v1/orders:
