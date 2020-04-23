@@ -48,7 +48,7 @@ class OrderController(
         value = [
             ApiResponse(
                 responseCode = "201",
-                description = "Order Number Created",
+                description = "External Order Number Created",
                 content = [
                     Content(schema = Schema(type = "object", implementation = CreateOrderResponse.Created::class))
                 ]
@@ -127,7 +127,7 @@ sealed class CreateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true
         )
         val id: UUID,
         @Schema(
-            description = "numeric 10-digit-long order number",
+            description = "numeric 10-digit-long external order number",
             example = "1234567890"
         )
         val orderNumber: String
