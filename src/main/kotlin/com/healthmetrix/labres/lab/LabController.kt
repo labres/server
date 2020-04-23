@@ -163,8 +163,15 @@ class LabController(
 }
 
 data class JsonResult(
-    @Schema(description = "The external order number")
+    @Schema(
+        description = "The external order number",
+        example = "1234567890"
+    )
     val orderNumber: String,
+    @Schema(
+        description = "The kind of test used to generate the given result as a LOINC code.",
+        example = "94500-6"
+    )
     val type: String? = null,
     @Schema(description = "The test result")
     val result: Result
