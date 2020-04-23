@@ -24,8 +24,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux:2.2.6.RELEASE")
 
     // swagger
-    implementation("io.springfox:springfox-swagger2:2.9.2")
-    implementation("io.springfox:springfox-swagger-ui:2.9.2")
+    val springdocVersion = "1.3.4"
+    implementation("org.springdoc:springdoc-openapi-ui:$springdocVersion")
+    implementation("org.springdoc:springdoc-openapi-kotlin:$springdocVersion")
 
     // spring data
     implementation("org.springframework.data:spring-data-commons:2.2.6.RELEASE")

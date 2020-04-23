@@ -1,6 +1,6 @@
 package com.healthmetrix.labres.order
 
-import com.healthmetrix.labres.ApiResponse
+import com.healthmetrix.labres.LabResApiResponse
 import org.springframework.http.HttpStatus
 
 enum class Status {
@@ -19,7 +19,7 @@ enum class Status {
     }
 }
 
-sealed class StatusResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : ApiResponse(httpStatus, hasBody) {
+sealed class StatusResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : LabResApiResponse(httpStatus, hasBody) {
     data class Found(val status: Status) : StatusResponse(HttpStatus.OK)
 
     object NotFound : StatusResponse(HttpStatus.NOT_FOUND, false)
