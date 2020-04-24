@@ -4,7 +4,7 @@ dynamo:
 
 springdoc:
   swagger-ui:
-    path: docs-ui.html
+    enabled: false
   api-docs:
     path: /docs
 
