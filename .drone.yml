@@ -24,7 +24,7 @@ steps:
     image: openjdk:11-jdk-slim
     <<: *gradle_user_home
     commands:
-      - ./gradlew --no-daemon bootJar
+      - ./gradlew --no-daemon build
 
   - name: gradle dependency check
     image: openjdk:11-jdk-slim
