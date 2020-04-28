@@ -50,7 +50,7 @@ steps:
     commands:
       - if [ ! -f "build/dependencyUpdates/outdated-dependencies" ]; then exit 0; fi
       - apk add curl
-      - 'curl -sS -X POST $WEBHOOK -H "Content-Type: application/json" -d "{\"text\":\"Found outdated dependencies in {{repo.name}} build ${DRONE_COMMIT_SHA:0:8}\n\`\`\`$(cat build/dependencyUpdates/outdated-dependencies)\`\`\`\"}"'
+      - 'curl -sS -X POST $WEBHOOK -H "Content-Type: application/json" -d "{\"text\":\"Found outdated dependencies in lab-res build ${DRONE_COMMIT_SHA:0:8}\n\`\`\`$(cat build/dependencyUpdates/outdated-dependencies)\`\`\`\"}"'
 
   - name: slack
     image: plugins/slack
