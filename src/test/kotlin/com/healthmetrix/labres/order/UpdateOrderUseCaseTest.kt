@@ -24,7 +24,7 @@ class UpdateOrderUseCaseTest {
     )
 
     @Test
-    fun `it returns Success with notification id`() {
+    fun `it returns Success with notification url`() {
         every { orderInformationRepository.findById(any()) } returns orderInfo
         every { orderInformationRepository.save(any()) } returns orderInfo
 

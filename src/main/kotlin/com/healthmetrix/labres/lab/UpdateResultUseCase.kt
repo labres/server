@@ -31,7 +31,7 @@ class UpdateResultUseCase(
             if (update.notificationUrl != null)
                 notifier(update.notificationUrl)
             else
-                logger.warn("No notification id for ${update.id}")
+                logger.warn("No notification url for ${update.id}")
         }
 
         return UpdateStatusResponse.Success

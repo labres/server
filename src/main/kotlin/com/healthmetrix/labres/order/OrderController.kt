@@ -128,7 +128,7 @@ class OrderController(
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @Operation(
-        summary = "Updates an order with the notification id",
+        summary = "Updates an order with the notification url",
         description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
     @ApiResponses(

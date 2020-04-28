@@ -78,7 +78,7 @@ class UpdateResultUseCaseTest {
     }
 
     @Test
-    fun `orderInfos updated with no notification id do not notify`() {
+    fun `orderInfos updated with no notification url do not notify`() {
         val orderInfoWithoutNotificationId = orderInfo.copy(notificationUrl = null)
         every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfoWithoutNotificationId
         every { orderInformationRepository.save(any()) } returns orderInfoWithoutNotificationId

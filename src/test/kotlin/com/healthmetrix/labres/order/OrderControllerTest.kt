@@ -91,7 +91,7 @@ class OrderControllerTest {
         private val notificationUrl = "123"
 
         @Test
-        fun `it updates an order with the notification id`() {
+        fun `it updates an order with the notification url`() {
             every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.SUCCESS
 
             mockMvc.put("/v1/orders/$orderId") {
