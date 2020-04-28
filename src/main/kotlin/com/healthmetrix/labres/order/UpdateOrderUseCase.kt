@@ -17,7 +17,7 @@ class UpdateOrderUseCase(
 
         val order = orderInformationRepository.findById(id) ?: return Result.NOT_FOUND
 
-        orderInformationRepository.save(order.copy(notificationId = notificationId))
+        orderInformationRepository.save(order.copy(notificationUrl = notificationId))
 
         return Result.SUCCESS
     }

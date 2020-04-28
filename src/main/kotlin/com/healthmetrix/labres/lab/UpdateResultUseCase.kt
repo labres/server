@@ -28,10 +28,10 @@ class UpdateResultUseCase(
             orderInformationRepository.save(update.copy(enteredLabAt = now))
         } else {
             orderInformationRepository.save(update.copy(reportedAt = now))
-            if (update.notificationId != null)
-                notifier(update.notificationId)
+            if (update.notificationUrl != null)
+                notifier(update.notificationUrl)
             else
-                logger.warn("No notification id for ${update.id}")
+                logger.warn("No notification url for ${update.id}")
         }
 
         return UpdateStatusResponse.Success

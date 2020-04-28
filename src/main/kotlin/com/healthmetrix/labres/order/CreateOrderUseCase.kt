@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component
 class CreateOrderUseCase(
     private val orderInformationRepository: OrderInformationRepository
 ) {
-    operator fun invoke(notificationId: String?): Pair<UUID, OrderNumber.External> {
+    operator fun invoke(notificationUrl: String?): Pair<UUID, OrderNumber.External> {
         var orderNumber = OrderNumber.External.random()
         while (orderInformationRepository.findByOrderNumber(orderNumber) != null)
             orderNumber = OrderNumber.External.random()
@@ -20,7 +20,7 @@ class CreateOrderUseCase(
             id = UUID.randomUUID(),
             number = orderNumber,
             status = Status.IN_PROGRESS,
-            notificationId = notificationId,
+            notificationUrl = notificationUrl,
             issuedAt = Date.from(Instant.now())
         )
 
