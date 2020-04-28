@@ -88,7 +88,7 @@ class OrderControllerTest {
     @Nested
     inner class UpdateOrderEndpointTest {
         private val orderId = UUID.randomUUID()
-        private val notificationId = "123"
+        private val notificationUrl = "123"
 
         @Test
         fun `it updates an order with the notification id`() {
@@ -98,7 +98,7 @@ class OrderControllerTest {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
-                        "notificationId" to notificationId
+                        "notificationUrl" to notificationUrl
                     )
                 )
             }.andExpect {
@@ -113,7 +113,7 @@ class OrderControllerTest {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
-                        "notificationId" to notificationId
+                        "notificationUrl" to notificationUrl
                     )
                 )
             }.andExpect {
@@ -128,7 +128,7 @@ class OrderControllerTest {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
-                        "notificationId" to notificationId
+                        "notificationUrl" to notificationUrl
                     )
                 )
             }.andExpect {

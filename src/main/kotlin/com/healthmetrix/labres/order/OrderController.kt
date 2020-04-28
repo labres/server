@@ -66,7 +66,7 @@ class OrderController(
         @RequestBody(required = false) // TODO: springdoc-openapi does not correctly infer this. see https://github.com/springdoc/springdoc-openapi/issues/603
         createOrderRequestBody: CreateOrderRequestBody?
     ): ResponseEntity<CreateOrderResponse> {
-        val (id, orderNumber) = createOrderUseCase(createOrderRequestBody?.notificationId)
+        val (id, orderNumber) = createOrderUseCase(createOrderRequestBody?.notificationUrl)
         return CreateOrderResponse.Created(
             id,
             orderNumber.number
@@ -170,7 +170,7 @@ class OrderController(
         orderId: String,
         @RequestBody
         updateOrderRequestBody: UpdateOrderRequestBody
-    ): ResponseEntity<UpdateOrderResponse> = when (updateOrderUseCase(orderId, updateOrderRequestBody.notificationId)) {
+    ): ResponseEntity<UpdateOrderResponse> = when (updateOrderUseCase(orderId, updateOrderRequestBody.notificationUrl)) {
         UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
         UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
         UpdateOrderUseCase.Result.INVALID_ORDER_ID -> UpdateOrderResponse.NotFound
@@ -180,19 +180,19 @@ class OrderController(
 data class CreateOrderRequestBody(
     @Schema(
         type = "string",
-        description = "Notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.",
+        description = "Notification URL sent from Data4Life that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
         required = true
     )
-    val notificationId: String
+    val notificationUrl: String
 )
 
 data class UpdateOrderRequestBody(
     @Schema(
         type = "string",
-        description = "Notification ID sent from Data4Life that can be used later to notify them that lab results have been uploaded.",
+        description = "Notification URL sent from Data4Life that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
         required = true
     )
-    val notificationId: String
+    val notificationUrl: String
 )
 
 sealed class UpdateOrderResponse(httpStatus: HttpStatus) : LabResApiResponse(httpStatus, false) {

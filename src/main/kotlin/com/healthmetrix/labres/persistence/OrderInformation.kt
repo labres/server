@@ -18,7 +18,7 @@ data class OrderInformation(
     val labId: String? = null,
     val reportedAt: Date? = null,
     val notifiedAt: Date? = null,
-    val notificationId: String? = null,
+    val notificationUrl: String? = null,
     val enteredLabAt: Date? = null,
     val testType: String? = null
 ) {
@@ -29,7 +29,7 @@ data class OrderInformation(
         issuedAt = issuedAt,
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
-        notificationId = notificationId,
+        notificationUrl = notificationUrl,
         enteredLabAt = enteredLabAt,
         testType = testType
     )
@@ -60,7 +60,7 @@ data class RawOrderInformation(
     var notifiedAt: Date? = null,
 
     @DynamoDBAttribute
-    var notificationId: String? = null,
+    var notificationUrl: String? = null,
 
     @DynamoDBAttribute
     var enteredLabAt: Date? = null,
@@ -86,7 +86,7 @@ data class RawOrderInformation(
                 labId = labId,
                 reportedAt = reportedAt,
                 notifiedAt = notifiedAt,
-                notificationId = notificationId,
+                notificationUrl = notificationUrl,
                 enteredLabAt = enteredLabAt
             )
         else {
