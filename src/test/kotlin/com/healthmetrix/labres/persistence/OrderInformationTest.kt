@@ -16,7 +16,7 @@ class OrderInformationTest {
         issuedAt = Date.from(Instant.now()),
         reportedAt = null,
         notifiedAt = null,
-        notificationId = null
+        notificationUrl = null
     )
 
     @Test

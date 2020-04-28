@@ -23,7 +23,7 @@ class UpdateResultUseCaseTest {
         issuedAt = Date.from(Instant.now()),
         number = orderNumber,
         status = Status.IN_PROGRESS,
-        notificationId = "notificationId"
+        notificationUrl = "notificationId"
     )
 
     private val labResult = LabResult(orderNumber, "labId", Result.POSITIVE, null)
@@ -78,8 +78,8 @@ class UpdateResultUseCaseTest {
     }
 
     @Test
-    fun `orderInfos updated with no notification id do not notify`() {
-        val orderInfoWithoutNotificationId = orderInfo.copy(notificationId = null)
+    fun `orderInfos updated with no notification url do not notify`() {
+        val orderInfoWithoutNotificationId = orderInfo.copy(notificationUrl = null)
         every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfoWithoutNotificationId
         every { orderInformationRepository.save(any()) } returns orderInfoWithoutNotificationId
 

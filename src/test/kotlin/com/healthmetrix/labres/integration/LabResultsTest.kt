@@ -51,17 +51,17 @@ class LabResultsTest {
         }
 
         @Test
-        fun `an orderInformation can be created with a notification id`() {
+        fun `an orderInformation can be created with a notification url`() {
             val createResponse = mockMvc.post("/v1/orders") {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
-                        "notificationId" to "abc123"
+                        "notificationUrl" to "abc123"
                     )
                 )
             }.andReturn().responseBody<CreateOrderResponse.Created>()
             val orderInformation = orderInformationRepository.findById(createResponse.id)!!
-            assertThat(orderInformation.notificationId).isEqualTo("abc123")
+            assertThat(orderInformation.notificationUrl).isEqualTo("abc123")
         }
 
         @Test
@@ -96,7 +96,7 @@ class LabResultsTest {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
-                        "notificationId" to "beforeId"
+                        "notificationUrl" to "beforeId"
                     )
                 )
             }.andReturn().responseBody<CreateOrderResponse.Created>()
