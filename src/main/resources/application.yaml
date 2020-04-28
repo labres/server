@@ -22,8 +22,6 @@ documentation-info:
     email: admin@healthmetrix.com
 
 notification:
-  host: http://localhost:8001
-  path: /notifications/{notificationId}
   basic-auth:
     user: # empty
     pass: # empty
