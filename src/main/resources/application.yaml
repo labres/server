@@ -26,6 +26,9 @@ notification:
     user: # empty
     pass: # empty
 
+# has to be a comma separated string
+cors-domains: "*"
+
 ---
 spring:
   profiles: dev
