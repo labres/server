@@ -15,7 +15,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 const val EXTERNAL_ORDER_NUMBER_API_TAG = "External Order Number API"
-const val LABORATORY_API_TAG = "Laboratory API"
+const val LABORATORY_ORDER_NUMBER_API_TAG = "Laboratory Order Number API"
+const val LABORATORY_API_TAG = "Laboratory Results API"
 
 @Configuration
 class SwaggerConfig(

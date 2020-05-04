@@ -1,6 +1,6 @@
 package com.healthmetrix.labres.order
 
-import com.healthmetrix.labres.EXTERNAL_ORDER_NUMBER_API_TAG
+import com.healthmetrix.labres.LABORATORY_ORDER_NUMBER_API_TAG
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.persistence.OrderInformationRepository
@@ -13,16 +13,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
-import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
+import java.util.*
 
 @RestController
 @ApiResponses(
@@ -36,19 +31,19 @@ import org.springframework.web.bind.annotation.RestController
     ]
 )
 @SecurityRequirement(name = "OrdersApiToken")
-@Tag(name = EXTERNAL_ORDER_NUMBER_API_TAG)
-class OrderController(
+@Tag(name = LABORATORY_ORDER_NUMBER_API_TAG)
+class LaboratoryOrderNumberController(
     private val createOrderUseCase: CreateOrderUseCase,
     private val orderInformationRepository: OrderInformationRepository,
     private val updateOrderUseCase: UpdateOrderUseCase
 ) {
     @PostMapping(
-        path = ["/v1/orders"],
+        path = ["/v1/labs/{labId}/orders"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @Operation(
-        summary = "Issues a new globally unique External Order Number (EON). The number of issuing EONs is limited to 3 per subject.",
+        summary = "[NOT YET IMPLEMENTED] Registers a laboratory order number to be notified for changes.",
         description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
     @ApiResponses(
@@ -62,20 +57,20 @@ class OrderController(
             )
         ]
     )
-    fun postOrderNumber(
+    fun generateOrderByLaboratoryOrderId(
         @RequestBody(required = false) // TODO: springdoc-openapi does not correctly infer this. see https://github.com/springdoc/springdoc-openapi/issues/603
-        createOrderRequestBody: CreateOrderRequestBody?
+        createOrderByLaboratoryOrderNumberRequestBody: CreateOrderByLaboratoryOrderNumberRequestBody?
     ): ResponseEntity<CreateOrderResponse> {
-        val (id, orderNumber) = createOrderUseCase(createOrderRequestBody?.notificationUrl)
+        val (id, orderNumber) = createOrderUseCase(createOrderByLaboratoryOrderNumberRequestBody?.notificationUrl)
         return CreateOrderResponse.Created(
             id,
             orderNumber.number
         ).asEntity()
     }
 
-    @GetMapping(path = ["/v1/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
+    @GetMapping(path = ["/v1/labs/{labId}/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
-        summary = "Returns the current status of a given lab order",
+        summary = "[NOT YET IMPLEMENTED] Returns the current status of a given lab order",
         description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
     @ApiResponses(
@@ -100,7 +95,7 @@ class OrderController(
             )
         ]
     )
-    fun getOrderNumber(
+    fun getOrderStatus(
         @Parameter(
             description = "UUID of an order that has been sent to a lab",
             required = true,
@@ -123,12 +118,12 @@ class OrderController(
     }
 
     @PutMapping(
-        path = ["/v1/orders/{orderId}"],
+        path = ["/v1/labs/{labId}/orders/{orderId}"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @Operation(
-        summary = "Updates an order with the notification url",
+        summary = "[NOT YET IMPLEMENTED] Updates an order with the notification url",
         description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
     @ApiResponses(
@@ -177,42 +172,11 @@ class OrderController(
     }.asEntity()
 }
 
-data class CreateOrderRequestBody(
+data class CreateOrderByLaboratoryOrderNumberRequestBody(
     @Schema(
         type = "string",
-        description = "Notification URL sent from Data4Life that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
+        description = "Notification URL that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
         required = true
     )
     val notificationUrl: String
 )
-
-data class UpdateOrderRequestBody(
-    @Schema(
-        type = "string",
-        description = "Notification URL sent from Data4Life that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
-        required = true
-    )
-    val notificationUrl: String
-)
-
-sealed class UpdateOrderResponse(httpStatus: HttpStatus) : LabResApiResponse(httpStatus, false) {
-    object Updated : UpdateOrderResponse(HttpStatus.OK)
-    object NotFound : UpdateOrderResponse(HttpStatus.NOT_FOUND)
-}
-
-sealed class CreateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :
-    LabResApiResponse(httpStatus, hasBody) {
-
-    data class Created(
-        @Schema(
-            description = "A unique internal identifier for the order",
-            example = "65e524cb-7494-4073-ad16-495fed0d79e4"
-        )
-        val id: UUID,
-        @Schema(
-            description = "numeric 10-digit-long external order number",
-            example = "1234567890"
-        )
-        val orderNumber: String
-    ) : CreateOrderResponse(HttpStatus.CREATED)
-}
