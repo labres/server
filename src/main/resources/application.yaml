@@ -32,6 +32,6 @@ cors-domains: "*"
 ---
 spring:
   profiles: dev
-  profiles.include: dynamo
+  profiles.include: dynamo, notify
 
 dynamo.local-endpoint:
