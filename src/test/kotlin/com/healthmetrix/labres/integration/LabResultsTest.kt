@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.healthmetrix.labres.LabResApplication
 import com.healthmetrix.labres.encodeBase64
-import com.healthmetrix.labres.order.CreateOrderResponse
+import com.healthmetrix.labres.order.ExternalOrderNumberController.IssueExternalOrderNumberResponse
 import com.healthmetrix.labres.order.Status
 import com.healthmetrix.labres.order.StatusResponse
 import com.healthmetrix.labres.persistence.OrderInformationRepository
@@ -44,7 +44,7 @@ class LabResultsTest {
         fun `an orderInformation has IN_PROGRESS when first created`() {
             val createResponse = mockMvc.post("/v1/orders") {
                 contentType = MediaType.APPLICATION_JSON
-            }.andReturn().responseBody<CreateOrderResponse.Created>()
+            }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
 
             val orderInformation = orderInformationRepository.findById(createResponse.id)!!
             assertThat(orderInformation.status).isEqualTo(Status.IN_PROGRESS)
@@ -59,7 +59,7 @@ class LabResultsTest {
                         "notificationUrl" to "abc123"
                     )
                 )
-            }.andReturn().responseBody<CreateOrderResponse.Created>()
+            }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
             val orderInformation = orderInformationRepository.findById(createResponse.id)!!
             assertThat(orderInformation.notificationUrl).isEqualTo("abc123")
         }
@@ -68,7 +68,7 @@ class LabResultsTest {
         fun `a lab result can be successfully created, fetched, and updated`() {
             val createResponse = mockMvc.post("/v1/orders") {
                 contentType = MediaType.APPLICATION_JSON
-            }.andReturn().responseBody<CreateOrderResponse.Created>()
+            }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
 
             val orderId = createResponse.id
             mockMvc.get("/v1/orders/$orderId")
@@ -99,7 +99,7 @@ class LabResultsTest {
                         "notificationUrl" to "beforeId"
                     )
                 )
-            }.andReturn().responseBody<CreateOrderResponse.Created>()
+            }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
 
             val orderId = createResponse.id
             val orderNumber = createResponse.orderNumber

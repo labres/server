@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController
 )
 @SecurityRequirement(name = "OrdersApiToken")
 @Tag(name = EXTERNAL_ORDER_NUMBER_API_TAG)
-class OrderController(
+class ExternalOrderNumberController(
     private val createOrderUseCase: CreateOrderUseCase,
     private val orderInformationRepository: OrderInformationRepository,
     private val updateOrderUseCase: UpdateOrderUseCase
@@ -48,7 +48,7 @@ class OrderController(
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @Operation(
-        summary = "Issues a new globally unique External Order Number (EON). The number of issuing  EONs is limited to 3 per subject.",
+        summary = "Issues a new globally unique External Order Number (EON) and registers a lab order for it. The number of issuing EONs is limited to 3 per subject.",
         description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
     @ApiResponses(
@@ -57,17 +57,17 @@ class OrderController(
                 responseCode = "201",
                 description = "External Order Number Created",
                 content = [
-                    Content(schema = Schema(type = "object", implementation = CreateOrderResponse.Created::class))
+                    Content(schema = Schema(type = "object", implementation = IssueExternalOrderNumberResponse.Created::class))
                 ]
             )
         ]
     )
-    fun postOrderNumber(
+    fun issueExternalOrderNumber(
         @RequestBody(required = false) // TODO: springdoc-openapi does not correctly infer this. see https://github.com/springdoc/springdoc-openapi/issues/603
-        createOrderRequestBody: CreateOrderRequestBody?
-    ): ResponseEntity<CreateOrderResponse> {
-        val (id, orderNumber) = createOrderUseCase(createOrderRequestBody?.notificationUrl)
-        return CreateOrderResponse.Created(
+        issueExternalOrderNumberRequestBody: IssueExternalOrderNumberRequestBody?
+    ): ResponseEntity<IssueExternalOrderNumberResponse> {
+        val (id, orderNumber) = createOrderUseCase(issueExternalOrderNumberRequestBody?.notificationUrl)
+        return IssueExternalOrderNumberResponse.Created(
             id,
             orderNumber.number
         ).asEntity()
@@ -175,44 +175,44 @@ class OrderController(
         UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
         UpdateOrderUseCase.Result.INVALID_ORDER_ID -> UpdateOrderResponse.NotFound
     }.asEntity()
-}
 
-data class CreateOrderRequestBody(
-    @Schema(
-        type = "string",
-        description = "Notification URL sent from Data4Life that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
-        required = true
-    )
-    val notificationUrl: String
-)
-
-data class UpdateOrderRequestBody(
-    @Schema(
-        type = "string",
-        description = "Notification URL sent from Data4Life that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
-        required = true
-    )
-    val notificationUrl: String
-)
-
-sealed class UpdateOrderResponse(httpStatus: HttpStatus) : LabResApiResponse(httpStatus, false) {
-    object Updated : UpdateOrderResponse(HttpStatus.OK)
-    object NotFound : UpdateOrderResponse(HttpStatus.NOT_FOUND)
-}
-
-sealed class CreateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :
-    LabResApiResponse(httpStatus, hasBody) {
-
-    data class Created(
+    data class IssueExternalOrderNumberRequestBody(
         @Schema(
-            description = "A unique internal identifier for the order",
-            example = "65e524cb-7494-4073-ad16-495fed0d79e4"
+                type = "string",
+                description = "Notification URL sent from the client that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
+                required = true
         )
-        val id: UUID,
+        val notificationUrl: String
+    )
+
+    sealed class IssueExternalOrderNumberResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :
+            LabResApiResponse(httpStatus, hasBody) {
+
+        data class Created(
+            @Schema(
+                    description = "A unique internal identifier for the order",
+                    example = "65e524cb-7494-4073-ad16-495fed0d79e4"
+            )
+            val id: UUID,
+            @Schema(
+                    description = "numeric 10-digit-long external order number",
+                    example = "1234567890"
+            )
+            val orderNumber: String
+        ) : IssueExternalOrderNumberResponse(HttpStatus.CREATED)
+    }
+
+    data class UpdateOrderRequestBody(
         @Schema(
-            description = "numeric 10-digit-long external order number",
-            example = "1234567890"
+                type = "string",
+                description = "Notification URL sent from the client that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
+                required = true
         )
-        val orderNumber: String
-    ) : CreateOrderResponse(HttpStatus.CREATED)
+        val notificationUrl: String
+    )
+
+    sealed class UpdateOrderResponse(httpStatus: HttpStatus) : LabResApiResponse(httpStatus, false) {
+        object Updated : UpdateOrderResponse(HttpStatus.OK)
+        object NotFound : UpdateOrderResponse(HttpStatus.NOT_FOUND)
+    }
 }

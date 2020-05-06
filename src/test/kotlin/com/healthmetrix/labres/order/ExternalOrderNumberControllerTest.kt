@@ -25,7 +25,7 @@ import org.springframework.test.web.servlet.put
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @AutoConfigureMockMvc
-class OrderControllerTest {
+class ExternalOrderNumberControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
