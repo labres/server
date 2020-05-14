@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.lab
 
+import com.healthmetrix.labres.notifications.NotifyOnStatusChangeUseCase
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
 import com.healthmetrix.labres.persistence.OrderInformation
@@ -16,7 +17,7 @@ import org.junit.jupiter.api.Test
 
 class UpdateResultUseCaseTest {
     private val orderInformationRepository: OrderInformationRepository = mockk()
-    private val notifier: NotifyUseCase = mockk()
+    private val notifier: NotifyOnStatusChangeUseCase = mockk()
     private val underTest = UpdateResultUseCase(orderInformationRepository, notifier)
     private val orderNumber = OrderNumber.External.from("1234567891")
     private val notificationUrl = "http://callMe.test"
@@ -37,7 +38,7 @@ class UpdateResultUseCaseTest {
     fun `returns updated orderInfromation if successfully updated`() {
         every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
         every { orderInformationRepository.save(any()) } returns updated
-        every { notifier(any()) } returns Unit
+        every { notifier(any(), any()) } returns true
 
         assertThat(underTest(labResult)).isEqualTo(updated)
     }
@@ -49,7 +50,7 @@ class UpdateResultUseCaseTest {
         every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
         val updated = updated.copy(status = Status.IN_PROGRESS, enteredLabAt = now)
         every { orderInformationRepository.save(any()) } returns updated
-        every { notifier(any()) } returns Unit
+        every { notifier(any(), any()) } returns true
 
         underTest(labResult.copy(result = Result.IN_PROGRESS), now = now)
 
@@ -63,7 +64,7 @@ class UpdateResultUseCaseTest {
         every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
         val updated = updated.copy(reportedAt = now, testType = testType)
         every { orderInformationRepository.save(any()) } returns updated
-        every { notifier(any()) } returns Unit
+        every { notifier(any(), any()) } returns true
 
         underTest(labResult.copy(testType = testType), now = now)
 
@@ -76,11 +77,11 @@ class UpdateResultUseCaseTest {
 
         every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
         every { orderInformationRepository.save(any()) } returns updated
-        every { notifier(any()) } returns Unit
+        every { notifier(any(), any()) } returns true
 
         underTest(labResult, now = now)
 
-        verify(exactly = 1) { notifier.invoke(notificationUrl) }
+        verify(exactly = 1) { notifier.invoke(updated.id, notificationUrl) }
     }
 
     @Test
@@ -98,32 +99,7 @@ class UpdateResultUseCaseTest {
 
         verify(exactly = 0) {
             orderInformationRepository.save(any())
-            notifier.invoke(any())
-        }
-    }
-
-    @Test
-    fun `orderInfos updated with a status of IN_PROGRESS do not notify`() {
-        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
-        every { orderInformationRepository.save(any()) } returns orderInfo.copy(status = Status.IN_PROGRESS)
-
-        underTest(labResult.copy(result = Result.IN_PROGRESS), now)
-
-        verify(exactly = 0) {
-            notifier(any())
-        }
-    }
-
-    @Test
-    fun `orderInfos updated with no notification url do not notify`() {
-        val orderInfoWithoutNotificationId = orderInfo.copy(notificationUrl = null)
-        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfoWithoutNotificationId
-        every { orderInformationRepository.save(any()) } returns orderInfoWithoutNotificationId
-
-        underTest(labResult.copy(result = Result.POSITIVE), now)
-
-        verify(exactly = 0) {
-            notifier(any())
+            notifier.invoke(any(), any())
         }
     }
 }

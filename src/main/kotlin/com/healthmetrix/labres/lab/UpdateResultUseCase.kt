@@ -1,6 +1,6 @@
 package com.healthmetrix.labres.lab
 
-import com.healthmetrix.labres.logger
+import com.healthmetrix.labres.notifications.NotifyOnStatusChangeUseCase
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import java.time.Instant
@@ -9,14 +9,14 @@ import org.springframework.stereotype.Component
 
 @Component
 class UpdateResultUseCase(
-    private val orderInformationRepository: OrderInformationRepository,
-    private val notifier: NotifyUseCase
+    private val repository: OrderInformationRepository,
+    private val notifyOnStatusChange: NotifyOnStatusChangeUseCase
 ) {
     operator fun invoke(
         labResult: LabResult,
         now: Date = Date.from(Instant.now())
     ): OrderInformation? {
-        val orderInfo = orderInformationRepository.findByOrderNumber(labResult.orderNumber)
+        val orderInfo = repository.findByOrderNumber(labResult.orderNumber)
             ?: return null
 
         val update = orderInfo.copy(
@@ -25,16 +25,15 @@ class UpdateResultUseCase(
             testType = labResult.testType
         )
 
-        return if (labResult.isEmptyLabResult)
-            orderInformationRepository.save(update.copy(enteredLabAt = now))
-        else
-            orderInformationRepository
-                .save(update.copy(reportedAt = now))
-                .also(this::notify)
+        return updateTimestamp(update, labResult, now)
+            .let(repository::save)
+            .also { notifyOnStatusChange(it.id, it.notificationUrl) }
     }
 
-    private fun notify(orderInformation: OrderInformation): Unit = if (orderInformation.notificationUrl != null)
-        notifier(orderInformation.notificationUrl)
-    else
-        logger.warn("No notification url for ${orderInformation.id}")
+    private fun updateTimestamp(orderInformation: OrderInformation, labResult: LabResult, now: Date) =
+        if (labResult.isEmptyLabResult) {
+            orderInformation.copy(enteredLabAt = now)
+        } else {
+            orderInformation.copy(reportedAt = now)
+        }
 }
