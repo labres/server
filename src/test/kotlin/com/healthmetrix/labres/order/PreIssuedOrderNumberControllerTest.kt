@@ -22,13 +22,13 @@ import org.springframework.test.web.servlet.put
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @AutoConfigureMockMvc
-class ExternalOrderNumberControllerTest {
+class PreIssuedOrderNumberControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
 
     @MockkBean
-    private lateinit var issueExternalOrderNumber: IssueExternalOrderNumberUseCase
+    private lateinit var registerOrder: RegisterOrderUseCase
 
     @MockkBean
     private lateinit var updateOrderUseCase: UpdateOrderUseCase
@@ -41,28 +41,44 @@ class ExternalOrderNumberControllerTest {
 
     private val orderId = UUID.randomUUID()
     private val orderNumberString = "1234567890"
-    private val orderNumber = OrderNumber.External.from(orderNumberString)
+    private val issuerId = "issuerA"
+    private val orderNumber = OrderNumber.from(issuerId, orderNumberString)
+    private val testSiteId = "testSiteA"
+    private val notificationUrl = "http://callme.test"
 
     @Nested
-    inner class CreateOrderEndpointTest {
+    inner class RegisterOrderEndpointTest {
         @Test
-        fun `issuing an external order number returns status 201`() {
-            every { issueExternalOrderNumber.invoke(any()) } returns (orderId to orderNumber)
+        fun `registering a preissued order number returns status 201`() {
+            every { registerOrder.invoke(any(), any(), any(), any()) } returns (orderId to orderNumber)
 
-            mockMvc.post("/v1/orders") {
+            val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+                orderNumber = orderNumberString,
+                testSiteId = testSiteId,
+                notificationUrl = notificationUrl
+            )
+
+            mockMvc.post("/v1/issuers/$issuerId/orders") {
                 contentType = MediaType.APPLICATION_JSON
-                content = "{\"notificationUrl\":\"http://test.test\"}"
+                content = objectMapper.writeValueAsString(request)
             }.andExpect {
                 status { isCreated }
             }
         }
 
         @Test
-        fun `issuing an external order number returns order number and id`() {
-            every { issueExternalOrderNumber.invoke(any()) } returns (orderId to orderNumber)
+        fun `registering a preissued order number returns order number and id`() {
+            every { registerOrder.invoke(any(), any(), any(), any()) } returns (orderId to orderNumber)
 
-            mockMvc.post("/v1/orders") {
+            val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+                orderNumber = orderNumberString,
+                testSiteId = null,
+                notificationUrl = null
+            )
+
+            mockMvc.post("/v1/issuers/$issuerId/orders") {
                 contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
             }.andExpect {
                 jsonPath("$.orderNumber") { isString }
                 jsonPath("$.id") { isString }

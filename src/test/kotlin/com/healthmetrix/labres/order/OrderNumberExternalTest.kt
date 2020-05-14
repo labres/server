@@ -13,4 +13,25 @@ class OrderNumberExternalTest {
 
         assertThat(allMatch).isEqualTo(true)
     }
+
+    @Test
+    fun `eons have an implicit issuer`() {
+        val eon = OrderNumber.External.from("1234567890")
+        assertThat(eon.issuerId).isEqualTo(EON_ISSUER_ID)
+    }
+
+    @Test
+    fun `factory method should create an eon if the issuerId is null`() {
+        assertThat(OrderNumber.from(null, "1234567890")).isInstanceOf(OrderNumber.External::class.java)
+    }
+
+    @Test
+    fun `factory method should create an eon if the issuerId is "labres"`() {
+        assertThat(OrderNumber.from("labres", "1234567890")).isInstanceOf(OrderNumber.External::class.java)
+    }
+
+    @Test
+    fun `factory method should create an pon if the issuerId is not "labres" or null`() {
+        assertThat(OrderNumber.from("something", "test")).isInstanceOf(OrderNumber.PreIssued::class.java)
+    }
 }

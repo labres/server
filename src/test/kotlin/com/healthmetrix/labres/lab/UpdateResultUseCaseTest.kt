@@ -4,6 +4,7 @@ import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -17,51 +18,87 @@ class UpdateResultUseCaseTest {
     private val orderInformationRepository: OrderInformationRepository = mockk()
     private val notifier: NotifyUseCase = mockk()
     private val underTest = UpdateResultUseCase(orderInformationRepository, notifier)
-    private val orderNumber = OrderNumber.External.from("1234567891")!!
+    private val orderNumber = OrderNumber.External.from("1234567891")
+    private val notificationUrl = "http://callMe.test"
     private val orderInfo = OrderInformation(
         id = UUID.randomUUID(),
         issuedAt = Date.from(Instant.now()),
-        number = orderNumber,
+        orderNumber = orderNumber,
         status = Status.IN_PROGRESS,
-        notificationUrl = "notificationId"
+        notificationUrl = notificationUrl
     )
-
-    private val labResult = LabResult(orderNumber, "labId", Result.POSITIVE, null)
+    private val labId = "labId"
+    private val testType = "multipleChoice"
+    private val now = Date.from(Instant.now())
+    private val labResult = LabResult(orderNumber, labId, Result.POSITIVE, null)
+    private val updated = orderInfo.copy(status = Status.POSITIVE, labId = labId)
 
     @Test
-    fun `returns Success result`() {
+    fun `returns updated orderInfromation if successfully updated`() {
         every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
-        every { orderInformationRepository.save(any()) } returns orderInfo.copy(
-            status = Status.POSITIVE,
-            reportedAt = Date.from(Instant.now()),
-            labId = "labId"
-        )
+        every { orderInformationRepository.save(any()) } returns updated
         every { notifier(any()) } returns Unit
-        assertThat(underTest(labResult)).isInstanceOf(UpdateStatusResponse.Success::class.java)
+
+        assertThat(underTest(labResult)).isEqualTo(updated)
     }
 
     @Test
-    fun `returns OrderNotFound if no orderNumber found`() {
+    fun `updates orderInformation with enteredLabAt set if status is IN_PROGRESS`() {
+        clearMocks(orderInformationRepository)
+
+        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
+        val updated = updated.copy(status = Status.IN_PROGRESS, enteredLabAt = now)
+        every { orderInformationRepository.save(any()) } returns updated
+        every { notifier(any()) } returns Unit
+
+        underTest(labResult.copy(result = Result.IN_PROGRESS), now = now)
+
+        verify(exactly = 1) { orderInformationRepository.save(updated) }
+    }
+
+    @Test
+    fun `updates orderInformation with reportedAt set if status is not IN_PROGRESS`() {
+        clearMocks(orderInformationRepository)
+
+        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
+        val updated = updated.copy(reportedAt = now, testType = testType)
+        every { orderInformationRepository.save(any()) } returns updated
+        every { notifier(any()) } returns Unit
+
+        underTest(labResult.copy(testType = testType), now = now)
+
+        verify(exactly = 1) { orderInformationRepository.save(updated) }
+    }
+
+    @Test
+    fun `notifies on updated order`() {
+        clearMocks(notifier)
+
+        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
+        every { orderInformationRepository.save(any()) } returns updated
+        every { notifier(any()) } returns Unit
+
+        underTest(labResult, now = now)
+
+        verify(exactly = 1) { notifier.invoke(notificationUrl) }
+    }
+
+    @Test
+    fun `returns null if no orderNumber found`() {
         every { orderInformationRepository.findByOrderNumber(any()) } returns null
-        assertThat(underTest(labResult)).isInstanceOf(UpdateStatusResponse.OrderNotFound::class.java)
+        assertThat(underTest(labResult)).isNull()
     }
 
     @Test
-    fun `it updates orderInfo with labId`() {
-        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
-        every { orderInformationRepository.save(any()) } returns orderInfo.copy(status = Status.POSITIVE)
-        every { notifier(any()) } returns Unit
+    fun `doesn't update or notify if no orderNumber found`() {
+        clearMocks(orderInformationRepository)
+        every { orderInformationRepository.findByOrderNumber(any()) } returns null
 
-        val now = Date.from(Instant.now())
-        underTest(labResult, now)
-        verify {
-            orderInformationRepository.save(
-                orderInfo.copy(
-                    status = Status.POSITIVE,
-                    reportedAt = now,
-                    labId = "labId"
-                )
-            )
+        underTest(labResult)
+
+        verify(exactly = 0) {
+            orderInformationRepository.save(any())
+            notifier.invoke(any())
         }
     }
 
@@ -70,7 +107,7 @@ class UpdateResultUseCaseTest {
         every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
         every { orderInformationRepository.save(any()) } returns orderInfo.copy(status = Status.IN_PROGRESS)
 
-        underTest(labResult.copy(result = Result.IN_PROGRESS), Date.from(Instant.now()))
+        underTest(labResult.copy(result = Result.IN_PROGRESS), now)
 
         verify(exactly = 0) {
             notifier(any())
@@ -83,28 +120,10 @@ class UpdateResultUseCaseTest {
         every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfoWithoutNotificationId
         every { orderInformationRepository.save(any()) } returns orderInfoWithoutNotificationId
 
-        underTest(labResult.copy(result = Result.POSITIVE), Date.from(Instant.now()))
+        underTest(labResult.copy(result = Result.POSITIVE), now)
 
         verify(exactly = 0) {
             notifier(any())
-        }
-    }
-
-    @Test
-    fun `it sets enteredLabAt on orderInfo instead of reportedAt when status is IN_PROGRESS`() {
-        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
-        every { orderInformationRepository.save(any()) } returns orderInfo.copy(status = Status.IN_PROGRESS)
-
-        val now = Date.from(Instant.now())
-        underTest(labResult.copy(result = Result.IN_PROGRESS), now)
-        verify {
-            orderInformationRepository.save(
-                orderInfo.copy(
-                    status = Status.IN_PROGRESS,
-                    enteredLabAt = now,
-                    labId = "labId"
-                )
-            )
         }
     }
 }

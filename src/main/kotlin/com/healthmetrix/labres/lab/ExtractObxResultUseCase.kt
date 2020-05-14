@@ -1,6 +1,5 @@
 package com.healthmetrix.labres.lab
 
-import com.healthmetrix.labres.order.OrderNumber
 import org.springframework.stereotype.Component
 
 private const val RESULT_INDEX = 5
@@ -16,11 +15,13 @@ private const val OBX_MESSAGE_SEPARATOR = "|"
  */
 @Component
 class ExtractObxResultUseCase {
-    operator fun invoke(message: String, labId: String): LabResult? = with(Obx(message)) {
-        result?.let { r -> LabResult(orderNumber, labId, r, testType) }
+    operator fun invoke(message: String, labId: String, issuerId: String?): LabResult? = with(Obx(message, issuerId)) {
+        // TODO: find out how to correctly parse the relating order number from OBX
+        // result?.let { r -> LabResult(orderNumber, labId, r, testType) }
+        null
     }
 
-    private class Obx(message: String) {
+    private class Obx(message: String, issuerId: String?) {
         private val fields = message.split(OBX_MESSAGE_SEPARATOR)
 
         /**
@@ -39,6 +40,7 @@ class ExtractObxResultUseCase {
 
         val testType = fields.getOrNull(TEST_TYPE_INDEX)
 
-        val orderNumber = OrderNumber.External("TODO") // TODO when specified
+        // TODO: find out how to correctly parse the relating order number from OBX
+        val orderNumber = null
     }
 }

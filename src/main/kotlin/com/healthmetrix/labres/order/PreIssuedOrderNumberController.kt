@@ -1,7 +1,7 @@
 package com.healthmetrix.labres.order
 
-import com.healthmetrix.labres.EXTERNAL_ORDER_NUMBER_API_TAG
 import com.healthmetrix.labres.LabResApiResponse
+import com.healthmetrix.labres.PRE_ISSUED_ORDER_NUMBER_API_TAG
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.logger
 import io.swagger.v3.oas.annotations.Operation
@@ -36,41 +36,57 @@ import org.springframework.web.bind.annotation.RestController
     ]
 )
 @SecurityRequirement(name = "OrdersApiToken")
-@Tag(name = EXTERNAL_ORDER_NUMBER_API_TAG)
-class ExternalOrderNumberController(
-    private val issueExternalOrderNumber: IssueExternalOrderNumberUseCase,
+@Tag(name = PRE_ISSUED_ORDER_NUMBER_API_TAG)
+class PreIssuedOrderNumberController(
+    private val registerOrder: RegisterOrderUseCase,
     private val updateOrder: UpdateOrderUseCase,
     private val queryStatus: QueryStatusUseCase
 ) {
     @PostMapping(
-        path = ["/v1/orders"],
+        path = ["/v1/issuers/{issuerId}/orders"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @Operation(
-        summary = "Issues a new globally unique External Order Number (EON) and registers a lab order for it. The number of issuing EONs is limited to 3 per subject.",
+        summary = "Registers a laboratory order specified by an issuer id and a given out laboratory order number",
         description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
     @ApiResponses(
         value = [
             ApiResponse(
                 responseCode = "201",
-                description = "External Order Number Created",
+                description = "Pre issued laboratory order has been registered successfully",
                 content = [
-                    Content(schema = Schema(type = "object", implementation = IssueExternalOrderNumberResponse.Created::class))
+                    Content(schema = Schema(type = "object", implementation = RegisterOrderResponse.Created::class))
+                ]
+            ),
+            ApiResponse(
+                responseCode = "409",
+                description = "Combination of issuer and order number already exists",
+                content = [
+                    Content(schema = Schema(type = "object", implementation = RegisterOrderResponse.Conflict::class))
                 ]
             )
         ]
     )
-    fun issueExternalOrderNumber(
-        @RequestBody(required = false) // TODO: springdoc-openapi does not correctly infer this. see https://github.com/springdoc/springdoc-openapi/issues/603
-        requestBody: IssueExternalOrderNumberRequestBody?
-    ): ResponseEntity<IssueExternalOrderNumberResponse> {
-        val (id, orderNumber) = issueExternalOrderNumber(requestBody?.notificationUrl)
-        return IssueExternalOrderNumberResponse.Created(id, orderNumber.number).asEntity()
-    }
+    fun registerOrder(
+        @Parameter(
+            description = "Identifier for the issuer given out the order number. Has to be whitelisted for a JWT issuer.",
+            required = true,
+            schema = Schema(
+                type = "string",
+                description = "A short descriptive issuer name having at most 16 characters"
+            )
+        )
+        @PathVariable issuerId: String,
+        @RequestBody requestBody: RegisterOrderRequestBody
+    ): ResponseEntity<RegisterOrderResponse> = registerOrder(
+        orderNumber = OrderNumber.from(issuerId, requestBody.orderNumber),
+        testSiteId = requestBody.testSiteId,
+        notificationUrl = requestBody.notificationUrl
+    ).let { RegisterOrderResponse.Created(it.first, it.second.number) }.asEntity()
 
-    @GetMapping(path = ["/v1/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
+    @GetMapping(path = ["/v1/issuers/{issuerId}/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
         summary = "Returns the current status of a given lab order",
         description = "Should only be invoked for verified users (logged into account or verified email address)"
@@ -96,7 +112,7 @@ class ExternalOrderNumberController(
             ),
             ApiResponse(
                 responseCode = "404",
-                description = "No order for the given id found",
+                description = "No order for the given combination of issuerId and orderId found",
                 content = [Content(
                     schema = Schema(
                         type = "object",
@@ -107,7 +123,16 @@ class ExternalOrderNumberController(
             )
         ]
     )
-    fun queryStatus(
+    fun getOrderNumber(
+        @Parameter(
+            description = "Identifier for the issuer given out the order number. Has to be whitelisted for a JWT issuer.",
+            required = true,
+            schema = Schema(
+                type = "string",
+                description = "A short descriptive issuer name having at most 16 characters"
+            )
+        )
+        @PathVariable issuerId: String,
         @Parameter(
             description = "UUID of an order that has been sent to a lab",
             required = true,
@@ -123,14 +148,14 @@ class ExternalOrderNumberController(
             return StatusResponse.BadRequest(message).asEntity()
         }
 
-        return (queryStatus(orderId, null)
+        return (queryStatus(orderId, issuerId)
             ?.let(StatusResponse::Found)
             ?: StatusResponse.NotFound)
             .asEntity()
     }
 
     @PutMapping(
-        path = ["/v1/orders/{orderId}"],
+        path = ["/v1/issuers/{issuerId}/orders/{orderId}"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
@@ -169,6 +194,16 @@ class ExternalOrderNumberController(
     )
     fun updateOrder(
         @Parameter(
+            description = "Identifier for the issuer given out the order number. Has to be whitelisted for a JWT issuer.",
+            required = true,
+            schema = Schema(
+                type = "string",
+                description = "A short descriptive issuer name having at most 16 characters"
+            )
+        )
+        @PathVariable
+        issuerId: String,
+        @Parameter(
             description = "UUID of an order that has been sent to a lab",
             required = true,
             schema = Schema(type = "string", format = "uuid", description = "A Version 4 UUID")
@@ -176,9 +211,9 @@ class ExternalOrderNumberController(
         @PathVariable
         orderId: String,
         @RequestBody
-        updateOrderRequestBody: UpdateOrderRequestBody
+        updateOrderRequestBody: ExternalOrderNumberController.UpdateOrderRequestBody
     ): ResponseEntity<UpdateOrderResponse> {
-        val id = try {
+        val orderId = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
@@ -186,48 +221,65 @@ class ExternalOrderNumberController(
             return UpdateOrderResponse.BadRequest(message).asEntity()
         }
 
-        return when (updateOrder(id, null, updateOrderRequestBody.notificationUrl)) {
+        return when (updateOrder(orderId, issuerId, updateOrderRequestBody.notificationUrl)) {
             UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
             UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
         }.asEntity()
     }
 
-    data class IssueExternalOrderNumberRequestBody(
+    data class RegisterOrderRequestBody(
         @Schema(
-                type = "string",
-                description = "Notification URL sent from the client that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
-                required = true
+            type = "string",
+            description = "Optional identifier to specify the test site a test was being used at",
+            required = true
         )
-        val notificationUrl: String
+        val orderNumber: String,
+        @Schema(
+            type = "string",
+            description = "Order number that has been issued by an issuer to identify a laboratory order. Must be unique for the given issuer id.",
+            required = false
+        )
+        val testSiteId: String?,
+        @Schema(
+            type = "string",
+            description = "Notification URL sent from the client that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
+            required = false
+        )
+        val notificationUrl: String?
     )
 
-    sealed class IssueExternalOrderNumberResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :
-            LabResApiResponse(httpStatus, hasBody) {
+    sealed class RegisterOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :
+        LabResApiResponse(httpStatus, hasBody) {
 
         data class Created(
             @Schema(
-                    description = "A unique internal identifier for the order",
-                    example = "65e524cb-7494-4073-ad16-495fed0d79e4"
+                type = "string",
+                description = "A unique internal identifier for the order",
+                example = "65e524cb-7494-4073-ad16-495fed0d79e4"
             )
             val id: UUID,
             @Schema(
-                    description = "numeric 10-digit-long external order number",
-                    example = "1234567890"
+                type = "string",
+                description = "numeric 10-digit-long external order number",
+                example = "1234567890"
             )
             val orderNumber: String
-        ) : IssueExternalOrderNumberResponse(HttpStatus.CREATED)
+        ) : RegisterOrderResponse(HttpStatus.CREATED)
+
+        object Conflict : RegisterOrderResponse(HttpStatus.CONFLICT)
     }
 
     data class UpdateOrderRequestBody(
         @Schema(
-                type = "string",
-                description = "Notification URL sent from the client that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
-                required = true
+            type = "string",
+            description = "Notification URL sent from the client that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
+            required = true
         )
         val notificationUrl: String
     )
 
-    sealed class UpdateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = false) : LabResApiResponse(httpStatus, hasBody) {
+    sealed class UpdateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = false) :
+        LabResApiResponse(httpStatus, hasBody) {
         object Updated : UpdateOrderResponse(HttpStatus.OK)
         object NotFound : UpdateOrderResponse(HttpStatus.NOT_FOUND)
         data class BadRequest(val message: String) : UpdateOrderResponse(HttpStatus.BAD_REQUEST)
