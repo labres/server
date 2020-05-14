@@ -4,7 +4,7 @@ dynamo:
 
 springdoc:
   swagger-ui:
-    enabled: false
+    enabled: true
   api-docs:
     path: /docs
 
@@ -13,8 +13,11 @@ documentation-info:
   version: 1
   description: LabRes provides an API to establish a direct connection between laboratory results and citizens.
   servers:
-    - url: https://api.labres.dev.healthmetrix.com/{version}
-      description: development environment for the LabRes apiKey
+    - url: http://localhost:8080
+      description: local dev environment for LabRes
+      version: v1
+    - url: https://api.labres.de
+      description: production environment for LabRes
       version: v1
   contact:
     name: Healthmetrix GmbH
@@ -33,6 +36,18 @@ cors-domains: "*"
 spring:
   profiles: dev
   # TODO: find out why notify doesn't work
-  profiles.include: dynamo,notify
+  profiles.include: dynamo, notify
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    path: /docs
 
 dynamo.local-endpoint:
+
+documentation-info:
+  servers:
+    - url: https://api.labres.de
+      description: production environment for LabRes
+      version: v1
