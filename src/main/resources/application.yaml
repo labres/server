@@ -32,6 +32,7 @@ cors-domains: "*"
 ---
 spring:
   profiles: dev
-  profiles.include: dynamo, notify
+  # TODO: find out why notify doesn't work
+  profiles.include: dynamo,notify
 
 dynamo.local-endpoint:

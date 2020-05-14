@@ -17,25 +17,26 @@ interface OrderInformationRepository {
 
 @EnableScan
 internal interface RawOrderInformationRepository : CrudRepository<RawOrderInformation, UUID> {
-    fun findByExternalOrderNumber(externalOrderNumber: String): List<RawOrderInformation>
+    fun findByIssuerIdAndOrderNumber(issuerId: String, orderNumber: String): List<RawOrderInformation>
 }
 
 @Component
 @Profile("dynamo")
 class DynamoOrderInformationRepository internal constructor(
-    private val rawOrderInformationRepository: RawOrderInformationRepository
+    private val repository: RawOrderInformationRepository
 ) : OrderInformationRepository {
-    override fun findById(id: UUID): OrderInformation? = rawOrderInformationRepository
+    override fun findById(id: UUID): OrderInformation? = repository
         .findById(id)
         .orElse(null)
         ?.cook()
 
-    override fun findByOrderNumber(orderNumber: OrderNumber): OrderInformation? = when (orderNumber) {
-        is OrderNumber.External -> rawOrderInformationRepository.findByExternalOrderNumber(orderNumber.eon())
-    }.mapNotNull(RawOrderInformation::cook).singleOrNull()
+    override fun findByOrderNumber(orderNumber: OrderNumber): OrderInformation? = repository
+        .findByIssuerIdAndOrderNumber(orderNumber.issuerId, orderNumber.number)
+        .mapNotNull(RawOrderInformation::cook)
+        .singleOrNull()
 
     override fun save(orderInformation: OrderInformation) =
-        rawOrderInformationRepository.save(orderInformation.raw()).cook()!!
+        repository.save(orderInformation.raw()).cook()!!
 }
 
 @Component
@@ -48,12 +49,12 @@ class InMemoryOrderInformationRepository : OrderInformationRepository {
         return map.getOrDefault(id, null)
     }
 
-    override fun findByOrderNumber(orderNumber: OrderNumber) = map.filter {
-        it.value.number == orderNumber
-    }.entries.singleOrNull()?.value
+    override fun findByOrderNumber(orderNumber: OrderNumber) = map.values.singleOrNull { it.orderNumber == orderNumber }
 
     override fun save(orderInformation: OrderInformation): OrderInformation {
         map[orderInformation.id] = orderInformation
         return orderInformation
     }
+
+    fun clear() = map.clear()
 }

@@ -11,7 +11,8 @@ import org.junit.jupiter.api.Test
 class OrderInformationTest {
     private val baseRawOrderInformation = RawOrderInformation(
         id = UUID.randomUUID(),
-        externalOrderNumber = "0123456789",
+        issuerId = "labres",
+        orderNumber = "0123456789",
         status = "NEGATIVE",
         issuedAt = Date.from(Instant.now()),
         reportedAt = null,
@@ -24,7 +25,7 @@ class OrderInformationTest {
         assertThat(baseRawOrderInformation.cook()).isEqualTo(
             OrderInformation(
                 id = baseRawOrderInformation.id!!,
-                number = OrderNumber.External(baseRawOrderInformation.externalOrderNumber!!),
+                orderNumber = OrderNumber.External.from(baseRawOrderInformation.orderNumber!!),
                 status = Status.NEGATIVE,
                 issuedAt = baseRawOrderInformation.issuedAt!!
             )
@@ -34,7 +35,7 @@ class OrderInformationTest {
     @Test
     fun `cooking a raw order info without EON fails`() {
         val raw = baseRawOrderInformation.copy(
-            externalOrderNumber = null
+            orderNumber = null
         )
 
         assertThat(raw.cook()).isNull()
