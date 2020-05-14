@@ -4,7 +4,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 plugins {
     kotlin("jvm") version "1.3.72"
     kotlin("plugin.spring") version "1.3.72"
-    id("org.springframework.boot") version "2.2.6.RELEASE"
+    id("org.springframework.boot") version "2.2.7.RELEASE"
     id("com.github.ben-manes.versions") version "0.28.0"
 }
 
@@ -18,10 +18,11 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
-    implementation("org.springframework.boot:spring-boot-starter-web:2.2.6.RELEASE")
-    implementation("org.springframework.boot:spring-boot-starter-actuator:2.2.6.RELEASE")
+    val springBootVersion = "2.2.7.RELEASE"
+    implementation("org.springframework.boot:spring-boot-starter-web:$springBootVersion")
+    implementation("org.springframework.boot:spring-boot-starter-actuator:$springBootVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.0")
-    implementation("org.springframework.boot:spring-boot-starter-webflux:2.2.6.RELEASE")
+    implementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
 
     // swagger
     val springdocVersion = "1.3.9"
@@ -29,19 +30,20 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-kotlin:$springdocVersion")
 
     // spring data
-    implementation("org.springframework.data:spring-data-commons:2.2.7.RELEASE")
+    implementation("org.springframework.data:spring-data-commons:2.3.0.RELEASE")
     implementation("io.github.boostchicken:spring-data-dynamodb:5.2.3")
 
     // dynamodb
-    implementation(platform("com.amazonaws:aws-java-sdk-bom:1.11.776"))
-    implementation("com.amazonaws:aws-java-sdk-dynamodb:1.11.776")
+    val awsSdkVersion = "1.11.782"
+    implementation(platform("com.amazonaws:aws-java-sdk-bom:$awsSdkVersion"))
+    implementation("com.amazonaws:aws-java-sdk-dynamodb:$awsSdkVersion")
 
     // testing
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.2")
     testImplementation("com.ninja-squad:springmockk:2.0.1")
-    testImplementation("org.assertj:assertj-core:3.16.0")
-    testImplementation("org.springframework.boot:spring-boot-starter-test:2.2.6.RELEASE") {
+    testImplementation("org.assertj:assertj-core:3.16.1")
+    testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
         exclude(group = "com.vaadin.external.google", module = "android-json")
         exclude(module = "junit")
