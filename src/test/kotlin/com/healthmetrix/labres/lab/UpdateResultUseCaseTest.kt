@@ -35,7 +35,7 @@ class UpdateResultUseCaseTest {
     private val updated = orderInfo.copy(status = Status.POSITIVE, labId = labId)
 
     @Test
-    fun `returns updated orderInfromation if successfully updated`() {
+    fun `returns updated orderInformation if successfully updated`() {
         every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
         every { orderInformationRepository.save(any()) } returns updated
         every { notifier(any(), any()) } returns true

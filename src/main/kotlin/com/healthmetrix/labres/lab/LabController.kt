@@ -65,9 +65,9 @@ class LabController(
             ),
             ApiResponse(
                 responseCode = "400",
-                description = "No order for order number (and issuer if provided) found",
+                description = "Order number is invalid and could not be parsed",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNotFound::class, hidden = true))
+                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNumberInvalid::class, hidden = false))
                 ]
             ),
             ApiResponse(
@@ -118,9 +118,9 @@ class LabController(
             ),
             ApiResponse(
                 responseCode = "400",
-                description = "No order for order number (and issuer if provided) found",
+                description = "Order number is invalid and could not be parsed",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNotFound::class, hidden = true))
+                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNumberInvalid::class, hidden = false))
                 ]
             ),
             ApiResponse(
@@ -147,22 +147,22 @@ class LabController(
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @Operation(
-        summary = "Upload lab result via JSON"
+        summary = "Upload multiple lab results at once via JSON"
     )
     @ApiResponses(
         value = [
             ApiResponse(
                 responseCode = "200",
-                description = "Results uploaded successfully",
+                description = "Number of processed results that all have been successfully updated",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.Success::class, hidden = true))
+                    Content(schema = Schema(implementation = BulkUpdateStatusResponse.Success::class))
                 ]
             ),
             ApiResponse(
-                responseCode = "404",
-                description = "No order for order number (and issuer if provided) found",
+                responseCode = "400",
+                description = "Error messages per result that couldn't be successfully updated.",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNotFound::class, hidden = true))
+                    Content(schema = Schema(implementation = BulkUpdateStatusResponse.PartialBadRequest::class))
                 ]
             )
         ]
@@ -173,27 +173,30 @@ class LabController(
         @RequestParam(required = false)
         issuerId: String?,
         @RequestBody
-        results: List<JsonResult>
+        request: BulkUpdateStatusRequest
     ): ResponseEntity<BulkUpdateStatusResponse> {
         // TODO: test issuer to be whitelisted for basic auth user
         val labId = extractLabIdFrom(labIdHeader) ?: return BulkUpdateStatusResponse.Unauthorized.asEntity()
 
         val errors = mutableListOf<BulkUploadError>()
 
-        results.forEach { result ->
-            try {
-                val labResult = parseJsonResult(result, labId, issuerId)
-                updateResultUseCase(labResult)
-                    ?: errors.add(BulkUploadError("Order for orderNumber ${result.orderNumber} not found"))
+        request.results.forEach { result ->
+            val labResult = try {
+                parseJsonResult(result, labId, issuerId)
             } catch (ex: IllegalArgumentException) {
                 errors.add(BulkUploadError(ex.message ?: "Failed to parse orderNumber"))
+                null
             }
+
+            if (labResult != null)
+                updateResultUseCase(labResult)
+                    ?: errors.add(BulkUploadError("Order for orderNumber ${result.orderNumber} not found"))
         }
 
         val response = if (errors.any())
             BulkUpdateStatusResponse.PartialBadRequest(errors)
         else
-            BulkUpdateStatusResponse.Success(results.size)
+            BulkUpdateStatusResponse.Success(request.results.size)
 
         return response.asEntity()
     }
@@ -234,7 +237,7 @@ class LabController(
     fun obxResult(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
         labIdHeader: String,
-        @RequestParam(name = "issuer", required = false)
+        @RequestParam(required = false)
         issuerId: String?,
         @RequestBody
         @Schema(
@@ -348,6 +351,8 @@ data class JsonResult(
 )
 
 private const val WWW_AUTHENTICATE_VALUE = "Basic realm=\"labres:labresults:write\""
+
+data class BulkUpdateStatusRequest(val results: List<JsonResult>)
 
 sealed class UpdateStatusResponse(
     httpStatus: HttpStatus,
