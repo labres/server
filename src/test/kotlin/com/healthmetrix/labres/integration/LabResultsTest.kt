@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.healthmetrix.labres.LabResApplication
 import com.healthmetrix.labres.encodeBase64
+import com.healthmetrix.labres.lab.BulkUpdateStatusRequest
 import com.healthmetrix.labres.lab.JsonResult
 import com.healthmetrix.labres.lab.Result
 import com.healthmetrix.labres.order.ExternalOrderNumberController.IssueExternalOrderNumberResponse
@@ -152,12 +153,14 @@ class LabResultsTest {
                 contentType = MediaType.APPLICATION_JSON
                 headers { setBasicAuth(labIdHeader) }
                 content = objectMapper.writeValueAsBytes(
-                    responses.map { res ->
-                        JsonResult(
-                            orderNumber = res.orderNumber,
-                            result = Result.POSITIVE
-                        )
-                    }
+                    BulkUpdateStatusRequest(
+                        responses.map { res ->
+                            JsonResult(
+                                orderNumber = res.orderNumber,
+                                result = Result.POSITIVE
+                            )
+                        }
+                    )
                 )
             }.andExpect {
                 jsonPath("$.processedRows", Is.`is`(3))
@@ -304,12 +307,14 @@ class LabResultsTest {
                 headers { setBasicAuth(labIdHeader) }
                 param("issuerId", issuerId)
                 content = objectMapper.writeValueAsBytes(
-                    responses.map { res ->
-                        JsonResult(
-                            orderNumber = res.orderNumber,
-                            result = Result.POSITIVE
-                        )
-                    }
+                    BulkUpdateStatusRequest(
+                        responses.map { res ->
+                            JsonResult(
+                                orderNumber = res.orderNumber,
+                                result = Result.POSITIVE
+                            )
+                        }
+                    )
                 )
             }.andExpect {
                 jsonPath("$.processedRows", Is.`is`(3))

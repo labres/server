@@ -16,31 +16,34 @@ sealed class OrderNumber {
     class External private constructor(override val number: String) : OrderNumber() {
         override val issuerId = EON_ISSUER_ID
 
+        override fun toString(): String {
+            return "External(number='$number', issuerId='$issuerId')"
+        }
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
 
             other as External
 
-            if (number != other.number) return false
+            if (number != other.number || issuerId != other.issuerId)
+                return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            return number.hashCode()
-        }
-
-        override fun toString(): String {
-            return "External(number='$number')"
+            var result = number.hashCode()
+            result = 31 * result + issuerId.hashCode()
+            return result
         }
 
         companion object {
             fun from(number: String): External = if (number.matches(Regex(EON_PATTERN)))
                 External(number)
             else throw IllegalArgumentException("OrderNumber $number does not match $EON_PATTERN").also {
-                    logger.info(it.message)
-                }
+                logger.info(it.message)
+            }
 
             fun random(): External = (0 until EON_LENGTH).map {
                 EON_ALPHABET.random()

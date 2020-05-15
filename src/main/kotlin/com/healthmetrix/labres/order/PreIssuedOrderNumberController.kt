@@ -38,9 +38,9 @@ import org.springframework.web.bind.annotation.RestController
 @SecurityRequirement(name = "OrdersApiToken")
 @Tag(name = PRE_ISSUED_ORDER_NUMBER_API_TAG)
 class PreIssuedOrderNumberController(
-    private val registerOrder: RegisterOrderUseCase,
-    private val updateOrder: UpdateOrderUseCase,
-    private val queryStatus: QueryStatusUseCase
+    private val registerOrderUseCase: RegisterOrderUseCase,
+    private val updateOrderUseCase: UpdateOrderUseCase,
+    private val queryStatusUseCase: QueryStatusUseCase
 ) {
     @PostMapping(
         path = ["/v1/issuers/{issuerId}/orders"],
@@ -71,7 +71,7 @@ class PreIssuedOrderNumberController(
     )
     fun registerOrder(
         @Parameter(
-            description = "Identifier for the issuer given out the order number. Has to be whitelisted for a JWT issuer.",
+            description = "Identifier for the issuer giving out the order number. Has to be whitelisted for a JWT issuer.",
             required = true,
             schema = Schema(
                 type = "string",
@@ -80,11 +80,15 @@ class PreIssuedOrderNumberController(
         )
         @PathVariable issuerId: String,
         @RequestBody requestBody: RegisterOrderRequestBody
-    ): ResponseEntity<RegisterOrderResponse> = registerOrder(
-        orderNumber = OrderNumber.from(issuerId, requestBody.orderNumber),
-        testSiteId = requestBody.testSiteId,
-        notificationUrl = requestBody.notificationUrl
-    ).let { RegisterOrderResponse.Created(it.first, it.second.number) }.asEntity()
+    ): ResponseEntity<RegisterOrderResponse> {
+        val (orderId, orderNumber) = registerOrderUseCase(
+            orderNumber = OrderNumber.from(issuerId, requestBody.orderNumber),
+            testSiteId = requestBody.testSiteId,
+            notificationUrl = requestBody.notificationUrl
+        )
+
+        return RegisterOrderResponse.Created(orderId, orderNumber.number).asEntity()
+    }
 
     @GetMapping(path = ["/v1/issuers/{issuerId}/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
@@ -125,7 +129,7 @@ class PreIssuedOrderNumberController(
     )
     fun getOrderNumber(
         @Parameter(
-            description = "Identifier for the issuer given out the order number. Has to be whitelisted for a JWT issuer.",
+            description = "Identifier for the issuer giving out the order number. Has to be whitelisted for a JWT issuer.",
             required = true,
             schema = Schema(
                 type = "string",
@@ -140,7 +144,7 @@ class PreIssuedOrderNumberController(
         )
         @PathVariable orderId: String
     ): ResponseEntity<StatusResponse> {
-        val orderId = try {
+        val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
@@ -148,7 +152,7 @@ class PreIssuedOrderNumberController(
             return StatusResponse.BadRequest(message).asEntity()
         }
 
-        return (queryStatus(orderId, issuerId)
+        return (queryStatusUseCase(id, issuerId)
             ?.let(StatusResponse::Found)
             ?: StatusResponse.NotFound)
             .asEntity()
@@ -221,7 +225,7 @@ class PreIssuedOrderNumberController(
             return UpdateOrderResponse.BadRequest(message).asEntity()
         }
 
-        return when (updateOrder(orderId, issuerId, updateOrderRequestBody.notificationUrl)) {
+        return when (updateOrderUseCase(orderId, issuerId, updateOrderRequestBody.notificationUrl)) {
             UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
             UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
         }.asEntity()
@@ -230,19 +234,20 @@ class PreIssuedOrderNumberController(
     data class RegisterOrderRequestBody(
         @Schema(
             type = "string",
-            description = "Optional identifier to specify the test site a test was being used at",
+            description = "Order number that has been issued by an issuer to identify a laboratory order. Must be unique for the given issuer id.",
             required = true
         )
         val orderNumber: String,
         @Schema(
             type = "string",
-            description = "Order number that has been issued by an issuer to identify a laboratory order. Must be unique for the given issuer id.",
+            description = "Optional identifier to specify the test site a test was being conducted at",
             required = false
         )
         val testSiteId: String?,
         @Schema(
             type = "string",
             description = "Notification URL sent from the client that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
+            example = "https://client.labres.de/notification",
             required = false
         )
         val notificationUrl: String?

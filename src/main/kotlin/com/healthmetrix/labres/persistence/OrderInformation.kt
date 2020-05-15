@@ -109,7 +109,7 @@ data class RawOrderInformation(
         }
 
         if (issuedAt == null) {
-            logger.warn("Unable to cook $id: Attribute createdAt must not be null")
+            logger.warn("Unable to cook $id: Attribute issuedAt must not be null")
             return null
         }
 

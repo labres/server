@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 const val EXTERNAL_ORDER_NUMBER_API_TAG = "External Order Number API"
-const val PRE_ISSUED_ORDER_NUMBER_API_TAG = "Laboratory Issued Order Number API"
+const val PRE_ISSUED_ORDER_NUMBER_API_TAG = "Preissued Order Number API"
 const val LABORATORY_API_TAG = "Laboratory API"
 
 @Configuration
@@ -28,6 +28,7 @@ class SwaggerConfig(
             .info(documentationInfo.toApiInfo())
             .addTagsItem(labApiTag)
             .addTagsItem(externalOrderNumberApiTag)
+            .addTagsItem(preissuedOrderNumberApiTag)
             .servers(documentationInfo.toServers())
             .components(
                 Components()
@@ -39,6 +40,9 @@ class SwaggerConfig(
     private val externalOrderNumberApiTag = Tag()
         .name(EXTERNAL_ORDER_NUMBER_API_TAG)
         .description("Endpoints to support External Order Numbers (EONs)")
+    private val preissuedOrderNumberApiTag = Tag()
+        .name(PRE_ISSUED_ORDER_NUMBER_API_TAG)
+        .description("Endpoints to support Preissued Order Numbers (PONs)")
     private val labApiTag = Tag()
         .name(LABORATORY_API_TAG)
         .description("Endpoints to be invoked by laboratories to report results")
