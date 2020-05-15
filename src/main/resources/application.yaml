@@ -16,9 +16,6 @@ documentation-info:
     - url: http://localhost:8080
       description: local dev environment for LabRes
       version: v1
-    - url: https://api.labres.de
-      description: production environment for LabRes
-      version: v1
   contact:
     name: Healthmetrix GmbH
     url: https://www.labres.de

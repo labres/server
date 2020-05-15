@@ -264,14 +264,16 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    listOf(
-                        mapOf(
-                            "orderNumber" to orderNumber,
-                            "result" to Status.NEGATIVE
-                        ),
-                        mapOf(
-                            "orderNumber" to anotherOrderNumber,
-                            "result" to Status.NEGATIVE
+                    BulkUpdateStatusRequest(
+                        listOf(
+                            JsonResult(
+                                orderNumber = orderNumber,
+                                result = Result.NEGATIVE
+                            ),
+                            JsonResult(
+                                orderNumber = anotherOrderNumber,
+                                result = Result.NEGATIVE
+                            )
                         )
                     )
                 )
@@ -288,14 +290,16 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    listOf(
-                        mapOf(
-                            "orderNumber" to orderNumber,
-                            "result" to Status.NEGATIVE
-                        ),
-                        mapOf(
-                            "orderNumber" to "9876543210",
-                            "result" to Status.NEGATIVE
+                    BulkUpdateStatusRequest(
+                        listOf(
+                            JsonResult(
+                                orderNumber = orderNumber,
+                                result = Result.NEGATIVE
+                            ),
+                            JsonResult(
+                                orderNumber = "9876543210",
+                                result = Result.NEGATIVE
+                            )
                         )
                     )
                 )
@@ -313,22 +317,24 @@ class LabControllerTest {
                 contentType = MediaType.APPLICATION_JSON
                 param("issuerId", "leKevin")
                 content = objectMapper.writeValueAsString(
-                    listOf(
-                        mapOf(
-                            "orderNumber" to orderNumber,
-                            "result" to Status.NEGATIVE
-                        ),
-                        mapOf(
-                            "orderNumber" to orderNumber + "1",
-                            "result" to Status.NEGATIVE
-                        ),
-                        mapOf(
-                            "orderNumber" to orderNumber + "2",
-                            "result" to Status.POSITIVE
-                        ),
-                        mapOf(
-                            "orderNumber" to orderNumber + "3",
-                            "result" to Status.POSITIVE
+                    BulkUpdateStatusRequest(
+                        listOf(
+                            JsonResult(
+                                orderNumber = orderNumber,
+                                result = Result.NEGATIVE
+                            ),
+                            JsonResult(
+                                orderNumber = orderNumber + "1",
+                                result = Result.NEGATIVE
+                            ),
+                            JsonResult(
+                                orderNumber = orderNumber + "2",
+                                result = Result.POSITIVE
+                            ),
+                            JsonResult(
+                                orderNumber = orderNumber + "3",
+                                result = Result.POSITIVE
+                            )
                         )
                     )
                 )
@@ -347,22 +353,24 @@ class LabControllerTest {
                 contentType = MediaType.APPLICATION_JSON
                 param("issuerId", "leKevin")
                 content = objectMapper.writeValueAsString(
-                    listOf(
-                        mapOf(
-                            "orderNumber" to orderNumber,
-                            "result" to Status.NEGATIVE
-                        ),
-                        mapOf(
-                            "orderNumber" to orderNumber + "1",
-                            "result" to Status.NEGATIVE
-                        ),
-                        mapOf(
-                            "orderNumber" to orderNumber + "2",
-                            "result" to Status.POSITIVE
-                        ),
-                        mapOf(
-                            "orderNumber" to orderNumber + "3",
-                            "result" to Status.POSITIVE
+                    BulkUpdateStatusRequest(
+                        listOf(
+                            JsonResult(
+                                orderNumber = orderNumber,
+                                result = Result.NEGATIVE
+                            ),
+                            JsonResult(
+                                orderNumber = orderNumber + "1",
+                                result = Result.NEGATIVE
+                            ),
+                            JsonResult(
+                                orderNumber = orderNumber + "2",
+                                result = Result.POSITIVE
+                            ),
+                            JsonResult(
+                                orderNumber = orderNumber + "3",
+                                result = Result.POSITIVE
+                            )
                         )
                     )
                 )
@@ -377,10 +385,12 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, "wrong")
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    listOf(
-                        mapOf(
-                            "orderNumber" to "invalid",
-                            "result" to Status.NEGATIVE
+                    BulkUpdateStatusRequest(
+                        listOf(
+                            JsonResult(
+                                orderNumber = "invalid",
+                                result = Result.NEGATIVE
+                            )
                         )
                     )
                 )
@@ -395,10 +405,12 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    listOf(
-                        mapOf(
-                            "orderNumber" to "invalid",
-                            "result" to Status.NEGATIVE
+                    BulkUpdateStatusRequest(
+                        listOf(
+                            JsonResult(
+                                orderNumber = "invalid",
+                                result = Result.NEGATIVE
+                            )
                         )
                     )
                 )
@@ -413,14 +425,16 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    listOf(
-                        mapOf(
-                            "orderNumber" to "invalid",
-                            "result" to Status.NEGATIVE
-                        ),
-                        mapOf(
-                            "orderNumber" to orderNumber,
-                            "result" to Status.NEGATIVE
+                    BulkUpdateStatusRequest(
+                        listOf(
+                            JsonResult(
+                                orderNumber = "invalid",
+                                result = Result.NEGATIVE
+                            ),
+                            JsonResult(
+                                orderNumber = orderNumber,
+                                result = Result.NEGATIVE
+                            )
                         )
                     )
                 )
@@ -435,10 +449,12 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    listOf(
-                        mapOf(
-                            "orderNumber" to orderNumber,
-                            "result" to Status.NEGATIVE
+                    BulkUpdateStatusRequest(
+                        listOf(
+                            JsonResult(
+                                orderNumber = orderNumber,
+                                result = Result.NEGATIVE
+                            )
                         )
                     )
                 )
@@ -453,14 +469,16 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    listOf(
-                        mapOf(
-                            "orderNumber" to orderNumber,
-                            "result" to Status.NEGATIVE
-                        ),
-                        mapOf(
-                            "orderNumber" to "9876543210",
-                            "result" to Status.NEGATIVE
+                    BulkUpdateStatusRequest(
+                        listOf(
+                            JsonResult(
+                                orderNumber = orderNumber,
+                                result = Result.NEGATIVE
+                            ),
+                            JsonResult(
+                                orderNumber = "9876543210",
+                                result = Result.NEGATIVE
+                            )
                         )
                     )
                 )
