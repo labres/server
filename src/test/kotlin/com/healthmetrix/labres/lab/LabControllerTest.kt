@@ -41,6 +41,9 @@ class LabControllerTest {
     private lateinit var updateResultUseCase: UpdateResultUseCase
 
     @MockkBean
+    private lateinit var bulkUpdateResultsUseCase: BulkUpdateResultsUseCase
+
+    @MockkBean
     private lateinit var extractObxResultUseCase: ExtractObxResultUseCase
 
     @MockkBean
@@ -256,7 +259,7 @@ class LabControllerTest {
 
         @Test
         fun `bulk uploading status of a list of externally issued orders returns status 200`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
+            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf()
 
             val anotherOrderNumber = "9876543210"
 
@@ -284,7 +287,7 @@ class LabControllerTest {
 
         @Test
         fun `bulk uploading status of a list of externally issued orders returns the number of processed rows`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
+            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf()
 
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
@@ -310,7 +313,7 @@ class LabControllerTest {
 
         @Test
         fun `bulk uploading status of a list of pre issued orders returns the number of processed rows`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
+            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf()
 
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
@@ -344,9 +347,9 @@ class LabControllerTest {
         }
 
         @Test
-        fun `bulk uploading status of a list of pre issued orders calls updateStatusUseCase 4 times`() {
-            clearMocks(updateResultUseCase)
-            every { updateResultUseCase(any(), any()) } returns mockk()
+        fun `bulk uploading status of a list of pre issued orders calls bulkUpdateResultsUseCase`() {
+            clearMocks(bulkUpdateResultsUseCase)
+            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf()
 
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
@@ -376,7 +379,7 @@ class LabControllerTest {
                 )
             }
 
-            verify(exactly = 4) { updateResultUseCase(any(), any()) }
+            verify(exactly = 1) { bulkUpdateResultsUseCase(any(), any(), any()) }
         }
 
         @Test
@@ -399,7 +402,7 @@ class LabControllerTest {
 
         @Test
         fun `bulk uploading status of a list of pre issued orders returns status 400 for an invalid order number`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
+            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf(BulkUploadError(message = "something broke"))
 
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
@@ -419,7 +422,7 @@ class LabControllerTest {
 
         @Test
         fun `bulk uploading status of a list of externally issued orders returns an error for an invalid order number`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
+            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf(BulkUploadError(message = "something broke"))
 
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
@@ -442,28 +445,11 @@ class LabControllerTest {
         }
 
         @Test
-        fun `bulk uploading status of a list of pre issued orders returns status 400 for orders not being found`() {
-            every { updateResultUseCase(any(), any()) } returns null
-
-            mockMvc.put("/v1/results/bulk") {
-                header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(
-                    BulkUpdateStatusRequest(
-                        listOf(
-                            JsonResult(
-                                orderNumber = orderNumber,
-                                result = Result.NEGATIVE
-                            )
-                        )
-                    )
-                )
-            }.andExpect { status { isBadRequest } }
-        }
-
-        @Test
-        fun `bulk uploading status of a list of orders returns errors for orders not being found`() {
-            every { updateResultUseCase(any(), any()) } returns null
+        fun `bulk uploading status of a list of orders returns multiple errors`() {
+            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf(
+                BulkUploadError(message = "something broke"),
+                BulkUploadError(message = "another thing broke")
+            )
 
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
