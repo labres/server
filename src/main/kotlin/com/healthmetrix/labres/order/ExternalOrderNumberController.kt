@@ -71,8 +71,10 @@ class ExternalOrderNumberController(
         @RequestBody(required = false)
         requestBody: IssueExternalOrderNumberRequestBody?
     ): ResponseEntity<IssueExternalOrderNumberResponse> {
-        val (id, orderNumber) = issueExternalOrderNumber(requestBody?.notificationUrl)
-        return IssueExternalOrderNumberResponse.Created(id, orderNumber.number).asEntity()
+        val order = issueExternalOrderNumber(requestBody?.notificationUrl)
+            ?: return IssueExternalOrderNumberResponse.Conflict.asEntity()
+
+        return IssueExternalOrderNumberResponse.Created(order.id, order.orderNumber.number).asEntity()
     }
 
     @GetMapping(path = ["/v1/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -233,6 +235,8 @@ class ExternalOrderNumberController(
             )
             val orderNumber: String
         ) : IssueExternalOrderNumberResponse(HttpStatus.CREATED)
+
+        object Conflict : IssueExternalOrderNumberResponse(HttpStatus.CONFLICT, false)
     }
 
     data class UpdateOrderRequestBody(
