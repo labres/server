@@ -36,7 +36,7 @@ dependencies {
     implementation("io.github.boostchicken:spring-data-dynamodb:5.2.3")
 
     // dynamodb
-    val awsSdkVersion = "1.11.782"
+    val awsSdkVersion = "1.11.784"
     implementation(platform("com.amazonaws:aws-java-sdk-bom:$awsSdkVersion"))
     implementation("com.amazonaws:aws-java-sdk-dynamodb:$awsSdkVersion")
 
