@@ -39,6 +39,7 @@ labres:
 spring:
   profiles: dev
   # TODO: find out why notify doesn't work
+  profiles.include: dynamo, notify, secrets
 
 dynamo.local-endpoint:
 
