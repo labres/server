@@ -43,7 +43,8 @@ const val LAB_API_BASE = "/v1/results"
 class LabController(
     private val extractObxResultUseCase: ExtractObxResultUseCase,
     private val extractLdtResultUseCase: ExtractLdtResultUseCase,
-    private val updateResultUseCase: UpdateResultUseCase
+    private val updateResultUseCase: UpdateResultUseCase,
+    private val bulkUpdateResultsUseCase: BulkUpdateResultsUseCase
 ) {
 
     @PutMapping(
@@ -67,7 +68,12 @@ class LabController(
                 responseCode = "400",
                 description = "Order number is invalid and could not be parsed",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNumberInvalid::class, hidden = false))
+                    Content(
+                        schema = Schema(
+                            implementation = UpdateStatusResponse.OrderNumberInvalid::class,
+                            hidden = false
+                        )
+                    )
                 ]
             ),
             ApiResponse(
@@ -90,11 +96,18 @@ class LabController(
         // TODO: test issuer to be whitelisted for basic auth user
         val labId = extractLabIdFrom(labIdHeader) ?: return UpdateStatusResponse.Unauthorized.asEntity()
 
-        val labResult = try {
-            parseJsonResult(result, labId, issuerId)
+        val orderNumber = try {
+            OrderNumber.from(issuerId, result.orderNumber)
         } catch (ex: IllegalArgumentException) {
             return UpdateStatusResponse.OrderNumberInvalid(ex.message ?: "Failed to parse orderNumber").asEntity()
         }
+
+        val labResult = LabResult(
+            orderNumber = orderNumber,
+            labId = labId,
+            result = result.result,
+            testType = result.type
+        )
 
         return updateResultUseCase(labResult).asUpdateStatusResponseEntity()
     }
@@ -120,7 +133,12 @@ class LabController(
                 responseCode = "400",
                 description = "Order number is invalid and could not be parsed",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNumberInvalid::class, hidden = false))
+                    Content(
+                        schema = Schema(
+                            implementation = UpdateStatusResponse.OrderNumberInvalid::class,
+                            hidden = false
+                        )
+                    )
                 ]
             ),
             ApiResponse(
@@ -178,20 +196,7 @@ class LabController(
         // TODO: test issuer to be whitelisted for basic auth user
         val labId = extractLabIdFrom(labIdHeader) ?: return BulkUpdateStatusResponse.Unauthorized.asEntity()
 
-        val errors = mutableListOf<BulkUploadError>()
-
-        request.results.forEach { result ->
-            val labResult = try {
-                parseJsonResult(result, labId, issuerId)
-            } catch (ex: IllegalArgumentException) {
-                errors.add(BulkUploadError(ex.message ?: "Failed to parse orderNumber"))
-                null
-            }
-
-            if (labResult != null)
-                updateResultUseCase(labResult)
-                    ?: errors.add(BulkUploadError("Order for orderNumber ${result.orderNumber} not found"))
-        }
+        val errors = bulkUpdateResultsUseCase(request.results, labId, issuerId)
 
         val response = if (errors.any())
             BulkUpdateStatusResponse.PartialBadRequest(errors)
@@ -321,17 +326,6 @@ class LabController(
             return null
 
         return decoded.first()
-    }
-
-    private fun parseJsonResult(result: JsonResult, labId: String, issuerId: String?): LabResult {
-        val orderNumber = OrderNumber.from(issuerId, result.orderNumber)
-
-        return LabResult(
-            orderNumber = orderNumber,
-            labId = labId,
-            result = result.result,
-            testType = result.type
-        )
     }
 }
 

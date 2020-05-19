@@ -16,9 +16,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class UpdateResultUseCaseTest {
-    private val orderInformationRepository: OrderInformationRepository = mockk()
+    private val repository: OrderInformationRepository = mockk()
     private val notifier: NotifyOnStatusChangeUseCase = mockk()
-    private val underTest = UpdateResultUseCase(orderInformationRepository, notifier)
+    private val underTest = UpdateResultUseCase(repository, notifier)
     private val orderNumber = OrderNumber.External.from("1234567891")
     private val notificationUrl = "http://callMe.test"
     private val orderInfo = OrderInformation(
@@ -36,70 +36,70 @@ class UpdateResultUseCaseTest {
 
     @Test
     fun `returns updated orderInformation if successfully updated`() {
-        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
-        every { orderInformationRepository.save(any()) } returns updated
-        every { notifier(any(), any()) } returns true
+        every { repository.findByOrderNumber(any()) } returns orderInfo
+        every { repository.save(any()) } returns updated
+        every { notifier.invoke(any(), any()) } returns true
 
         assertThat(underTest(labResult)).isEqualTo(updated)
     }
 
     @Test
     fun `updates orderInformation with enteredLabAt set if status is IN_PROGRESS`() {
-        clearMocks(orderInformationRepository)
+        clearMocks(repository)
 
-        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
+        every { repository.findByOrderNumber(any()) } returns orderInfo
         val updated = updated.copy(status = Status.IN_PROGRESS, enteredLabAt = now)
-        every { orderInformationRepository.save(any()) } returns updated
-        every { notifier(any(), any()) } returns true
+        every { repository.save(any()) } returns updated
+        every { notifier.invoke(any(), any()) } returns true
 
         underTest(labResult.copy(result = Result.IN_PROGRESS), now = now)
 
-        verify(exactly = 1) { orderInformationRepository.save(updated) }
-    }
-
-    @Test
-    fun `updates orderInformation with reportedAt set if status is not IN_PROGRESS`() {
-        clearMocks(orderInformationRepository)
-
-        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
-        val updated = updated.copy(reportedAt = now, testType = testType)
-        every { orderInformationRepository.save(any()) } returns updated
-        every { notifier(any(), any()) } returns true
-
-        underTest(labResult.copy(testType = testType), now = now)
-
-        verify(exactly = 1) { orderInformationRepository.save(updated) }
+        verify(exactly = 1) { repository.save(updated) }
     }
 
     @Test
     fun `notifies on updated order`() {
         clearMocks(notifier)
 
-        every { orderInformationRepository.findByOrderNumber(any()) } returns orderInfo
-        every { orderInformationRepository.save(any()) } returns updated
-        every { notifier(any(), any()) } returns true
+        every { repository.findByOrderNumber(any()) } returns orderInfo
+        every { repository.save(any()) } returns updated
+        every { notifier.invoke(any(), any()) } returns true
 
         underTest(labResult, now = now)
 
-        verify(exactly = 1) { notifier.invoke(updated.id, notificationUrl) }
+        verify(exactly = 1) { notifier.invoke(orderInfo.id, notificationUrl) }
     }
 
     @Test
     fun `returns null if no orderNumber found`() {
-        every { orderInformationRepository.findByOrderNumber(any()) } returns null
+        every { repository.findByOrderNumber(any()) } returns null
         assertThat(underTest(labResult)).isNull()
     }
 
     @Test
     fun `doesn't update or notify if no orderNumber found`() {
-        clearMocks(orderInformationRepository)
-        every { orderInformationRepository.findByOrderNumber(any()) } returns null
+        clearMocks(repository)
+        every { repository.findByOrderNumber(any()) } returns null
 
         underTest(labResult)
 
         verify(exactly = 0) {
-            orderInformationRepository.save(any())
+            repository.save(any())
             notifier.invoke(any(), any())
         }
+    }
+
+    @Test
+    fun `updates orderInformation with reportedAt set if status is not IN_PROGRESS`() {
+        clearMocks(repository)
+
+        every { repository.findByOrderNumber(any()) } returns orderInfo
+        val updated = updated.copy(reportedAt = now, testType = testType)
+        every { repository.save(any()) } returns updated
+        every { notifier.invoke(any(), any()) } returns true
+
+        underTest(labResult.copy(testType = testType), now)
+
+        verify(exactly = 1) { repository.save(updated) }
     }
 }

@@ -39,13 +39,6 @@ labres:
 spring:
   profiles: dev
   # TODO: find out why notify doesn't work
-  profiles.include: dynamo, notify, secrets
-
-springdoc:
-  swagger-ui:
-    enabled: false
-  api-docs:
-    path: /docs
 
 dynamo.local-endpoint:
 

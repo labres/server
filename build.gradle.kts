@@ -4,7 +4,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 plugins {
     kotlin("jvm") version "1.3.72"
     kotlin("plugin.spring") version "1.3.72"
-    id("org.springframework.boot") version "2.2.7.RELEASE"
+    id("org.springframework.boot") version "2.3.0.RELEASE"
     id("com.github.ben-manes.versions") version "0.28.0"
 }
 
@@ -18,7 +18,9 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
-    val springBootVersion = "2.2.7.RELEASE"
+
+    // spring
+    val springBootVersion = "2.3.0.RELEASE"
     implementation("org.springframework.boot:spring-boot-starter-web:$springBootVersion")
     implementation("org.springframework.boot:spring-boot-starter-actuator:$springBootVersion")
     implementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
@@ -30,7 +32,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-kotlin:$springdocVersion")
 
     // spring data
-    implementation("org.springframework.data:spring-data-commons:2.3.0.RELEASE")
+    implementation("org.springframework.data:spring-data-commons:$springBootVersion")
     implementation("io.github.boostchicken:spring-data-dynamodb:5.2.3")
 
     // dynamodb
