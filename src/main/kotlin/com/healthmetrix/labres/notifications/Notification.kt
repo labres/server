@@ -11,14 +11,14 @@ sealed class Notification {
     companion object {
         fun from(notificationUrl: String) = when {
             notificationUrl.isHttp() -> HttpNotification(notificationUrl)
-            notificationUrl.isLabresFcmUrl() -> FcmNotification(notificationUrl.asFcmToken())
+            notificationUrl.isLabResFcmUrl() -> FcmNotification(notificationUrl.asFcmToken())
             else -> null
         }
 
         private fun String.isHttp() =
             this.startsWith(HTTP_SCHEME, true) || this.startsWith(HTTPS_SCHEME, true)
 
-        private fun String.isLabresFcmUrl() = this.startsWith(LAB_RES_FCM_SCHEME)
+        private fun String.isLabResFcmUrl() = this.startsWith(LAB_RES_FCM_SCHEME)
 
         private fun String.asFcmToken() = this.removePrefix(LAB_RES_FCM_SCHEME)
     }
