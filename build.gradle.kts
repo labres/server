@@ -18,11 +18,13 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
+
+    // spring
     val springBootVersion = "2.3.0.RELEASE"
     implementation("org.springframework.boot:spring-boot-starter-web:$springBootVersion")
     implementation("org.springframework.boot:spring-boot-starter-actuator:$springBootVersion")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.0")
     implementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.0")
 
     // swagger
     val springdocVersion = "1.3.9"
@@ -37,6 +39,12 @@ dependencies {
     val awsSdkVersion = "1.11.784"
     implementation(platform("com.amazonaws:aws-java-sdk-bom:$awsSdkVersion"))
     implementation("com.amazonaws:aws-java-sdk-dynamodb:$awsSdkVersion")
+
+    // aws secrets
+    implementation("com.amazonaws.secretsmanager:aws-secretsmanager-caching-java:1.0.1")
+
+    // google fcm
+    implementation("com.google.firebase:firebase-admin:6.13.0")
 
     // testing
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.2")

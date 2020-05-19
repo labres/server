@@ -68,7 +68,12 @@ class LabController(
                 responseCode = "400",
                 description = "Order number is invalid and could not be parsed",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNumberInvalid::class, hidden = false))
+                    Content(
+                        schema = Schema(
+                            implementation = UpdateStatusResponse.OrderNumberInvalid::class,
+                            hidden = false
+                        )
+                    )
                 ]
             ),
             ApiResponse(
@@ -128,7 +133,12 @@ class LabController(
                 responseCode = "400",
                 description = "Order number is invalid and could not be parsed",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNumberInvalid::class, hidden = false))
+                    Content(
+                        schema = Schema(
+                            implementation = UpdateStatusResponse.OrderNumberInvalid::class,
+                            hidden = false
+                        )
+                    )
                 ]
             ),
             ApiResponse(

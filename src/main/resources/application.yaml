@@ -1,3 +1,6 @@
+labres:
+  stage: local
+
 dynamo:
   table-name: order_information
   local-endpoint: http://localhost:8000
@@ -30,16 +33,12 @@ notification:
 cors-domains: "*"
 
 ---
+labres:
+  stage: dev
+
 spring:
   profiles: dev
   # TODO: find out why notify doesn't work
-  profiles.include: dynamo, notify
-
-springdoc:
-  swagger-ui:
-    enabled: false
-  api-docs:
-    path: /docs
 
 dynamo.local-endpoint:
 
