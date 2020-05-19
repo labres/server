@@ -81,13 +81,13 @@ class PreIssuedOrderNumberController(
         @PathVariable issuerId: String,
         @RequestBody requestBody: RegisterOrderRequestBody
     ): ResponseEntity<RegisterOrderResponse> {
-        val (orderId, orderNumber) = registerOrderUseCase(
+        val order = registerOrderUseCase(
             orderNumber = OrderNumber.from(issuerId, requestBody.orderNumber),
             testSiteId = requestBody.testSiteId,
             notificationUrl = requestBody.notificationUrl
-        )
+        ) ?: return RegisterOrderResponse.Conflict.asEntity()
 
-        return RegisterOrderResponse.Created(orderId, orderNumber.number).asEntity()
+        return RegisterOrderResponse.Created(order.id, order.orderNumber.number).asEntity()
     }
 
     @GetMapping(path = ["/v1/issuers/{issuerId}/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -217,7 +217,7 @@ class PreIssuedOrderNumberController(
         @RequestBody
         updateOrderRequestBody: ExternalOrderNumberController.UpdateOrderRequestBody
     ): ResponseEntity<UpdateOrderResponse> {
-        val orderId = try {
+        val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
@@ -225,7 +225,7 @@ class PreIssuedOrderNumberController(
             return UpdateOrderResponse.BadRequest(message).asEntity()
         }
 
-        return when (updateOrderUseCase(orderId, issuerId, updateOrderRequestBody.notificationUrl)) {
+        return when (updateOrderUseCase(id, issuerId, updateOrderRequestBody.notificationUrl)) {
             UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
             UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
         }.asEntity()

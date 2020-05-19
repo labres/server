@@ -1,8 +1,8 @@
 package com.healthmetrix.labres.order
 
 import com.healthmetrix.labres.logger
+import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
-import java.util.UUID
 import org.springframework.stereotype.Service
 
 @Service
@@ -10,7 +10,7 @@ class IssueExternalOrderNumberUseCase(
     private val repository: OrderInformationRepository,
     private val registerOrder: RegisterOrderUseCase
 ) {
-    operator fun invoke(notificationUrl: String?): Pair<UUID, OrderNumber> {
+    operator fun invoke(notificationUrl: String?): OrderInformation? {
         val eon = issueNewEon()
         return registerOrder(eon, testSiteId = null, notificationUrl = notificationUrl)
     }

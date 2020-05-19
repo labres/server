@@ -2,8 +2,11 @@ package com.healthmetrix.labres.order
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.healthmetrix.labres.LabResTestApplication
+import com.healthmetrix.labres.persistence.OrderInformation
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import java.time.Instant
+import java.util.Date
 import java.util.UUID
 import org.hamcrest.core.Is
 import org.junit.jupiter.api.Nested
@@ -45,12 +48,18 @@ class PreIssuedOrderNumberControllerTest {
     private val orderNumber = OrderNumber.from(issuerId, orderNumberString)
     private val testSiteId = "testSiteA"
     private val notificationUrl = "http://callme.test"
+    private val order = OrderInformation(
+        id = orderId,
+        orderNumber = orderNumber,
+        status = Status.IN_PROGRESS,
+        issuedAt = Date.from(Instant.now())
+    )
 
     @Nested
     inner class RegisterOrderEndpointTest {
         @Test
         fun `registering a preissued order number returns status 201`() {
-            every { registerOrder.invoke(any(), any(), any(), any()) } returns (orderId to orderNumber)
+            every { registerOrder.invoke(any(), any(), any(), any()) } returns order
 
             val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
                 orderNumber = orderNumberString,
@@ -68,7 +77,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number returns order number and id`() {
-            every { registerOrder.invoke(any(), any(), any(), any()) } returns (orderId to orderNumber)
+            every { registerOrder.invoke(any(), any(), any(), any()) } returns order
 
             val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
                 orderNumber = orderNumberString,
@@ -82,6 +91,24 @@ class PreIssuedOrderNumberControllerTest {
             }.andExpect {
                 jsonPath("$.orderNumber") { isString }
                 jsonPath("$.id") { isString }
+            }
+        }
+
+        @Test
+        fun `registering a preissued order number returns 409 if it has already been registered before`() {
+            every { registerOrder.invoke(any(), any(), any(), any()) } returns null
+
+            val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+                orderNumber = orderNumberString,
+                testSiteId = null,
+                notificationUrl = null
+            )
+
+            mockMvc.post("/v1/issuers/$issuerId/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
+            }.andExpect {
+                status { isConflict }
             }
         }
     }

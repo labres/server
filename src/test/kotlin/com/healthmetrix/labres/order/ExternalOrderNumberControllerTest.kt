@@ -2,8 +2,11 @@ package com.healthmetrix.labres.order
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.healthmetrix.labres.LabResTestApplication
+import com.healthmetrix.labres.persistence.OrderInformation
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import java.time.Instant
+import java.util.Date
 import java.util.UUID
 import org.hamcrest.core.Is
 import org.junit.jupiter.api.Nested
@@ -42,12 +45,18 @@ class ExternalOrderNumberControllerTest {
     private val orderId = UUID.randomUUID()
     private val orderNumberString = "1234567890"
     private val orderNumber = OrderNumber.External.from(orderNumberString)
+    private val order = OrderInformation(
+        id = orderId,
+        orderNumber = orderNumber,
+        status = Status.IN_PROGRESS,
+        issuedAt = Date.from(Instant.now())
+    )
 
     @Nested
     inner class CreateOrderEndpointTest {
         @Test
         fun `issuing an external order number returns status 201`() {
-            every { issueExternalOrderNumber.invoke(any()) } returns (orderId to orderNumber)
+            every { issueExternalOrderNumber.invoke(any()) } returns order
 
             mockMvc.post("/v1/orders") {
                 contentType = MediaType.APPLICATION_JSON
@@ -59,7 +68,7 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `issuing an external order number returns order number and id`() {
-            every { issueExternalOrderNumber.invoke(any()) } returns (orderId to orderNumber)
+            every { issueExternalOrderNumber.invoke(any()) } returns order
 
             mockMvc.post("/v1/orders") {
                 contentType = MediaType.APPLICATION_JSON

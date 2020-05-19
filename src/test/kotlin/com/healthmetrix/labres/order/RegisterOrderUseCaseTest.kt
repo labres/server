@@ -32,13 +32,19 @@ internal class RegisterOrderUseCaseTest {
     internal fun setUp() {
         clearMocks(repository)
         every { repository.save(any()) } answers { arg(0) }
+        every { repository.findByOrderNumber(any()) } returns null
     }
 
     @Test
-    fun `it should return orderId and orderNumber for eon`() {
-        val result = underTest.invoke(eon, null, null)
+    fun `it should return the registered order for an eon`() {
+        val result = underTest.invoke(eon, null, null, now)
 
-        assertThat(result).isEqualTo(orderId to eon)
+        assertThat(result).isEqualTo(OrderInformation(
+            id = orderId,
+            orderNumber = eon,
+            status = Status.IN_PROGRESS,
+            issuedAt = Date.from(now)
+        ))
     }
 
     @Test
@@ -54,6 +60,26 @@ internal class RegisterOrderUseCaseTest {
                 testSiteId = testSiteId,
                 issuedAt = Date.from(now)
             ))
+        }
+    }
+
+    @Test
+    fun `it should return null if order has already been registered`() {
+        every { repository.findByOrderNumber(any()) } returns mockk()
+
+        val res = underTest.invoke(preIssuedOrderNumber, testSiteId, notificationUrl, now)
+
+        assertThat(res).isNull()
+    }
+
+    @Test
+    fun `it should not save anything if order has already been registered`() {
+        every { repository.findByOrderNumber(any()) } returns mockk()
+
+        underTest.invoke(preIssuedOrderNumber, testSiteId, notificationUrl, now)
+
+        verify(exactly = 0) {
+            repository.save(any())
         }
     }
 }

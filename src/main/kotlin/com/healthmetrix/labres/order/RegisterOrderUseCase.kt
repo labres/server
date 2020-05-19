@@ -17,8 +17,11 @@ class RegisterOrderUseCase(
         testSiteId: String?,
         notificationUrl: String?,
         now: Instant = Instant.now()
-    ): Pair<UUID, OrderNumber> {
-        // TODO check for existing?
+    ): OrderInformation? {
+        val existing = repository.findByOrderNumber(orderNumber)
+
+        if (existing != null)
+            return null
 
         val orderInfo = OrderInformation(
             id = idGenerator(),
@@ -29,8 +32,6 @@ class RegisterOrderUseCase(
             testSiteId = testSiteId
         )
 
-        val saved = repository.save(orderInfo)
-
-        return saved.id to saved.orderNumber
+        return repository.save(orderInfo)
     }
 }
