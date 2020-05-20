@@ -3,12 +3,12 @@ package com.healthmetrix.labres.order
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.healthmetrix.labres.LabResTestApplication
 import com.healthmetrix.labres.persistence.OrderInformation
-import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
+import org.hamcrest.core.Is
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,31 +25,54 @@ import org.springframework.test.web.servlet.put
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @AutoConfigureMockMvc
-class OrderControllerTest {
+class ExternalOrderNumberControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
 
     @MockkBean
-    private lateinit var orderInformationRepository: OrderInformationRepository
+    private lateinit var issueExternalOrderNumber: IssueExternalOrderNumberUseCase
 
     @MockkBean
     private lateinit var updateOrderUseCase: UpdateOrderUseCase
 
+    @MockkBean
+    private lateinit var queryStatus: QueryStatusUseCase
+
     @Autowired
     private lateinit var objectMapper: ObjectMapper
+
+    private val orderId = UUID.randomUUID()
+    private val orderNumberString = "1234567890"
+    private val orderNumber = OrderNumber.External.from(orderNumberString)
+    private val order = OrderInformation(
+        id = orderId,
+        orderNumber = orderNumber,
+        status = Status.IN_PROGRESS,
+        issuedAt = Date.from(Instant.now())
+    )
 
     @Nested
     inner class CreateOrderEndpointTest {
         @Test
-        fun `asking for an order returns an order and 201`() {
-            every { orderInformationRepository.findByOrderNumber(any()) } returns null
-            every { orderInformationRepository.save(any()) } answers { this.value }
+        fun `issuing an external order number returns status 201`() {
+            every { issueExternalOrderNumber.invoke(any()) } returns order
+
+            mockMvc.post("/v1/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = "{\"notificationUrl\":\"http://test.test\"}"
+            }.andExpect {
+                status { isCreated }
+            }
+        }
+
+        @Test
+        fun `issuing an external order number returns order number and id`() {
+            every { issueExternalOrderNumber.invoke(any()) } returns order
 
             mockMvc.post("/v1/orders") {
                 contentType = MediaType.APPLICATION_JSON
             }.andExpect {
-                status { isCreated }
                 jsonPath("$.orderNumber") { isString }
                 jsonPath("$.id") { isString }
             }
@@ -58,27 +81,35 @@ class OrderControllerTest {
 
     @Nested
     inner class GetOrderNumberEndpointTest {
-        private val orderId = UUID.randomUUID()
-        private val orderNumber = "12345678"
 
         @Test
-        fun `asking for an order number returns status with 200`() {
-            every { orderInformationRepository.findById(any()) } returns OrderInformation(
-                id = UUID.randomUUID(),
-                number = OrderNumber.External(orderNumber),
-                status = Status.POSITIVE,
-                issuedAt = Date.from(Instant.now())
-            )
+        fun `querying the status of an order returns 200`() {
+            every { queryStatus.invoke(any(), any()) } returns Status.POSITIVE
 
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isOk }
-                jsonPath("$.status") { exists() }
+            }
+        }
+
+        @Test
+        fun `querying the status of an order returns status`() {
+            every { queryStatus.invoke(any(), any()) } returns Status.POSITIVE
+
+            mockMvc.get("/v1/orders/$orderId").andExpect {
+                jsonPath("$.status", Is.`is`(Status.POSITIVE.toString()))
+            }
+        }
+
+        @Test
+        fun `returns status 400 when orderId is not a valid UUID`() {
+            mockMvc.get("/v1/orders/lenotsoniceuuid").andExpect {
+                status { isBadRequest }
             }
         }
 
         @Test
         fun `returns status 404 when no order is found`() {
-            every { orderInformationRepository.findById(any()) } returns null
+            every { queryStatus.invoke(any(), any()) } returns null
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isNotFound }
             }
@@ -92,7 +123,7 @@ class OrderControllerTest {
 
         @Test
         fun `it updates an order with the notification url`() {
-            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.SUCCESS
+            every { updateOrderUseCase(any(), any(), any()) } returns UpdateOrderUseCase.Result.SUCCESS
 
             mockMvc.put("/v1/orders/$orderId") {
                 contentType = MediaType.APPLICATION_JSON
@@ -108,8 +139,8 @@ class OrderControllerTest {
 
         @Test
         fun `it returns 404 if order cant be found`() {
-            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.NOT_FOUND
-            mockMvc.put("/v1/orders/nonexistentOrder") {
+            every { updateOrderUseCase(any(), any(), any()) } returns UpdateOrderUseCase.Result.NOT_FOUND
+            mockMvc.put("/v1/orders/$orderId") {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
@@ -122,8 +153,7 @@ class OrderControllerTest {
         }
 
         @Test
-        fun `it returns 404 if invalid order id`() {
-            every { updateOrderUseCase(any(), any()) } returns UpdateOrderUseCase.Result.INVALID_ORDER_ID
+        fun `it returns 400 if the orderId is invalid`() {
             mockMvc.put("/v1/orders/nonexistentOrder") {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
@@ -132,7 +162,7 @@ class OrderControllerTest {
                     )
                 )
             }.andExpect {
-                status { isNotFound }
+                status { isBadRequest }
             }
         }
     }

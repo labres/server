@@ -4,7 +4,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 plugins {
     kotlin("jvm") version "1.3.72"
     kotlin("plugin.spring") version "1.3.72"
-    id("org.springframework.boot") version "2.2.6.RELEASE"
+    id("org.springframework.boot") version "2.3.0.RELEASE"
     id("com.github.ben-manes.versions") version "0.28.0"
 }
 
@@ -18,30 +18,40 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
-    implementation("org.springframework.boot:spring-boot-starter-web:2.2.6.RELEASE")
-    implementation("org.springframework.boot:spring-boot-starter-actuator:2.2.6.RELEASE")
+
+    // spring
+    val springBootVersion = "2.3.0.RELEASE"
+    implementation("org.springframework.boot:spring-boot-starter-web:$springBootVersion")
+    implementation("org.springframework.boot:spring-boot-starter-actuator:$springBootVersion")
+    implementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.0")
-    implementation("org.springframework.boot:spring-boot-starter-webflux:2.2.6.RELEASE")
 
     // swagger
-    val springdocVersion = "1.3.4"
+    val springdocVersion = "1.3.9"
     implementation("org.springdoc:springdoc-openapi-ui:$springdocVersion")
     implementation("org.springdoc:springdoc-openapi-kotlin:$springdocVersion")
 
     // spring data
-    implementation("org.springframework.data:spring-data-commons:2.2.6.RELEASE")
+    implementation("org.springframework.data:spring-data-commons:$springBootVersion")
     implementation("io.github.boostchicken:spring-data-dynamodb:5.2.3")
 
     // dynamodb
-    implementation(platform("com.amazonaws:aws-java-sdk-bom:1.11.770"))
-    implementation("com.amazonaws:aws-java-sdk-dynamodb:1.11.770")
+    val awsSdkVersion = "1.11.784"
+    implementation(platform("com.amazonaws:aws-java-sdk-bom:$awsSdkVersion"))
+    implementation("com.amazonaws:aws-java-sdk-dynamodb:$awsSdkVersion")
+
+    // aws secrets
+    implementation("com.amazonaws.secretsmanager:aws-secretsmanager-caching-java:1.0.1")
+
+    // google fcm
+    implementation("com.google.firebase:firebase-admin:6.13.0")
 
     // testing
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.2")
     testImplementation("com.ninja-squad:springmockk:2.0.1")
-    testImplementation("org.assertj:assertj-core:3.15.0")
-    testImplementation("org.springframework.boot:spring-boot-starter-test:2.2.6.RELEASE") {
+    testImplementation("org.assertj:assertj-core:3.16.1")
+    testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
         exclude(group = "com.vaadin.external.google", module = "android-json")
         exclude(module = "junit")

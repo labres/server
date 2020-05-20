@@ -1,26 +1,63 @@
 package com.healthmetrix.labres.order
 
-const val ALPHABET = "0123456789"
-const val LENGTH = 10
+import com.healthmetrix.labres.logger
+import java.lang.IllegalArgumentException
+
+const val EON_ALPHABET = "0123456789"
+const val EON_LENGTH = 10
+const val EON_PATTERN = "[$EON_ALPHABET]{$EON_LENGTH}"
+const val EON_ISSUER_ID = "labres"
 
 sealed class OrderNumber {
 
-    fun eon() = (this as External).number
+    abstract val number: String
+    abstract val issuerId: String
 
-    fun eonOrNull() = (this as? External)?.number
+    class External private constructor(override val number: String) : OrderNumber() {
+        override val issuerId = EON_ISSUER_ID
 
-    data class External(val number: String) : OrderNumber() {
+        override fun toString(): String {
+            return "External(number='$number', issuerId='$issuerId')"
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as External
+
+            if (number != other.number || issuerId != other.issuerId)
+                return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = number.hashCode()
+            result = 31 * result + issuerId.hashCode()
+            return result
+        }
+
         companion object {
-            fun random(): External = (0 until LENGTH).map {
-                ALPHABET.random()
-            }.joinToString("").let(::External)
-
-            fun from(s: String?) = s?.let { num ->
-                if (num.matches(Regex("[$ALPHABET]{$LENGTH}")))
-                    External(num)
-                else
-                    null
+            fun from(number: String): External = if (number.matches(Regex(EON_PATTERN)))
+                External(number)
+            else throw IllegalArgumentException("OrderNumber $number does not match $EON_PATTERN").also {
+                logger.info(it.message)
             }
+
+            fun random(): External = (0 until EON_LENGTH).map {
+                EON_ALPHABET.random()
+            }.joinToString("").let(::External)
+        }
+    }
+
+    data class PreIssued(override val issuerId: String, override val number: String) : OrderNumber()
+
+    companion object {
+        fun from(issuerId: String?, number: String) = when (issuerId) {
+            null -> External.from(number)
+            EON_ISSUER_ID -> External.from(number)
+            else -> PreIssued(issuerId, number)
         }
     }
 }

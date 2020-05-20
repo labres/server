@@ -3,7 +3,7 @@ package com.healthmetrix.labres.order
 import com.healthmetrix.labres.EXTERNAL_ORDER_NUMBER_API_TAG
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
-import com.healthmetrix.labres.persistence.OrderInformationRepository
+import com.healthmetrix.labres.logger
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
@@ -37,10 +37,10 @@ import org.springframework.web.bind.annotation.RestController
 )
 @SecurityRequirement(name = "OrdersApiToken")
 @Tag(name = EXTERNAL_ORDER_NUMBER_API_TAG)
-class OrderController(
-    private val createOrderUseCase: CreateOrderUseCase,
-    private val orderInformationRepository: OrderInformationRepository,
-    private val updateOrderUseCase: UpdateOrderUseCase
+class ExternalOrderNumberController(
+    private val issueExternalOrderNumber: IssueExternalOrderNumberUseCase,
+    private val updateOrderUseCase: UpdateOrderUseCase,
+    private val queryStatusUseCase: QueryStatusUseCase
 ) {
     @PostMapping(
         path = ["/v1/orders"],
@@ -48,7 +48,7 @@ class OrderController(
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     @Operation(
-        summary = "Issues a new globally unique External Order Number (EON). The number of issuing  EONs is limited to 3 per subject.",
+        summary = "Issues a new globally unique External Order Number (EON) and registers a lab order for it. The number of issuing EONs is limited to 3 per subject.",
         description = "Should only be invoked for verified users (logged into account or verified email address)"
     )
     @ApiResponses(
@@ -57,20 +57,24 @@ class OrderController(
                 responseCode = "201",
                 description = "External Order Number Created",
                 content = [
-                    Content(schema = Schema(type = "object", implementation = CreateOrderResponse.Created::class))
+                    Content(
+                        schema = Schema(
+                            type = "object",
+                            implementation = IssueExternalOrderNumberResponse.Created::class
+                        )
+                    )
                 ]
             )
         ]
     )
-    fun postOrderNumber(
-        @RequestBody(required = false) // TODO: springdoc-openapi does not correctly infer this. see https://github.com/springdoc/springdoc-openapi/issues/603
-        createOrderRequestBody: CreateOrderRequestBody?
-    ): ResponseEntity<CreateOrderResponse> {
-        val (id, orderNumber) = createOrderUseCase(createOrderRequestBody?.notificationUrl)
-        return CreateOrderResponse.Created(
-            id,
-            orderNumber.number
-        ).asEntity()
+    fun issueExternalOrderNumber(
+        @RequestBody(required = false)
+        requestBody: IssueExternalOrderNumberRequestBody?
+    ): ResponseEntity<IssueExternalOrderNumberResponse> {
+        val order = issueExternalOrderNumber(requestBody?.notificationUrl)
+            ?: return IssueExternalOrderNumberResponse.Conflict.asEntity()
+
+        return IssueExternalOrderNumberResponse.Created(order.id, order.orderNumber.number).asEntity()
     }
 
     @GetMapping(path = ["/v1/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -88,6 +92,16 @@ class OrderController(
                 ]
             ),
             ApiResponse(
+                responseCode = "400",
+                description = "Order id could not be parsed as valid UUID",
+                content = [Content(
+                    schema = Schema(
+                        type = "object",
+                        implementation = StatusResponse.BadRequest::class
+                    )
+                )]
+            ),
+            ApiResponse(
                 responseCode = "404",
                 description = "No order for the given id found",
                 content = [Content(
@@ -100,7 +114,7 @@ class OrderController(
             )
         ]
     )
-    fun getOrderNumber(
+    fun queryStatus(
         @Parameter(
             description = "UUID of an order that has been sent to a lab",
             required = true,
@@ -111,15 +125,15 @@ class OrderController(
         val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
-            null
+            val message = "Failed to parse orderId $orderId"
+            logger.info(message, ex)
+            return StatusResponse.BadRequest(message).asEntity()
         }
 
-        val orderInfo = id?.let(orderInformationRepository::findById)
-
-        return when (orderInfo) {
-            null -> StatusResponse.NotFound
-            else -> StatusResponse.Found(orderInfo.status)
-        }.asEntity()
+        return (queryStatusUseCase(id, null)
+            ?.let(StatusResponse::Found)
+            ?: StatusResponse.NotFound)
+            .asEntity()
     }
 
     @PutMapping(
@@ -147,6 +161,17 @@ class OrderController(
                 ]
             ),
             ApiResponse(
+                responseCode = "400",
+                description = "OrderId could not be parsed as a UUID",
+                content = [
+                    Content(
+                        schema = Schema(
+                            type = "object",
+                            implementation = UpdateOrderResponse.BadRequest::class
+                        )
+                    )]
+            ),
+            ApiResponse(
                 responseCode = "404",
                 description = "no order for the given id found",
                 content = [
@@ -170,49 +195,63 @@ class OrderController(
         orderId: String,
         @RequestBody
         updateOrderRequestBody: UpdateOrderRequestBody
-    ): ResponseEntity<UpdateOrderResponse> = when (updateOrderUseCase(orderId, updateOrderRequestBody.notificationUrl)) {
-        UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
-        UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
-        UpdateOrderUseCase.Result.INVALID_ORDER_ID -> UpdateOrderResponse.NotFound
-    }.asEntity()
-}
+    ): ResponseEntity<UpdateOrderResponse> {
+        val id = try {
+            UUID.fromString(orderId)
+        } catch (ex: IllegalArgumentException) {
+            val message = "Failed to parse orderId $orderId"
+            logger.info(message, ex)
+            return UpdateOrderResponse.BadRequest(message).asEntity()
+        }
 
-data class CreateOrderRequestBody(
-    @Schema(
-        type = "string",
-        description = "Notification URL sent from Data4Life that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
-        required = true
-    )
-    val notificationUrl: String
-)
+        return when (updateOrderUseCase(id, null, updateOrderRequestBody.notificationUrl)) {
+            UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
+            UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
+        }.asEntity()
+    }
 
-data class UpdateOrderRequestBody(
-    @Schema(
-        type = "string",
-        description = "Notification URL sent from Data4Life that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
-        required = true
-    )
-    val notificationUrl: String
-)
-
-sealed class UpdateOrderResponse(httpStatus: HttpStatus) : LabResApiResponse(httpStatus, false) {
-    object Updated : UpdateOrderResponse(HttpStatus.OK)
-    object NotFound : UpdateOrderResponse(HttpStatus.NOT_FOUND)
-}
-
-sealed class CreateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :
-    LabResApiResponse(httpStatus, hasBody) {
-
-    data class Created(
+    data class IssueExternalOrderNumberRequestBody(
         @Schema(
-            description = "A unique internal identifier for the order",
-            example = "65e524cb-7494-4073-ad16-495fed0d79e4"
+            type = "string",
+            description = "Notification URL sent from the client that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
+            example = "https://client.labres.de/notification",
+            required = true
         )
-        val id: UUID,
+        val notificationUrl: String
+    )
+
+    sealed class IssueExternalOrderNumberResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :
+        LabResApiResponse(httpStatus, hasBody) {
+
+        data class Created(
+            @Schema(
+                description = "A unique internal identifier for the order",
+                example = "65e524cb-7494-4073-ad16-495fed0d79e4"
+            )
+            val id: UUID,
+            @Schema(
+                description = "numeric 10-digit-long external order number",
+                example = "1234567890"
+            )
+            val orderNumber: String
+        ) : IssueExternalOrderNumberResponse(HttpStatus.CREATED)
+
+        object Conflict : IssueExternalOrderNumberResponse(HttpStatus.CONFLICT, false)
+    }
+
+    data class UpdateOrderRequestBody(
         @Schema(
-            description = "numeric 10-digit-long external order number",
-            example = "1234567890"
+            type = "string",
+            description = "Notification URL sent from the client that can be used later to notify them that lab results have been uploaded. Must be a valid, complete URL including protocol for an existing HTTPS endpoint supporting POST requests.",
+            required = true
         )
-        val orderNumber: String
-    ) : CreateOrderResponse(HttpStatus.CREATED)
+        val notificationUrl: String
+    )
+
+    sealed class UpdateOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = false) :
+        LabResApiResponse(httpStatus, hasBody) {
+        object Updated : UpdateOrderResponse(HttpStatus.OK)
+        object NotFound : UpdateOrderResponse(HttpStatus.NOT_FOUND)
+        data class BadRequest(val message: String) : UpdateOrderResponse(HttpStatus.BAD_REQUEST)
+    }
 }

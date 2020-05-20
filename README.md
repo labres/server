@@ -1,6 +1,6 @@
 # LabRes Server
 
-A little service to receive and store lab results.
+A service to connect users to their lab results, e.g. for COVID19 tests.
 
 ## How to run locally with dynamo
 
@@ -24,10 +24,14 @@ A little service to receive and store lab results.
 - `dynamo`: When enabled, uses Dynamo DB for storage instead
   of an in-memory HashMap
 
-- `notify`: When enabled, POSTs a JSON object to the given endpoint with
-  the external order number that was just updated
-  
-  Example payload: `{"externalOrderNumber":"1234567890"}`
+- `notify`: When enabled, sends out notifications to a target being set when registering the order on LabRes.
+The notification is depending on the type of target either an empty HTTP POST request to the registered URL or a Google FCM 
+notification to the registered token.
+
+- `secrets`: When enabled, tries to fetch secrets from the AWS secret manager instead of accessing static mock values.
+
+- `dev`: Sets sane defaults for a dev environment next to including the profiles `dynamo`, `notify` and `secrets`
+
   
 ## License
 
