@@ -60,7 +60,7 @@ class LabController(
     @PutMapping(
         path = [LAB_API_BASE],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE]
     )
     @Operation(
         summary = "Upload lab result. Supported formats: JSON, HL7 ORU"
@@ -126,7 +126,7 @@ class LabController(
     @PutMapping(
         path = ["$LAB_API_BASE/json"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE]
     )
     @Operation(
         summary = "Upload lab result via JSON"
@@ -174,7 +174,7 @@ class LabController(
     @PutMapping(
         path = ["$LAB_API_BASE/bulk"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE]
     )
     @Operation(
         summary = "Upload multiple lab results at once via JSON"
@@ -223,7 +223,7 @@ class LabController(
     @PutMapping(
         path = [LAB_API_BASE],
         consumes = [KEVB_CSV_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE]
     )
     @Operation(
         summary = "Upload lab result"
