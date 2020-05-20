@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Configuration
 const val EXTERNAL_ORDER_NUMBER_API_TAG = "External Order Number API"
 const val PRE_ISSUED_ORDER_NUMBER_API_TAG = "Preissued Order Number API"
 const val LABORATORY_API_TAG = "Laboratory API"
+const val LABORATORY_BULK_API_TAG = "Laboratory Bulk API"
 
 @Configuration
 class SwaggerConfig(
@@ -27,6 +28,7 @@ class SwaggerConfig(
         return OpenAPI()
             .info(documentationInfo.toApiInfo())
             .addTagsItem(labApiTag)
+            .addTagsItem(labBulkApiTag)
             .addTagsItem(externalOrderNumberApiTag)
             .addTagsItem(preissuedOrderNumberApiTag)
             .servers(documentationInfo.toServers())
@@ -46,6 +48,9 @@ class SwaggerConfig(
     private val labApiTag = Tag()
         .name(LABORATORY_API_TAG)
         .description("Endpoints to be invoked by laboratories to report results")
+    private val labBulkApiTag = Tag()
+        .name(LABORATORY_BULK_API_TAG)
+        .description("Endpoints to be invoked by laboratories to bulk report results")
     private val basicAuthSecurityScheme = SecurityScheme()
         .type(SecurityScheme.Type.HTTP)
         .scheme("basic")
