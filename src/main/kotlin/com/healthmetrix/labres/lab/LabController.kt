@@ -291,11 +291,7 @@ class LabController(
             orderNumber = orderNumber,
             labId = labId,
             result = result,
-            testType = try {
-                csvParts[2]
-            } catch (ex: IndexOutOfBoundsException) {
-                null
-            }
+            testType = csvParts.getOrNull(2)
         )
 
         return updateResultUseCase(labResult).asUpdateStatusResponseEntity()
