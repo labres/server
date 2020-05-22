@@ -43,12 +43,6 @@ class LabControllerTest {
     @MockkBean
     private lateinit var bulkUpdateResultsUseCase: BulkUpdateResultsUseCase
 
-    @MockkBean
-    private lateinit var extractObxResultUseCase: ExtractObxResultUseCase
-
-    @MockkBean
-    private lateinit var extractLdtResultUseCase: ExtractLdtResultUseCase
-
     private val labId = "test-lab"
     private val issuerId = "test-issuer"
     private val orderNumber = "0123456789"
@@ -473,49 +467,160 @@ class LabControllerTest {
     }
 
     @Nested
-    inner class OBX {
+    inner class KEVB_CSV {
+
+        private val kevbCsv = MediaType.valueOf(KEVB_CSV_VALUE)
 
         @Test
-        fun `uploading a pretend OBX message returns 200`() {
+        fun `uploading a valid kevb csv request body with an external order number returns 200`() {
             every { updateResultUseCase(any(), any()) } returns mockk()
-            every { extractObxResultUseCase(any(), any(), any()) } returns
-                LabResult(OrderNumber.External.random(), labIdHeader, Result.NEGATIVE, null)
 
-            mockMvc.put("/v1/results/obx") {
+            mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                contentType = MediaType.TEXT_PLAIN
-                content = "NEGATIVE"
+                contentType = kevbCsv
+                content = "$orderNumber,${Status.NEGATIVE}"
             }.andExpect {
                 status { isOk }
             }
         }
 
         @Test
-        fun `uploading an invalid OBX message returns 500`() {
-            every { extractObxResultUseCase(any(), any(), any()) } returns null
+        fun `uploading a valid kevb csv request body with an external order number calls the updateResultsUseCase`() {
+            every { updateResultUseCase(any(), any()) } returns mockk<OrderInformation>()
 
-            mockMvc.put("/v1/results/obx") {
+            mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                contentType = MediaType.TEXT_PLAIN
-                content = "NOT OBX"
+                contentType = kevbCsv
+                content = "$orderNumber,${Status.NEGATIVE}"
+            }
+
+            verify {
+                updateResultUseCase.invoke(
+                    labResult = match {
+                        it.labId == labId &&
+                            it.orderNumber == OrderNumber.External.from(orderNumber) &&
+                            it.result == Result.NEGATIVE
+                    },
+                    now = any()
+                )
+            }
+        }
+
+        @Test
+        fun `uploading a valid kevb csv request body with a preissued order number returns 200`() {
+            every { updateResultUseCase(any(), any()) } returns mockk()
+
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                param("issuerId", issuerId)
+                contentType = kevbCsv
+                content = "$orderNumber,${Status.NEGATIVE}"
+            }.andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `uploading a valid kevb csv request body with a preissued order number calls the updateResultsUseCase`() {
+            every { updateResultUseCase(any(), any()) } returns mockk<OrderInformation>()
+
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                param("issuerId", issuerId)
+                contentType = kevbCsv
+                content = "$orderNumber,${Status.NEGATIVE}"
+            }
+
+            verify {
+                updateResultUseCase.invoke(
+                    labResult = match {
+                        it.labId == labId &&
+                            it.orderNumber == OrderNumber.PreIssued(issuerId, orderNumber) &&
+                            it.result == Result.NEGATIVE
+                    },
+                    now = any()
+                )
+            }
+        }
+
+        @Test
+        fun `upload a document to an unknown order number returns 404`() {
+            every { updateResultUseCase(any(), any()) } returns null
+
+            mockMvc.put("/v1/results") {
+                contentType = kevbCsv
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                content = "$orderNumber,${Status.POSITIVE}"
+            }.andExpect {
+                status { isNotFound }
+            }
+        }
+
+        @Test
+        fun `upload a document to an invalid order number returns 400`() {
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = kevbCsv
+                content = "nonsense,${Status.POSITIVE}"
             }.andExpect {
                 status { isBadRequest }
             }
         }
-    }
 
-    @Nested
-    inner class LDT {
-        @Test
-        fun `uploading an invalid ldt document returns 500`() {
-            every { extractLdtResultUseCase(any(), any()) } returns null
-
-            mockMvc.put("/v1/results/ldt") {
-                header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                contentType = MediaType.TEXT_PLAIN
-                content = "NOT LDT"
+        @ParameterizedTest
+        @ValueSource(
+            strings = [
+                "Wrong dXNlcjpwYXNz",
+                "Basic wrong",
+                "Basic dXNlcjpwYXNz dXNlcjpwYXNz",
+                "Basic dXNlcjpwYXNzOndyb25n"
+            ]
+        )
+        fun `upload document with invalid auth header returns 401`(labHeaderValue: String) {
+            mockMvc.put("/v1/results") {
+                contentType = kevbCsv
+                header(HttpHeaders.AUTHORIZATION, labHeaderValue)
+                content = "$orderNumber,${Status.POSITIVE}"
             }.andExpect {
-                status { isBadRequest }
+                status { isUnauthorized }
+            }
+        }
+
+        @Test
+        fun `uploading a document with the optional test type returns 200`() {
+            every { updateResultUseCase(any(), any()) } returns mockk()
+
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = kevbCsv
+                content = "$orderNumber,${Status.NEGATIVE},94500-6"
+            }.andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `uploading a document with the optional test type calls the updateStateUseCase`() {
+            every { updateResultUseCase(any(), any()) } returns mockk()
+
+            val testType = "94500-6"
+
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = kevbCsv
+                content = "$orderNumber,${Status.NEGATIVE},$testType"
+            }
+
+            verify {
+                updateResultUseCase.invoke(
+                    labResult = match {
+                        it.labId == labId &&
+                            it.orderNumber == OrderNumber.External.from(orderNumber) &&
+                            it.result == Result.NEGATIVE &&
+                            it.testType == testType
+                    },
+                    now = any()
+                )
             }
         }
     }

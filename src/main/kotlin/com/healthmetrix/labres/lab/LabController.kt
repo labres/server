@@ -1,9 +1,12 @@
 package com.healthmetrix.labres.lab
 
+import com.healthmetrix.labres.GlobalErrorHandler
 import com.healthmetrix.labres.LABORATORY_API_TAG
+import com.healthmetrix.labres.LABORATORY_BULK_API_TAG
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.decodeBase64
+import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.persistence.OrderInformation
 import io.swagger.v3.oas.annotations.Operation
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 const val LAB_API_BASE = "/v1/results"
+const val KEVB_CSV_VALUE = "application/kevb+csv"
 
 @RestController
 @ApiResponses(
@@ -35,14 +39,20 @@ const val LAB_API_BASE = "/v1/results"
             description = "API key invalid or missing",
             headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))],
             content = [Content()]
+        ),
+        ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = [
+                Content(
+                    schema = Schema(implementation = GlobalErrorHandler.InternalServerError::class, hidden = false)
+                )
+            ]
         )
     ]
 )
 @SecurityRequirement(name = "LabCredential")
-@Tag(name = LABORATORY_API_TAG)
 class LabController(
-    private val extractObxResultUseCase: ExtractObxResultUseCase,
-    private val extractLdtResultUseCase: ExtractLdtResultUseCase,
     private val updateResultUseCase: UpdateResultUseCase,
     private val bulkUpdateResultsUseCase: BulkUpdateResultsUseCase
 ) {
@@ -50,10 +60,10 @@ class LabController(
     @PutMapping(
         path = [LAB_API_BASE],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE]
     )
     @Operation(
-        summary = "Upload lab result via JSON"
+        summary = "Upload lab result. Supported formats: JSON, HL7 ORU"
     )
     @ApiResponses(
         value = [
@@ -70,7 +80,7 @@ class LabController(
                 content = [
                     Content(
                         schema = Schema(
-                            implementation = UpdateStatusResponse.OrderNumberInvalid::class,
+                            implementation = UpdateStatusResponse.InvalidRequest::class,
                             hidden = false
                         )
                     )
@@ -85,6 +95,7 @@ class LabController(
             )
         ]
     )
+    @Tag(name = LABORATORY_API_TAG)
     fun jsonResult(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
         labIdHeader: String,
@@ -99,7 +110,7 @@ class LabController(
         val orderNumber = try {
             OrderNumber.from(issuerId, result.orderNumber)
         } catch (ex: IllegalArgumentException) {
-            return UpdateStatusResponse.OrderNumberInvalid(ex.message ?: "Failed to parse orderNumber").asEntity()
+            return UpdateStatusResponse.InvalidRequest(ex.message ?: "Failed to parse orderNumber").asEntity()
         }
 
         val labResult = LabResult(
@@ -115,7 +126,7 @@ class LabController(
     @PutMapping(
         path = ["$LAB_API_BASE/json"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE]
     )
     @Operation(
         summary = "Upload lab result via JSON"
@@ -135,7 +146,7 @@ class LabController(
                 content = [
                     Content(
                         schema = Schema(
-                            implementation = UpdateStatusResponse.OrderNumberInvalid::class,
+                            implementation = UpdateStatusResponse.InvalidRequest::class,
                             hidden = false
                         )
                     )
@@ -150,6 +161,7 @@ class LabController(
             )
         ]
     )
+    @Tag(name = LABORATORY_API_TAG)
     fun jsonResultLegacy(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
         labIdHeader: String,
@@ -162,7 +174,7 @@ class LabController(
     @PutMapping(
         path = ["$LAB_API_BASE/bulk"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE]
     )
     @Operation(
         summary = "Upload multiple lab results at once via JSON"
@@ -185,6 +197,7 @@ class LabController(
             )
         ]
     )
+    @Tag(name = LABORATORY_BULK_API_TAG)
     fun bulkUploadJsonResults(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
         labIdHeader: String,
@@ -206,13 +219,14 @@ class LabController(
         return response.asEntity()
     }
 
+    // TODO: collapse to one method and inject custom Spring HttpMessageConverter for application/kevb+csv
     @PutMapping(
-        path = ["$LAB_API_BASE/obx"],
-        consumes = [MediaType.TEXT_PLAIN_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
+        path = [LAB_API_BASE],
+        consumes = [KEVB_CSV_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE]
     )
     @Operation(
-        summary = "Upload lab result via OBX text message"
+        summary = "Upload lab result"
     )
     @ApiResponses(
         value = [
@@ -225,7 +239,7 @@ class LabController(
             ),
             ApiResponse(
                 responseCode = "400",
-                description = "Invalid OBX Message. See https://wiki.hl7.de/index.php?title=Segment_OBX for a description of acceptable fields",
+                description = "Invalid request",
                 content = [
                     Content(schema = Schema(implementation = UpdateStatusResponse.InfoUnreadable::class, hidden = true))
                 ]
@@ -239,73 +253,46 @@ class LabController(
             )
         ]
     )
-    fun obxResult(
+    @Tag(name = LABORATORY_API_TAG)
+    fun uploadCsvLabResult(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
         labIdHeader: String,
         @RequestParam(required = false)
         issuerId: String?,
         @RequestBody
         @Schema(
-            description = "An OBX Segment of an HL7 ORU R1 message (see https://wiki.hl7.de/index.php?title=Segment_OBX for details).",
-            example = "OBX|3|ST|21300^2019-nCoronav.-RNA Sonst (PCR)|0061749799|Positiv|||N|||S|||20200406101220|Extern|||||||||Extern",
+            description = "CSV string with orderNumber, lab result and test type",
+            example = "1234567890,NEGATIVE,94531-1",
             format = "string"
         )
-        obxMessage: String
+        csv: String
     ): ResponseEntity<UpdateStatusResponse> {
-        val labId = extractLabIdFrom(labIdHeader) ?: return UpdateStatusResponse.OrderNotFound.asEntity()
+        // TODO: remove after testing with KEVB
+        logger.info("CSV message: received message with issuerId $issuerId and message:\n$csv")
 
-        val labResult = extractObxResultUseCase(obxMessage, labId, issuerId)
-            ?: return UpdateStatusResponse.InfoUnreadable.asEntity()
+        val labId = extractLabIdFrom(labIdHeader)
+            ?: return UpdateStatusResponse.Unauthorized.asEntity()
 
-        return updateResultUseCase(labResult).asUpdateStatusResponseEntity()
-    }
+        val csvParts = csv.trim().split(",")
 
-    @PutMapping(
-        path = ["$LAB_API_BASE/ldt"],
-        consumes = [MediaType.TEXT_PLAIN_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
-    )
-    @Operation(
-        summary = "Upload lab result via LDT Document"
-    )
-    @ApiResponses(
-        value = [
-            ApiResponse(
-                responseCode = "200",
-                description = "Result uploaded successfully",
-                content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.Success::class, hidden = true))
-                ]
-            ),
-            ApiResponse(
-                responseCode = "400",
-                description = "Invalid LDT Document",
-                content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.InfoUnreadable::class, hidden = true))
-                ]
-            ),
-            ApiResponse(
-                responseCode = "404",
-                description = "No order for order number found",
-                content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNotFound::class, hidden = true))
-                ]
-            )
-        ]
-    )
-    fun ldtResult(
-        @RequestHeader(HttpHeaders.AUTHORIZATION)
-        labIdHeader: String,
-        @RequestParam(name = "issuer", required = false)
-        issuerId: String?,
-        @RequestBody
-        @Schema(description = "An LDT Document")
-        ldtMessage: String
-    ): ResponseEntity<UpdateStatusResponse> {
-        val labId = extractLabIdFrom(labIdHeader) ?: return UpdateStatusResponse.OrderNotFound.asEntity()
+        if (csvParts.size < 2)
+            return UpdateStatusResponse.InvalidRequest(message = "CSV string contains less than 2 values").asEntity()
 
-        val labResult = extractLdtResultUseCase(ldtMessage, labId)
-            ?: return UpdateStatusResponse.InfoUnreadable.asEntity()
+        val orderNumber = try {
+            OrderNumber.from(issuerId, csvParts[0])
+        } catch (ex: IllegalArgumentException) {
+            return UpdateStatusResponse.InvalidRequest(message = ex.message ?: "Failed to parse orderNumber").asEntity()
+        }
+
+        val result = Result.from(csvParts[1])
+            ?: return UpdateStatusResponse.InvalidRequest(message = "Failed to parse result").asEntity()
+
+        val labResult = LabResult(
+            orderNumber = orderNumber,
+            labId = labId,
+            result = result,
+            testType = csvParts.getOrNull(2)
+        )
 
         return updateResultUseCase(labResult).asUpdateStatusResponseEntity()
     }
@@ -357,7 +344,7 @@ sealed class UpdateStatusResponse(
 
     object Success : UpdateStatusResponse(HttpStatus.OK)
     object OrderNotFound : UpdateStatusResponse(HttpStatus.NOT_FOUND)
-    data class OrderNumberInvalid(val message: String) : UpdateStatusResponse(HttpStatus.BAD_REQUEST, hasBody = true)
+    data class InvalidRequest(val message: String) : UpdateStatusResponse(HttpStatus.BAD_REQUEST, hasBody = true)
     object Unauthorized : UpdateStatusResponse(
         HttpStatus.UNAUTHORIZED, headers = mapOf(
             HttpHeaders.WWW_AUTHENTICATE to listOf(
@@ -365,6 +352,8 @@ sealed class UpdateStatusResponse(
             )
         ).toHttpHeaders()
     )
+
+    object Forbidden : UpdateStatusResponse(HttpStatus.FORBIDDEN)
 
     object InfoUnreadable : UpdateStatusResponse(HttpStatus.BAD_REQUEST, true) {
         val message = "Unable to read status"

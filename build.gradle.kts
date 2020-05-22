@@ -24,7 +24,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:$springBootVersion")
     implementation("org.springframework.boot:spring-boot-starter-actuator:$springBootVersion")
     implementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.0")
+
+    // serialization
+    val jacksonVersion = "2.11.0"
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
 
     // swagger
     val springdocVersion = "1.3.9"
@@ -36,7 +40,7 @@ dependencies {
     implementation("io.github.boostchicken:spring-data-dynamodb:5.2.3")
 
     // dynamodb
-    val awsSdkVersion = "1.11.784"
+    val awsSdkVersion = "1.11.785"
     implementation(platform("com.amazonaws:aws-java-sdk-bom:$awsSdkVersion"))
     implementation("com.amazonaws:aws-java-sdk-dynamodb:$awsSdkVersion")
 
