@@ -45,7 +45,7 @@ const val KEVB_CSV_VALUE = "application/kevb+csv"
             description = "Internal server error",
             content = [
                 Content(
-                    schema = Schema(implementation = GlobalErrorHandler.InternalServerError::class, hidden = false)
+                    schema = Schema(implementation = GlobalErrorHandler.Error::class, hidden = false)
                 )
             ]
         )
