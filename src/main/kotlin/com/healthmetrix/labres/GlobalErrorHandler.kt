@@ -1,7 +1,6 @@
 package com.healthmetrix.labres
 
 import io.swagger.v3.oas.annotations.media.Schema
-import io.swagger.v3.oas.annotations.responses.ApiResponse
 import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -31,7 +30,6 @@ class GlobalErrorHandler {
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ApiResponse(description = "Error with the request")
     fun onContentTypeNotSupported(exception: HttpMediaTypeNotSupportedException) =
         badRequest(exception, exception.message ?: "Content type not supported")
 
