@@ -35,6 +35,17 @@ const val KEVB_CSV_VALUE = "application/kevb+csv"
 @ApiResponses(
     value = [
         ApiResponse(
+            responseCode = "400",
+            description = "Invalid request",
+            content = [
+                Content(
+                    schema = Schema(
+                        type = "object",
+                        implementation = GlobalErrorHandler.Error.BadRequest::class
+                    )
+                )]
+        ),
+        ApiResponse(
             responseCode = "401",
             description = "API key invalid or missing",
             headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))],
@@ -45,7 +56,10 @@ const val KEVB_CSV_VALUE = "application/kevb+csv"
             description = "Internal server error",
             content = [
                 Content(
-                    schema = Schema(implementation = GlobalErrorHandler.InternalServerError::class, hidden = false)
+                    schema = Schema(
+                        type = "object",
+                        implementation = GlobalErrorHandler.Error::class
+                    )
                 )
             ]
         )
@@ -72,18 +86,6 @@ class LabController(
                 description = "Result uploaded successfully",
                 content = [
                     Content(schema = Schema(implementation = UpdateStatusResponse.Success::class, hidden = true))
-                ]
-            ),
-            ApiResponse(
-                responseCode = "400",
-                description = "Order number is invalid and could not be parsed",
-                content = [
-                    Content(
-                        schema = Schema(
-                            implementation = UpdateStatusResponse.InvalidRequest::class,
-                            hidden = false
-                        )
-                    )
                 ]
             ),
             ApiResponse(
@@ -141,18 +143,6 @@ class LabController(
                 ]
             ),
             ApiResponse(
-                responseCode = "400",
-                description = "Order number is invalid and could not be parsed",
-                content = [
-                    Content(
-                        schema = Schema(
-                            implementation = UpdateStatusResponse.InvalidRequest::class,
-                            hidden = false
-                        )
-                    )
-                ]
-            ),
-            ApiResponse(
                 responseCode = "404",
                 description = "No order for order number (and issuer if provided) found",
                 content = [
@@ -186,13 +176,6 @@ class LabController(
                 description = "Number of processed results that all have been successfully updated",
                 content = [
                     Content(schema = Schema(implementation = BulkUpdateStatusResponse.Success::class))
-                ]
-            ),
-            ApiResponse(
-                responseCode = "400",
-                description = "Error messages per result that couldn't be successfully updated.",
-                content = [
-                    Content(schema = Schema(implementation = BulkUpdateStatusResponse.PartialBadRequest::class))
                 ]
             )
         ]
@@ -235,13 +218,6 @@ class LabController(
                 description = "Result uploaded successfully",
                 content = [
                     Content(schema = Schema(implementation = UpdateStatusResponse.Success::class, hidden = true))
-                ]
-            ),
-            ApiResponse(
-                responseCode = "400",
-                description = "Invalid request",
-                content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.InfoUnreadable::class, hidden = true))
                 ]
             ),
             ApiResponse(

@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.order
 
+import com.healthmetrix.labres.GlobalErrorHandler
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.PRE_ISSUED_ORDER_NUMBER_API_TAG
 import com.healthmetrix.labres.asEntity
@@ -28,10 +29,33 @@ import org.springframework.web.bind.annotation.RestController
 @ApiResponses(
     value = [
         ApiResponse(
+            responseCode = "400",
+            description = "Invalid request",
+            content = [
+                Content(
+                    schema = Schema(
+                        type = "object",
+                        implementation = GlobalErrorHandler.Error.BadRequest::class
+                    )
+                )]
+        ),
+        ApiResponse(
             responseCode = "401",
             description = "Unauthorized",
             headers = [Header(name = "WWW-Authenticate", schema = Schema(type = "string"))],
             content = [Content()]
+        ),
+        ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = [
+                Content(
+                    schema = Schema(
+                        type = "object",
+                        implementation = GlobalErrorHandler.Error::class
+                    )
+                )
+            ]
         )
     ]
 )
@@ -103,16 +127,6 @@ class PreIssuedOrderNumberController(
                 content = [
                     Content(schema = Schema(type = "object", implementation = StatusResponse.Found::class))
                 ]
-            ),
-            ApiResponse(
-                responseCode = "400",
-                description = "Order id could not be parsed as valid UUID",
-                content = [Content(
-                    schema = Schema(
-                        type = "object",
-                        implementation = StatusResponse.BadRequest::class
-                    )
-                )]
             ),
             ApiResponse(
                 responseCode = "404",
