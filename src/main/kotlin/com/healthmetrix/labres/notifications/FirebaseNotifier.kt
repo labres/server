@@ -12,6 +12,12 @@ class FirebaseNotifier(private val messaging: FirebaseMessaging, private val dry
         val message = Message.builder()
             .putData("type", "RESULT")
             .setToken(notification.token)
+            .setNotification(
+                com.google.firebase.messaging.Notification.builder()
+                    .setTitle("Ihr Testergebnis ist da!")
+                    .setBody("Sie können Ihr Testergebnis abrufen.")
+                    .build()
+            )
             .setAndroidConfig(
                 AndroidConfig.builder()
                     .setPriority(AndroidConfig.Priority.HIGH)
