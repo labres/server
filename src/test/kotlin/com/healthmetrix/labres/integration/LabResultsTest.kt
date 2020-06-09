@@ -4,17 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.healthmetrix.labres.LabResApplication
 import com.healthmetrix.labres.encodeBase64
-import com.healthmetrix.labres.lab.BulkUpdateStatusRequest
-import com.healthmetrix.labres.lab.JsonResult
+import com.healthmetrix.labres.lab.APPLICATION_KEVB_CSV
+import com.healthmetrix.labres.lab.BulkUpdateResultRequest
 import com.healthmetrix.labres.lab.Result
+import com.healthmetrix.labres.lab.UpdateResultRequest
 import com.healthmetrix.labres.order.ExternalOrderNumberController.IssueExternalOrderNumberResponse
-import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.PreIssuedOrderNumberController
 import com.healthmetrix.labres.order.Status
 import com.healthmetrix.labres.order.StatusResponse
 import com.healthmetrix.labres.persistence.InMemoryOrderInformationRepository
 import com.healthmetrix.labres.persistence.OrderInformationRepository
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.core.Is
 import org.junit.jupiter.api.BeforeEach
@@ -50,11 +49,10 @@ class LabResultsTest {
         (repository as InMemoryOrderInformationRepository).clear()
     }
 
-    private val labIdHeader = "user:pass".encodeBase64()
-    private val orderId = UUID.randomUUID()
+    private val labName = "test_lab"
+    private val labIdHeader = "$labName:pass".encodeBase64()
     private val orderNumberString = "1234567890"
-    private val issuerId = "issuerA"
-    private val orderNumber = OrderNumber.from(issuerId, orderNumberString)
+    private val issuerId = "test_issuer"
     private val testSiteId = "testSiteA"
     private val notificationUrl = "http://callme.test"
 
@@ -95,7 +93,7 @@ class LabResultsTest {
                 .andReturn().responseBody<StatusResponse.Found>()
 
             val orderNumber = createResponse.orderNumber
-            mockMvc.put("/v1/results/json") {
+            mockMvc.put("/v1/results") {
                 contentType = MediaType.APPLICATION_JSON
                 headers { setBasicAuth(labIdHeader) }
                 content = objectMapper.writeValueAsBytes(
@@ -104,10 +102,36 @@ class LabResultsTest {
                         "result" to "POSITIVE"
                     )
                 )
-            }
+            }.andExpect { status { isOk } }
 
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
+        }
+
+        @Test
+        fun `updating results works also with kevb+csv as content type`() {
+            val createResponse = mockMvc.post("/v1/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsBytes(
+                    mapOf(
+                        "notificationUrl" to "beforeId"
+                    )
+                )
+            }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
+
+            val orderId = createResponse.id
+            val orderNumber = createResponse.orderNumber
+            val orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.labId).isNull()
+
+            mockMvc.put("/v1/results") {
+                contentType = APPLICATION_KEVB_CSV
+                headers { setBasicAuth(labIdHeader) }
+                content = "$orderNumber,${Result.POSITIVE}"
+            }
+
+            val updatedOrderInformation = repository.findById(orderId)!!
+            assertThat(updatedOrderInformation.labId).isEqualTo(labName)
         }
 
         @Test
@@ -126,7 +150,7 @@ class LabResultsTest {
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.labId).isNull()
 
-            mockMvc.put("/v1/results/json") {
+            mockMvc.put("/v1/results") {
                 contentType = MediaType.APPLICATION_JSON
                 headers { setBasicAuth(labIdHeader) }
                 content = objectMapper.writeValueAsBytes(
@@ -138,7 +162,7 @@ class LabResultsTest {
             }
 
             val updatedOrderInformation = repository.findById(orderId)!!
-            assertThat(updatedOrderInformation.labId).isEqualTo("user")
+            assertThat(updatedOrderInformation.labId).isEqualTo(labName)
         }
 
         @Test
@@ -153,9 +177,9 @@ class LabResultsTest {
                 contentType = MediaType.APPLICATION_JSON
                 headers { setBasicAuth(labIdHeader) }
                 content = objectMapper.writeValueAsBytes(
-                    BulkUpdateStatusRequest(
+                    BulkUpdateResultRequest(
                         responses.map { res ->
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = res.orderNumber,
                                 result = Result.POSITIVE
                             )
@@ -245,15 +269,17 @@ class LabResultsTest {
         }
 
         @Test
-        fun `updating results sets the lab id`() {
-            val createResponse = mockMvc.post("/v1/orders") {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsBytes(
-                    mapOf(
-                        "notificationUrl" to "beforeId"
+        fun `updating results works also with kevb+csv as content type`() {
+            val createResponse = mockMvc
+                .post("/v1/issuers/$issuerId/orders") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsBytes(
+                        mapOf(
+                            "orderNumber" to orderNumberString,
+                            "notificationUrl" to "beforeId"
+                        )
                     )
-                )
-            }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
+                }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
 
             val orderId = createResponse.id
             val orderNumber = createResponse.orderNumber
@@ -261,18 +287,46 @@ class LabResultsTest {
             assertThat(orderInformation.labId).isNull()
 
             mockMvc.put("/v1/results") {
+                contentType = APPLICATION_KEVB_CSV
+                headers { setBasicAuth(labIdHeader) }
+                param("issuerId", issuerId)
+                content = "$orderNumber,${Result.POSITIVE}"
+            }
+
+            val updatedOrderInformation = repository.findById(orderId)!!
+            assertThat(updatedOrderInformation.labId).isEqualTo(labName)
+        }
+
+        @Test
+        fun `updating results sets the lab id`() {
+            val createResponse = mockMvc
+                .post("/v1/issuer/$issuerId/orders") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsBytes(
+                        mapOf(
+                            "orderNumber" to orderNumberString
+                        )
+                    )
+                }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
+
+            val orderId = createResponse.id
+            val orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.labId).isNull()
+
+            mockMvc.put("/v1/results") {
                 contentType = MediaType.APPLICATION_JSON
                 headers { setBasicAuth(labIdHeader) }
+                param("issuerId", issuerId)
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
-                        "orderNumber" to orderNumber,
+                        "orderNumber" to orderNumberString,
                         "result" to "POSITIVE"
                     )
                 )
             }
 
             val updatedOrderInformation = repository.findById(orderId)!!
-            assertThat(updatedOrderInformation.labId).isEqualTo("user")
+            assertThat(updatedOrderInformation.labId).isEqualTo(labName)
         }
 
         @Test
@@ -307,9 +361,9 @@ class LabResultsTest {
                 headers { setBasicAuth(labIdHeader) }
                 param("issuerId", issuerId)
                 content = objectMapper.writeValueAsBytes(
-                    BulkUpdateStatusRequest(
+                    BulkUpdateResultRequest(
                         responses.map { res ->
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = res.orderNumber,
                                 result = Result.POSITIVE
                             )

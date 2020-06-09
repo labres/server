@@ -6,9 +6,6 @@ import com.healthmetrix.labres.LABORATORY_BULK_API_TAG
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.decodeBase64
-import com.healthmetrix.labres.logger
-import com.healthmetrix.labres.order.OrderNumber
-import com.healthmetrix.labres.persistence.OrderInformation
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.headers.Header
 import io.swagger.v3.oas.annotations.media.Content
@@ -29,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 const val LAB_API_BASE = "/v1/results"
-const val KEVB_CSV_VALUE = "application/kevb+csv"
+private const val AUTHORIZATION_REALM = "Basic realm=\"labres:labresults:write\""
 
 @RestController
 @ApiResponses(
@@ -52,6 +49,11 @@ const val KEVB_CSV_VALUE = "application/kevb+csv"
             content = [Content()]
         ),
         ApiResponse(
+            responseCode = "403",
+            description = "LabId is not allowed to upload results for given issuerId",
+            content = [Content()]
+        ),
+        ApiResponse(
             responseCode = "500",
             description = "Internal server error",
             content = [
@@ -68,16 +70,20 @@ const val KEVB_CSV_VALUE = "application/kevb+csv"
 @SecurityRequirement(name = "LabCredential")
 class LabController(
     private val updateResultUseCase: UpdateResultUseCase,
-    private val bulkUpdateResultsUseCase: BulkUpdateResultsUseCase
+    private val bulkUpdateResultsUseCase: BulkUpdateResultsUseCase,
+    private val labRegistry: LabRegistry
 ) {
 
     @PutMapping(
         path = [LAB_API_BASE],
-        consumes = [MediaType.APPLICATION_JSON_VALUE],
+        consumes = [
+            MediaType.APPLICATION_JSON_VALUE,
+            APPLICATION_KEVB_CSV_VALUE
+        ],
         produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE]
     )
     @Operation(
-        summary = "Upload lab result. Supported formats: JSON, HL7 ORU"
+        summary = "Upload lab result. Supported formats: JSON, kevb+csv"
     )
     @ApiResponses(
         value = [
@@ -85,14 +91,14 @@ class LabController(
                 responseCode = "200",
                 description = "Result uploaded successfully",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.Success::class, hidden = true))
+                    Content(schema = Schema(implementation = UpdateResultResponse.Success::class, hidden = true))
                 ]
             ),
             ApiResponse(
                 responseCode = "404",
                 description = "No order for order number (and issuer if provided) found",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNotFound::class, hidden = true))
+                    Content(schema = Schema(implementation = UpdateResultResponse.OrderNotFound::class, hidden = true))
                 ]
             )
         ]
@@ -100,29 +106,24 @@ class LabController(
     @Tag(name = LABORATORY_API_TAG)
     fun jsonResult(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
-        labIdHeader: String,
+        authorizationHeader: String,
         @RequestParam(required = false)
         issuerId: String?,
         @RequestBody
-        result: JsonResult
-    ): ResponseEntity<UpdateStatusResponse> {
-        // TODO: test issuer to be whitelisted for basic auth user
-        val labId = extractLabIdFrom(labIdHeader) ?: return UpdateStatusResponse.Unauthorized.asEntity()
+        request: UpdateResultRequest
+    ): ResponseEntity<UpdateResultResponse> {
+        val lab = extractLabIdFrom(authorizationHeader)
+            ?.let(labRegistry::get)
+            ?: return UpdateResultResponse.Unauthorized.asEntity()
 
-        val orderNumber = try {
-            OrderNumber.from(issuerId, result.orderNumber)
-        } catch (ex: IllegalArgumentException) {
-            return UpdateStatusResponse.InvalidRequest(ex.message ?: "Failed to parse orderNumber").asEntity()
-        }
+        if (!lab.canUpdateResultFor(issuerId))
+            return UpdateResultResponse.Forbidden.asEntity()
 
-        val labResult = LabResult(
-            orderNumber = orderNumber,
-            labId = labId,
-            result = result.result,
-            testType = result.type
-        )
-
-        return updateResultUseCase(labResult).asUpdateStatusResponseEntity()
+        return when (updateResultUseCase(request, lab.id, issuerId)) {
+            UpdateResult.INVALID_ORDER_NUMBER -> UpdateResultResponse.InvalidRequest("Failed to parse orderNumber: ${request.orderNumber}")
+            UpdateResult.ORDER_NOT_FOUND -> UpdateResultResponse.OrderNotFound
+            UpdateResult.SUCCESS -> UpdateResultResponse.Success
+        }.asEntity()
     }
 
     @PutMapping(
@@ -139,14 +140,14 @@ class LabController(
                 responseCode = "200",
                 description = "Result uploaded successfully",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.Success::class, hidden = true))
+                    Content(schema = Schema(implementation = UpdateResultResponse.Success::class, hidden = true))
                 ]
             ),
             ApiResponse(
                 responseCode = "404",
                 description = "No order for order number (and issuer if provided) found",
                 content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNotFound::class, hidden = true))
+                    Content(schema = Schema(implementation = UpdateResultResponse.OrderNotFound::class, hidden = true))
                 ]
             )
         ]
@@ -158,8 +159,8 @@ class LabController(
         @RequestParam(required = false)
         issuerId: String?,
         @RequestBody
-        result: JsonResult
-    ): ResponseEntity<UpdateStatusResponse> = jsonResult(labIdHeader, issuerId, result)
+        request: UpdateResultRequest
+    ): ResponseEntity<UpdateResultResponse> = jsonResult(labIdHeader, issuerId, request)
 
     @PutMapping(
         path = ["$LAB_API_BASE/bulk"],
@@ -175,7 +176,7 @@ class LabController(
                 responseCode = "200",
                 description = "Number of processed results that all have been successfully updated",
                 content = [
-                    Content(schema = Schema(implementation = BulkUpdateStatusResponse.Success::class))
+                    Content(schema = Schema(implementation = BulkUpdateResultResponse.Success::class))
                 ]
             )
         ]
@@ -183,98 +184,29 @@ class LabController(
     @Tag(name = LABORATORY_BULK_API_TAG)
     fun bulkUploadJsonResults(
         @RequestHeader(HttpHeaders.AUTHORIZATION)
-        labIdHeader: String,
+        authorizationHeader: String,
         @RequestParam(required = false)
         issuerId: String?,
         @RequestBody
-        request: BulkUpdateStatusRequest
-    ): ResponseEntity<BulkUpdateStatusResponse> {
-        // TODO: test issuer to be whitelisted for basic auth user
-        val labId = extractLabIdFrom(labIdHeader) ?: return BulkUpdateStatusResponse.Unauthorized.asEntity()
+        request: BulkUpdateResultRequest
+    ): ResponseEntity<BulkUpdateResultResponse> {
+        val lab = extractLabIdFrom(authorizationHeader)
+            ?.let(labRegistry::get)
+            ?: return BulkUpdateResultResponse.Unauthorized.asEntity()
 
-        val errors = bulkUpdateResultsUseCase(request.results, labId, issuerId)
+        if (!lab.canUpdateResultFor(issuerId))
+            return BulkUpdateResultResponse.Forbidden.asEntity()
 
-        val response = if (errors.any())
-            BulkUpdateStatusResponse.PartialBadRequest(errors)
-        else
-            BulkUpdateStatusResponse.Success(request.results.size)
-
-        return response.asEntity()
+        return bulkUpdateResultsUseCase(request.results, lab.id, issuerId).let { errors ->
+            if (errors.any())
+                BulkUpdateResultResponse.PartialBadRequest(errors)
+            else
+                BulkUpdateResultResponse.Success(request.results.size)
+        }.asEntity()
     }
 
-    // TODO: collapse to one method and inject custom Spring HttpMessageConverter for application/kevb+csv
-    @PutMapping(
-        path = [LAB_API_BASE],
-        consumes = [KEVB_CSV_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE]
-    )
-    @Operation(
-        summary = "Upload lab result"
-    )
-    @ApiResponses(
-        value = [
-            ApiResponse(
-                responseCode = "200",
-                description = "Result uploaded successfully",
-                content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.Success::class, hidden = true))
-                ]
-            ),
-            ApiResponse(
-                responseCode = "404",
-                description = "No order for order number found",
-                content = [
-                    Content(schema = Schema(implementation = UpdateStatusResponse.OrderNotFound::class, hidden = true))
-                ]
-            )
-        ]
-    )
-    @Tag(name = LABORATORY_API_TAG)
-    fun uploadCsvLabResult(
-        @RequestHeader(HttpHeaders.AUTHORIZATION)
-        labIdHeader: String,
-        @RequestParam(required = false)
-        issuerId: String?,
-        @RequestBody
-        @Schema(
-            description = "CSV string with orderNumber, lab result and test type",
-            example = "1234567890,NEGATIVE,94531-1",
-            format = "string"
-        )
-        csv: String
-    ): ResponseEntity<UpdateStatusResponse> {
-        // TODO: remove after testing with KEVB
-        logger.info("CSV message: received message with issuerId $issuerId and message:\n$csv")
-
-        val labId = extractLabIdFrom(labIdHeader)
-            ?: return UpdateStatusResponse.Unauthorized.asEntity()
-
-        val csvParts = csv.trim().split(",")
-
-        if (csvParts.size < 2)
-            return UpdateStatusResponse.InvalidRequest(message = "CSV string contains less than 2 values").asEntity()
-
-        val orderNumber = try {
-            OrderNumber.from(issuerId, csvParts[0])
-        } catch (ex: IllegalArgumentException) {
-            return UpdateStatusResponse.InvalidRequest(message = ex.message ?: "Failed to parse orderNumber").asEntity()
-        }
-
-        val result = Result.from(csvParts[1])
-            ?: return UpdateStatusResponse.InvalidRequest(message = "Failed to parse result").asEntity()
-
-        val labResult = LabResult(
-            orderNumber = orderNumber,
-            labId = labId,
-            result = result,
-            testType = csvParts.getOrNull(2)
-        )
-
-        return updateResultUseCase(labResult).asUpdateStatusResponseEntity()
-    }
-
-    private fun extractLabIdFrom(labIdHeader: String): String? {
-        val (prefix, encoded) = labIdHeader.split(" ").also {
+    private fun extractLabIdFrom(header: String): String? {
+        val (prefix, encoded) = header.split(" ").also {
             if (it.size != 2) return null
         }
 
@@ -292,73 +224,64 @@ class LabController(
     }
 }
 
-data class JsonResult(
+data class UpdateResultRequest(
     @Schema(
         description = "The external order number",
         example = "1234567890"
     )
     val orderNumber: String,
+    @Schema(description = "The test result")
+    val result: Result,
     @Schema(
         description = "The kind of test used to generate the given result as a LOINC code.",
         example = "94500-6"
     )
-    val type: String? = null,
-    @Schema(description = "The test result")
-    val result: Result
+    val type: String? = null
 )
 
-private const val WWW_AUTHENTICATE_VALUE = "Basic realm=\"labres:labresults:write\""
-
-data class BulkUpdateStatusRequest(val results: List<JsonResult>)
-
-sealed class UpdateStatusResponse(
+sealed class UpdateResultResponse(
     httpStatus: HttpStatus,
     hasBody: Boolean = false,
     headers: HttpHeaders = HttpHeaders.EMPTY
 ) :
     LabResApiResponse(httpStatus, hasBody, headers) {
 
-    object Success : UpdateStatusResponse(HttpStatus.OK)
-    object OrderNotFound : UpdateStatusResponse(HttpStatus.NOT_FOUND)
-    data class InvalidRequest(val message: String) : UpdateStatusResponse(HttpStatus.BAD_REQUEST, hasBody = true)
-    object Unauthorized : UpdateStatusResponse(
+    object Success : UpdateResultResponse(HttpStatus.OK)
+    object OrderNotFound : UpdateResultResponse(HttpStatus.NOT_FOUND)
+    data class InvalidRequest(val message: String) : UpdateResultResponse(HttpStatus.BAD_REQUEST, hasBody = true)
+    object Unauthorized : UpdateResultResponse(
         HttpStatus.UNAUTHORIZED, headers = mapOf(
             HttpHeaders.WWW_AUTHENTICATE to listOf(
-                WWW_AUTHENTICATE_VALUE
+                AUTHORIZATION_REALM
             )
         ).toHttpHeaders()
     )
 
-    object Forbidden : UpdateStatusResponse(HttpStatus.FORBIDDEN)
-
-    object InfoUnreadable : UpdateStatusResponse(HttpStatus.BAD_REQUEST, true) {
-        val message = "Unable to read status"
-    }
+    object Forbidden : UpdateResultResponse(HttpStatus.FORBIDDEN)
 }
 
-sealed class BulkUpdateStatusResponse(
+data class BulkUpdateResultRequest(val results: List<UpdateResultRequest>)
+
+sealed class BulkUpdateResultResponse(
     httpStatus: HttpStatus,
     hasBody: Boolean = false,
     headers: HttpHeaders = HttpHeaders.EMPTY
 ) :
     LabResApiResponse(httpStatus, hasBody, headers) {
 
-    data class Success(val processedRows: Int) : BulkUpdateStatusResponse(HttpStatus.OK, true)
-    data class PartialBadRequest(val bulkUploadErrors: List<BulkUploadError>) :
-        BulkUpdateStatusResponse(HttpStatus.BAD_REQUEST, hasBody = true)
+    data class Success(val processedRows: Int) : BulkUpdateResultResponse(HttpStatus.OK, true)
+    data class PartialBadRequest(val bulkUploadErrors: List<BulkUpdateResultsUseCase.BulkUpdateError>) :
+        BulkUpdateResultResponse(HttpStatus.BAD_REQUEST, hasBody = true)
 
-    object Unauthorized : BulkUpdateStatusResponse(
+    object Unauthorized : BulkUpdateResultResponse(
         HttpStatus.UNAUTHORIZED, headers = mapOf(
             HttpHeaders.WWW_AUTHENTICATE to listOf(
-                WWW_AUTHENTICATE_VALUE
+                AUTHORIZATION_REALM
             )
         ).toHttpHeaders()
     )
-}
 
-data class BulkUploadError(val message: String)
+    object Forbidden : BulkUpdateResultResponse(HttpStatus.FORBIDDEN)
+}
 
 private fun Map<String, List<String>>.toHttpHeaders() = HttpHeaders(LinkedMultiValueMap(this))
-
-private fun OrderInformation?.asUpdateStatusResponseEntity() = (this?.let { UpdateStatusResponse.Success }
-    ?: UpdateStatusResponse.OrderNotFound).asEntity()

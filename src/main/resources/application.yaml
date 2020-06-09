@@ -1,5 +1,9 @@
 labres:
   stage: local
+  registry:
+    labs:
+      - id: test_lab
+        issuers: test_issuer, labres
 
 dynamo:
   table-name: order_information
@@ -35,6 +39,12 @@ cors-domains: "*"
 ---
 labres:
   stage: dev
+  registry:
+    labs:
+      - id: hmx
+        issuers: hmx, labres
+      - id: d4l
+        issuers: labres
 
 spring:
   profiles: dev
@@ -52,6 +62,12 @@ documentation-info:
 ---
 labres:
   stage: prod
+  registry:
+    labs:
+      - id: charite
+        issuers: labres
+      - id: kevb
+        issuers: kevb
 
 spring:
   profiles: prod

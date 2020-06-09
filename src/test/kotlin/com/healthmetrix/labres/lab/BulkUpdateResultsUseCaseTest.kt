@@ -15,7 +15,7 @@ class BulkUpdateResultsUseCaseTest {
     private val labId = "test-lab"
     private val issuerId = "test-issuer"
     private val orderNumber = "1234567890"
-    private val result = JsonResult(
+    private val result = UpdateResultRequest(
         orderNumber = orderNumber,
         result = Result.POSITIVE
     )
@@ -24,7 +24,7 @@ class BulkUpdateResultsUseCaseTest {
     @BeforeEach
     internal fun setUp() {
         clearMocks(updateResultUseCase)
-        every { updateResultUseCase.invoke(any(), any()) } returns mockk()
+        every { updateResultUseCase.invoke(any(), any(), any(), any()) } returns UpdateResult.SUCCESS
     }
 
     @Test
@@ -36,37 +36,25 @@ class BulkUpdateResultsUseCaseTest {
 
     @Test
     fun `it should call updateResultUseCase for each result`() {
-        val res = underTest(listOf(result, result.copy(orderNumber = "0987654321")), labId, issuerId)
+        underTest(listOf(result, result.copy(orderNumber = "0987654321")), labId, issuerId)
 
-        verify(exactly = 2) { updateResultUseCase(any(), any()) }
-    }
-
-    @Test
-    fun `it should return an error for each order number that could not be parsed`() {
-        val res = underTest(
-            listOf(
-                result,
-                result.copy(orderNumber = "wrong"),
-                result.copy(orderNumber = "also wrong")
-            ),
-            labId,
-            null
-        )
-
-        assertThat(res).hasSize(2)
+        verify(exactly = 2) { updateResultUseCase(any(), any(), any(), any()) }
     }
 
     @Test
     fun `it should return an error for each order number that could not be updated`() {
-        every { updateResultUseCase(any(), any()) } returns null
+        val secondOrderNumber = "0987654321"
+
+        every { updateResultUseCase(match { it.orderNumber == orderNumber }, any(), any(), any()) } returns UpdateResult.ORDER_NOT_FOUND
+        every { updateResultUseCase(match { it.orderNumber == secondOrderNumber }, any(), any(), any()) } returns UpdateResult.INVALID_ORDER_NUMBER
 
         val res = underTest(
             listOf(
                 result,
-                result.copy(orderNumber = "0987654321")
+                result.copy(orderNumber = secondOrderNumber)
             ),
             labId,
-            null
+            issuerId
         )
 
         assertThat(res).hasSize(2)
