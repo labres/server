@@ -3,15 +3,14 @@ package com.healthmetrix.labres.lab
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.healthmetrix.labres.LabResTestApplication
 import com.healthmetrix.labres.encodeBase64
-import com.healthmetrix.labres.order.OrderNumber
+import com.healthmetrix.labres.order.EON_ISSUER_ID
 import com.healthmetrix.labres.order.Status
-import com.healthmetrix.labres.persistence.OrderInformation
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.clearMocks
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.verify
 import org.hamcrest.core.Is
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -43,19 +42,26 @@ class LabControllerTest {
     @MockkBean
     private lateinit var bulkUpdateResultsUseCase: BulkUpdateResultsUseCase
 
+    @MockkBean
+    private lateinit var labRegistry: LabRegistry
+
     private val labId = "test-lab"
     private val issuerId = "test-issuer"
     private val orderNumber = "0123456789"
     private val labIdHeader = "Basic ${"$labId:pass".encodeBase64()}"
 
+    @BeforeEach
+    internal fun setUp() {
+        every { labRegistry.get(any()) } returns RegisteredLab(labId, listOf(issuerId, EON_ISSUER_ID))
+        every { updateResultUseCase(any(), any(), any(), any()) } returns UpdateResult.SUCCESS
+    }
+
     @Nested
-    inner class JSON {
+    inner class UpdateJsonResult {
 
         @Test
         fun `uploading a valid json request body with an external order number returns 200`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
-
-            mockMvc.put("/v1/results/json") {
+            mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
@@ -71,9 +77,7 @@ class LabControllerTest {
 
         @Test
         fun `uploading a valid json request body with an external order number calls the updateResultsUseCase`() {
-            every { updateResultUseCase(any(), any()) } returns mockk<OrderInformation>()
-
-            mockMvc.put("/v1/results/json") {
+            mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
@@ -86,11 +90,12 @@ class LabControllerTest {
 
             verify {
                 updateResultUseCase.invoke(
-                    labResult = match {
-                        it.labId == labId &&
-                            it.orderNumber == OrderNumber.External.from(orderNumber) &&
+                    updateResultRequest = match {
+                        it.orderNumber == orderNumber &&
                             it.result == Result.NEGATIVE
                     },
+                    labId = labId,
+                    issuerId = null,
                     now = any()
                 )
             }
@@ -98,9 +103,7 @@ class LabControllerTest {
 
         @Test
         fun `uploading a valid json request body with a preissued order number returns 200`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
-
-            mockMvc.put("/v1/results/json") {
+            mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 param("issuerId", issuerId)
                 contentType = MediaType.APPLICATION_JSON
@@ -117,9 +120,7 @@ class LabControllerTest {
 
         @Test
         fun `uploading a valid json request body with a preissued order number calls the updateResultsUseCase`() {
-            every { updateResultUseCase(any(), any()) } returns mockk<OrderInformation>()
-
-            mockMvc.put("/v1/results/json") {
+            mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 param("issuerId", issuerId)
                 contentType = MediaType.APPLICATION_JSON
@@ -133,21 +134,22 @@ class LabControllerTest {
 
             verify {
                 updateResultUseCase.invoke(
-                    labResult = match {
-                        it.labId == labId &&
-                            it.orderNumber == OrderNumber.PreIssued(issuerId, orderNumber) &&
+                    updateResultRequest = match {
+                        it.orderNumber == orderNumber &&
                             it.result == Result.NEGATIVE
                     },
+                    labId = labId,
+                    issuerId = issuerId,
                     now = any()
                 )
             }
         }
 
         @Test
-        fun `upload a document to an unknown order number returns 404`() {
-            every { updateResultUseCase(any(), any()) } returns null
+        fun `upload a result to an unknown order number returns 404`() {
+            every { updateResultUseCase(any(), any(), any(), any()) } returns com.healthmetrix.labres.lab.UpdateResult.ORDER_NOT_FOUND
 
-            mockMvc.put("/v1/results/json") {
+            mockMvc.put("/v1/results") {
                 contentType = MediaType.APPLICATION_JSON
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 content = objectMapper.writeValueAsBytes(
@@ -162,13 +164,15 @@ class LabControllerTest {
         }
 
         @Test
-        fun `upload a document to an invalid order number returns 400`() {
-            mockMvc.put("/v1/results/json") {
+        fun `upload a result to an invalid order number returns 400`() {
+            every { updateResultUseCase(any(), any(), any(), any()) } returns com.healthmetrix.labres.lab.UpdateResult.INVALID_ORDER_NUMBER
+
+            mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsBytes(
                     mapOf(
-                        "orderNumber" to "nonsense",
+                        "orderNumber" to orderNumber,
                         "result" to Status.POSITIVE
                     )
                 )
@@ -186,8 +190,8 @@ class LabControllerTest {
                 "Basic dXNlcjpwYXNzOndyb25n"
             ]
         )
-        fun `upload document with invalid auth header returns 401`(labHeaderValue: String) {
-            mockMvc.put("/v1/results/json") {
+        fun `upload result with invalid auth header returns 401`(labHeaderValue: String) {
+            mockMvc.put("/v1/results") {
                 contentType = MediaType.APPLICATION_JSON
                 header(HttpHeaders.AUTHORIZATION, labHeaderValue)
                 content = objectMapper.writeValueAsBytes(
@@ -202,10 +206,44 @@ class LabControllerTest {
         }
 
         @Test
-        fun `uploading a document with the optional test type returns 200`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
+        fun `upload result returns 401 when lab has not been registered`() {
+            every { labRegistry.get(any()) } returns null
 
-            mockMvc.put("/v1/results/json") {
+            mockMvc.put("/v1/results") {
+                contentType = MediaType.APPLICATION_JSON
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                content = objectMapper.writeValueAsBytes(
+                    mapOf(
+                        "orderNumber" to "0123456789",
+                        "result" to Status.POSITIVE
+                    )
+                )
+            }.andExpect {
+                status { isUnauthorized }
+            }
+        }
+
+        @Test
+        fun `upload result returns 403 when registered lab is not allowed to upload for the given issuer`() {
+            every { labRegistry.get(any()) } returns RegisteredLab(labId, emptyList())
+
+            mockMvc.put("/v1/results") {
+                contentType = MediaType.APPLICATION_JSON
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                content = objectMapper.writeValueAsBytes(
+                    mapOf(
+                        "orderNumber" to "0123456789",
+                        "result" to Status.POSITIVE
+                    )
+                )
+            }.andExpect {
+                status { isForbidden }
+            }
+        }
+
+        @Test
+        fun `uploading a document with the optional test type returns 200`() {
+            mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
@@ -222,11 +260,9 @@ class LabControllerTest {
 
         @Test
         fun `uploading a document with the optional test type calls the updateStateUseCase`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
-
             val testType = "94500-6"
 
-            mockMvc.put("/v1/results/json") {
+            mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
@@ -240,16 +276,197 @@ class LabControllerTest {
 
             verify {
                 updateResultUseCase.invoke(
-                    labResult = match {
-                        it.labId == labId &&
-                            it.orderNumber == OrderNumber.External.from(orderNumber) &&
+                    updateResultRequest = match {
+                        it.orderNumber == orderNumber &&
                             it.result == Result.NEGATIVE &&
-                            it.testType == testType
+                            it.type == testType
                     },
+                    labId = labId,
+                    issuerId = null,
                     now = any()
                 )
             }
         }
+    }
+
+    @Nested
+    inner class UpdateKevbCsvResult {
+
+        @Test
+        fun `uploading a valid csv request body with an external order number returns 200`() {
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = APPLICATION_KEVB_CSV
+                content = "$orderNumber,${Status.NEGATIVE}"
+            }.andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `uploading a valid csv request body with an external order number calls the updateResultsUseCase`() {
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = APPLICATION_KEVB_CSV
+                content = "$orderNumber,${Status.NEGATIVE}"
+            }
+
+            verify {
+                updateResultUseCase.invoke(
+                    updateResultRequest = match {
+                        it.orderNumber == orderNumber &&
+                            it.result == Result.NEGATIVE
+                    },
+                    labId = labId,
+                    issuerId = null,
+                    now = any()
+                )
+            }
+        }
+
+        @Test
+        fun `uploading a valid csv request body with a preissued order number returns 200`() {
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                param("issuerId", issuerId)
+                contentType = APPLICATION_KEVB_CSV
+                content = "0123456789,${Status.POSITIVE}"
+            }.andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `uploading a valid csv request body with a preissued order number calls the updateResultsUseCase`() {
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                param("issuerId", issuerId)
+                contentType = APPLICATION_KEVB_CSV
+                content = "$orderNumber,${Status.POSITIVE}"
+            }
+
+            verify {
+                updateResultUseCase.invoke(
+                    updateResultRequest = match {
+                        it.orderNumber == orderNumber &&
+                            it.result == Result.NEGATIVE
+                    },
+                    labId = labId,
+                    issuerId = issuerId,
+                    now = any()
+                )
+            }
+        }
+
+        @Test
+        fun `upload a result to an unknown order number returns 404`() {
+            every { updateResultUseCase(any(), any(), any(), any()) } returns com.healthmetrix.labres.lab.UpdateResult.ORDER_NOT_FOUND
+
+            mockMvc.put("/v1/results") {
+                contentType = APPLICATION_KEVB_CSV
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                content = "0123456789,${Status.POSITIVE}"
+            }.andExpect {
+                status { isNotFound }
+            }
+        }
+
+        @Test
+        fun `upload a result to an invalid order number returns 400`() {
+            every { updateResultUseCase(any(), any(), any(), any()) } returns com.healthmetrix.labres.lab.UpdateResult.INVALID_ORDER_NUMBER
+
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = APPLICATION_KEVB_CSV
+                content = "$orderNumber,${Status.POSITIVE}"
+            }.andExpect {
+                status { isBadRequest }
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(
+            strings = [
+                "Wrong dXNlcjpwYXNz",
+                "Basic wrong",
+                "Basic dXNlcjpwYXNz dXNlcjpwYXNz",
+                "Basic dXNlcjpwYXNzOndyb25n"
+            ]
+        )
+        fun `upload result with invalid auth header returns 401`(labHeaderValue: String) {
+            mockMvc.put("/v1/results") {
+                contentType = APPLICATION_KEVB_CSV
+                header(HttpHeaders.AUTHORIZATION, labHeaderValue)
+                content = "0123456789,${Status.POSITIVE}"
+            }.andExpect {
+                status { isUnauthorized }
+            }
+        }
+
+        @Test
+        fun `upload result returns 401 when lab has not been registered`() {
+            every { labRegistry.get(any()) } returns null
+
+            mockMvc.put("/v1/results") {
+                contentType = APPLICATION_KEVB_CSV
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                content = "0123456789,${Status.POSITIVE}"
+            }.andExpect {
+                status { isUnauthorized }
+            }
+        }
+
+        @Test
+        fun `upload result returns 403 when registered lab is not allowed to upload for the given issuer`() {
+            every { labRegistry.get(any()) } returns RegisteredLab(labId, emptyList())
+
+            mockMvc.put("/v1/results") {
+                contentType = APPLICATION_KEVB_CSV
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                content = "0123456789,${Status.POSITIVE}"
+            }.andExpect {
+                status { isForbidden }
+            }
+        }
+
+        @Test
+        fun `uploading a result with the optional test type returns 200`() {
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = APPLICATION_KEVB_CSV
+                content = "0123456789,${Status.NEGATIVE},94500-6"
+            }.andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `uploading a result with the optional test type calls the updateStateUseCase`() {
+            val testType = "94500-6"
+
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = APPLICATION_KEVB_CSV
+                content = "$orderNumber,${Status.NEGATIVE},$testType"
+            }
+
+            verify {
+                updateResultUseCase.invoke(
+                    updateResultRequest = match {
+                        it.orderNumber == orderNumber &&
+                            it.result == Result.NEGATIVE &&
+                            it.type == testType
+                    },
+                    labId = labId,
+                    issuerId = null,
+                    now = any()
+                )
+            }
+        }
+    }
+
+    @Nested
+    inner class BulkUpdateResults {
 
         @Test
         fun `bulk uploading status of a list of externally issued orders returns status 200`() {
@@ -261,13 +478,13 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    BulkUpdateStatusRequest(
+                    BulkUpdateResultRequest(
                         listOf(
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber,
                                 result = Result.NEGATIVE
                             ),
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = anotherOrderNumber,
                                 result = Result.NEGATIVE
                             )
@@ -287,13 +504,13 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    BulkUpdateStatusRequest(
+                    BulkUpdateResultRequest(
                         listOf(
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber,
                                 result = Result.NEGATIVE
                             ),
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = "9876543210",
                                 result = Result.NEGATIVE
                             )
@@ -312,23 +529,23 @@ class LabControllerTest {
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
-                param("issuerId", "leKevin")
+                param("issuerId", issuerId)
                 content = objectMapper.writeValueAsString(
-                    BulkUpdateStatusRequest(
+                    BulkUpdateResultRequest(
                         listOf(
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber,
                                 result = Result.NEGATIVE
                             ),
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber + "1",
                                 result = Result.NEGATIVE
                             ),
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber + "2",
                                 result = Result.POSITIVE
                             ),
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber + "3",
                                 result = Result.POSITIVE
                             )
@@ -348,23 +565,23 @@ class LabControllerTest {
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
-                param("issuerId", "leKevin")
+                param("issuerId", issuerId)
                 content = objectMapper.writeValueAsString(
-                    BulkUpdateStatusRequest(
+                    BulkUpdateResultRequest(
                         listOf(
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber,
                                 result = Result.NEGATIVE
                             ),
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber + "1",
                                 result = Result.NEGATIVE
                             ),
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber + "2",
                                 result = Result.POSITIVE
                             ),
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber + "3",
                                 result = Result.POSITIVE
                             )
@@ -382,9 +599,9 @@ class LabControllerTest {
                 header(HttpHeaders.AUTHORIZATION, "wrong")
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    BulkUpdateStatusRequest(
+                    BulkUpdateResultRequest(
                         listOf(
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = "invalid",
                                 result = Result.NEGATIVE
                             )
@@ -396,15 +613,19 @@ class LabControllerTest {
 
         @Test
         fun `bulk uploading status of a list of pre issued orders returns status 400 for an invalid order number`() {
-            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf(BulkUploadError(message = "something broke"))
+            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf(
+                BulkUpdateResultsUseCase.BulkUpdateError(
+                    message = "something broke"
+                )
+            )
 
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    BulkUpdateStatusRequest(
+                    BulkUpdateResultRequest(
                         listOf(
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = "invalid",
                                 result = Result.NEGATIVE
                             )
@@ -416,19 +637,23 @@ class LabControllerTest {
 
         @Test
         fun `bulk uploading status of a list of externally issued orders returns an error for an invalid order number`() {
-            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf(BulkUploadError(message = "something broke"))
+            every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf(
+                BulkUpdateResultsUseCase.BulkUpdateError(
+                    message = "something broke"
+                )
+            )
 
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    BulkUpdateStatusRequest(
+                    BulkUpdateResultRequest(
                         listOf(
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = "invalid",
                                 result = Result.NEGATIVE
                             ),
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber,
                                 result = Result.NEGATIVE
                             )
@@ -441,21 +666,21 @@ class LabControllerTest {
         @Test
         fun `bulk uploading status of a list of orders returns multiple errors`() {
             every { bulkUpdateResultsUseCase(any(), any(), any()) } returns listOf(
-                BulkUploadError(message = "something broke"),
-                BulkUploadError(message = "another thing broke")
+                BulkUpdateResultsUseCase.BulkUpdateError(message = "something broke"),
+                BulkUpdateResultsUseCase.BulkUpdateError(message = "another thing broke")
             )
 
             mockMvc.put("/v1/results/bulk") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    BulkUpdateStatusRequest(
+                    BulkUpdateResultRequest(
                         listOf(
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = orderNumber,
                                 result = Result.NEGATIVE
                             ),
-                            JsonResult(
+                            UpdateResultRequest(
                                 orderNumber = "9876543210",
                                 result = Result.NEGATIVE
                             )
@@ -463,165 +688,6 @@ class LabControllerTest {
                     )
                 )
             }.andExpect { jsonPath("$.bulkUploadErrors.length()", Is.`is`(2)) }
-        }
-    }
-
-    @Nested
-    inner class KEVB_CSV {
-
-        private val kevbCsv = MediaType.valueOf(KEVB_CSV_VALUE)
-
-        @Test
-        fun `uploading a valid kevb csv request body with an external order number returns 200`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
-
-            mockMvc.put("/v1/results") {
-                header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                contentType = kevbCsv
-                content = "$orderNumber,${Status.NEGATIVE}"
-            }.andExpect {
-                status { isOk }
-            }
-        }
-
-        @Test
-        fun `uploading a valid kevb csv request body with an external order number calls the updateResultsUseCase`() {
-            every { updateResultUseCase(any(), any()) } returns mockk<OrderInformation>()
-
-            mockMvc.put("/v1/results") {
-                header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                contentType = kevbCsv
-                content = "$orderNumber,${Status.NEGATIVE}"
-            }
-
-            verify {
-                updateResultUseCase.invoke(
-                    labResult = match {
-                        it.labId == labId &&
-                            it.orderNumber == OrderNumber.External.from(orderNumber) &&
-                            it.result == Result.NEGATIVE
-                    },
-                    now = any()
-                )
-            }
-        }
-
-        @Test
-        fun `uploading a valid kevb csv request body with a preissued order number returns 200`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
-
-            mockMvc.put("/v1/results") {
-                header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                param("issuerId", issuerId)
-                contentType = kevbCsv
-                content = "$orderNumber,${Status.NEGATIVE}"
-            }.andExpect {
-                status { isOk }
-            }
-        }
-
-        @Test
-        fun `uploading a valid kevb csv request body with a preissued order number calls the updateResultsUseCase`() {
-            every { updateResultUseCase(any(), any()) } returns mockk<OrderInformation>()
-
-            mockMvc.put("/v1/results") {
-                header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                param("issuerId", issuerId)
-                contentType = kevbCsv
-                content = "$orderNumber,${Status.NEGATIVE}"
-            }
-
-            verify {
-                updateResultUseCase.invoke(
-                    labResult = match {
-                        it.labId == labId &&
-                            it.orderNumber == OrderNumber.PreIssued(issuerId, orderNumber) &&
-                            it.result == Result.NEGATIVE
-                    },
-                    now = any()
-                )
-            }
-        }
-
-        @Test
-        fun `upload a document to an unknown order number returns 404`() {
-            every { updateResultUseCase(any(), any()) } returns null
-
-            mockMvc.put("/v1/results") {
-                contentType = kevbCsv
-                header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                content = "$orderNumber,${Status.POSITIVE}"
-            }.andExpect {
-                status { isNotFound }
-            }
-        }
-
-        @Test
-        fun `upload a document to an invalid order number returns 400`() {
-            mockMvc.put("/v1/results") {
-                header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                contentType = kevbCsv
-                content = "nonsense,${Status.POSITIVE}"
-            }.andExpect {
-                status { isBadRequest }
-            }
-        }
-
-        @ParameterizedTest
-        @ValueSource(
-            strings = [
-                "Wrong dXNlcjpwYXNz",
-                "Basic wrong",
-                "Basic dXNlcjpwYXNz dXNlcjpwYXNz",
-                "Basic dXNlcjpwYXNzOndyb25n"
-            ]
-        )
-        fun `upload document with invalid auth header returns 401`(labHeaderValue: String) {
-            mockMvc.put("/v1/results") {
-                contentType = kevbCsv
-                header(HttpHeaders.AUTHORIZATION, labHeaderValue)
-                content = "$orderNumber,${Status.POSITIVE}"
-            }.andExpect {
-                status { isUnauthorized }
-            }
-        }
-
-        @Test
-        fun `uploading a document with the optional test type returns 200`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
-
-            mockMvc.put("/v1/results") {
-                header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                contentType = kevbCsv
-                content = "$orderNumber,${Status.NEGATIVE},94500-6"
-            }.andExpect {
-                status { isOk }
-            }
-        }
-
-        @Test
-        fun `uploading a document with the optional test type calls the updateStateUseCase`() {
-            every { updateResultUseCase(any(), any()) } returns mockk()
-
-            val testType = "94500-6"
-
-            mockMvc.put("/v1/results") {
-                header(HttpHeaders.AUTHORIZATION, labIdHeader)
-                contentType = kevbCsv
-                content = "$orderNumber,${Status.NEGATIVE},$testType"
-            }
-
-            verify {
-                updateResultUseCase.invoke(
-                    labResult = match {
-                        it.labId == labId &&
-                            it.orderNumber == OrderNumber.External.from(orderNumber) &&
-                            it.result == Result.NEGATIVE &&
-                            it.testType == testType
-                    },
-                    now = any()
-                )
-            }
         }
     }
 }

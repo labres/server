@@ -35,6 +35,7 @@ class DynamoOrderInformationRepository internal constructor(
         .mapNotNull(RawOrderInformation::cook)
         .singleOrNull()
 
+    // TODO make it return nullable
     override fun save(orderInformation: OrderInformation) =
         repository.save(orderInformation.raw()).cook()!!
 }
