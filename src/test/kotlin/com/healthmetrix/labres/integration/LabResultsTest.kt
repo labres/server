@@ -6,6 +6,7 @@ import com.healthmetrix.labres.LabResApplication
 import com.healthmetrix.labres.encodeBase64
 import com.healthmetrix.labres.lab.APPLICATION_KEVB_CSV
 import com.healthmetrix.labres.lab.BulkUpdateResultRequest
+import com.healthmetrix.labres.lab.KevbLabResultMessageConverter
 import com.healthmetrix.labres.lab.Result
 import com.healthmetrix.labres.lab.UpdateResultRequest
 import com.healthmetrix.labres.order.ExternalOrderNumberController.IssueExternalOrderNumberResponse
@@ -43,6 +44,9 @@ class LabResultsTest {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
+
+    @Autowired
+    private lateinit var kevbLabResultMessageConverter: KevbLabResultMessageConverter
 
     @BeforeEach
     internal fun setUp() {
@@ -167,7 +171,7 @@ class LabResultsTest {
 
         @Test
         fun `bulk upload works`() {
-            val responses = (0 until 3).map { req ->
+            val responses = (0 until 3).map {
                 mockMvc.post("/v1/orders") {
                     contentType = MediaType.APPLICATION_JSON
                 }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
@@ -300,7 +304,7 @@ class LabResultsTest {
         @Test
         fun `updating results sets the lab id`() {
             val createResponse = mockMvc
-                .post("/v1/issuer/$issuerId/orders") {
+                .post("/v1/issuers/$issuerId/orders") {
                     contentType = MediaType.APPLICATION_JSON
                     content = objectMapper.writeValueAsBytes(
                         mapOf(
@@ -382,6 +386,6 @@ class LabResultsTest {
     }
 
     private inline fun <reified T> MvcResult.responseBody(): T {
-        return objectMapper.readValue<T>(response.contentAsString)
+        return objectMapper.readValue(response.contentAsString)
     }
 }

@@ -14,6 +14,7 @@ import java.time.Instant
 import java.util.Date
 import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -43,6 +44,11 @@ class UpdateResultUseCaseTest {
         mockkObject(OrderNumber)
         every { OrderNumber.from(any(), any()) } returns orderNumber
         every { OrderNumber.from(null, any()) } returns orderNumber
+    }
+
+    @AfterEach
+    internal fun tearDown() {
+        clearMocks(OrderNumber)
     }
 
     @Test
