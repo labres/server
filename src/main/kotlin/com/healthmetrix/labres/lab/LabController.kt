@@ -233,10 +233,14 @@ data class UpdateResultRequest(
     @Schema(description = "The test result")
     val result: Result,
     @Schema(
-        description = "The kind of test used to generate the given result as a LOINC code.",
-        example = "94500-6"
+        description = "The kind of test used to generate the given result.",
+        nullable = true,
+        required = false,
+        defaultValue = "PCR",
+        allowableValues = [PCR_LOINC],
+        example = "NGS"
     )
-    val type: String? = null
+    val type: TestType = TestType.PCR
 )
 
 sealed class UpdateResultResponse(

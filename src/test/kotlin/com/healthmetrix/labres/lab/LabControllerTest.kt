@@ -92,7 +92,8 @@ class LabControllerTest {
                 updateResultUseCase.invoke(
                     updateResultRequest = match {
                         it.orderNumber == orderNumber &&
-                            it.result == Result.NEGATIVE
+                            it.result == Result.NEGATIVE &&
+                            it.type == TestType.PCR
                     },
                     labId = labId,
                     issuerId = null,
@@ -147,7 +148,14 @@ class LabControllerTest {
 
         @Test
         fun `upload a result to an unknown order number returns 404`() {
-            every { updateResultUseCase(any(), any(), any(), any()) } returns com.healthmetrix.labres.lab.UpdateResult.ORDER_NOT_FOUND
+            every {
+                updateResultUseCase(
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            } returns com.healthmetrix.labres.lab.UpdateResult.ORDER_NOT_FOUND
 
             mockMvc.put("/v1/results") {
                 contentType = MediaType.APPLICATION_JSON
@@ -165,7 +173,14 @@ class LabControllerTest {
 
         @Test
         fun `upload a result to an invalid order number returns 400`() {
-            every { updateResultUseCase(any(), any(), any(), any()) } returns com.healthmetrix.labres.lab.UpdateResult.INVALID_ORDER_NUMBER
+            every {
+                updateResultUseCase(
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            } returns com.healthmetrix.labres.lab.UpdateResult.INVALID_ORDER_NUMBER
 
             mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
@@ -250,7 +265,24 @@ class LabControllerTest {
                     mapOf(
                         "orderNumber" to "0123456789",
                         "result" to Status.NEGATIVE,
-                        "type" to "94500-6"
+                        "type" to TestType.ANTIBODY.toString()
+                    )
+                )
+            }.andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `uploading a document with the optional test type as loinc code for kevb returns 200`() {
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(
+                    mapOf(
+                        "orderNumber" to "0123456789",
+                        "result" to Status.NEGATIVE,
+                        "type" to PCR_LOINC
                     )
                 )
             }.andExpect {
@@ -260,7 +292,7 @@ class LabControllerTest {
 
         @Test
         fun `uploading a document with the optional test type calls the updateStateUseCase`() {
-            val testType = "94500-6"
+            val testType = TestType.ANTIBODY
 
             mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
@@ -349,7 +381,8 @@ class LabControllerTest {
                 updateResultUseCase.invoke(
                     updateResultRequest = match {
                         it.orderNumber == orderNumber &&
-                            it.result == Result.NEGATIVE
+                            it.result == Result.NEGATIVE &&
+                            it.type == TestType.PCR
                     },
                     labId = labId,
                     issuerId = issuerId,
@@ -360,7 +393,14 @@ class LabControllerTest {
 
         @Test
         fun `upload a result to an unknown order number returns 404`() {
-            every { updateResultUseCase(any(), any(), any(), any()) } returns com.healthmetrix.labres.lab.UpdateResult.ORDER_NOT_FOUND
+            every {
+                updateResultUseCase(
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            } returns com.healthmetrix.labres.lab.UpdateResult.ORDER_NOT_FOUND
 
             mockMvc.put("/v1/results") {
                 contentType = APPLICATION_KEVB_CSV
@@ -373,7 +413,14 @@ class LabControllerTest {
 
         @Test
         fun `upload a result to an invalid order number returns 400`() {
-            every { updateResultUseCase(any(), any(), any(), any()) } returns com.healthmetrix.labres.lab.UpdateResult.INVALID_ORDER_NUMBER
+            every {
+                updateResultUseCase(
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            } returns com.healthmetrix.labres.lab.UpdateResult.INVALID_ORDER_NUMBER
 
             mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
@@ -434,7 +481,18 @@ class LabControllerTest {
             mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = APPLICATION_KEVB_CSV
-                content = "0123456789,${Status.NEGATIVE},94500-6"
+                content = "0123456789,${Status.NEGATIVE},${TestType.ANTIBODY}"
+            }.andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `uploading a result with the optional test type as loinc code for kevb returns 200`() {
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = APPLICATION_KEVB_CSV
+                content = "0123456789,${Status.NEGATIVE},94531-1"
             }.andExpect {
                 status { isOk }
             }
@@ -442,7 +500,7 @@ class LabControllerTest {
 
         @Test
         fun `uploading a result with the optional test type calls the updateStateUseCase`() {
-            val testType = "94500-6"
+            val testType = TestType.PCR
 
             mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
