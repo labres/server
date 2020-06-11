@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.persistence
 
+import com.healthmetrix.labres.lab.TestType
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
 import java.time.Instant
@@ -19,7 +20,7 @@ internal class RawOrderInformationTest {
     private val reportedAt = Date.from(Instant.now().minusSeconds(60))
     private val notifiedAt = Date.from(Instant.now().minusSeconds(30))
     private val notificationUrl = "http://lebignotifier.test"
-    private val testType = "multipleChoice"
+    private val testType = TestType.PCR
     private val labId = "test-lab"
     private val testSiteId = "test-test-site"
     private val orderNumberString = "1234567890"
@@ -31,7 +32,7 @@ internal class RawOrderInformationTest {
         status = status.toString(),
         labId = labId,
         testSiteId = testSiteId,
-        testType = testType,
+        testType = testType.toString(),
         notificationUrl = notificationUrl,
         issuedAt = issuedAt,
         enteredLabAt = enteredLabAt,
@@ -126,6 +127,35 @@ internal class RawOrderInformationTest {
         fun `cooking should return null if issuedAt is null`() {
             val result = raw.copy(
                 issuedAt = null
+            ).cook()
+
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `cooking should return null if testType is null but enteredLabAt isn't`() {
+            val result = raw.copy(
+                testType = null,
+                enteredLabAt = enteredLabAt
+            ).cook()
+
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `cooking should return null if testType is null but reportedAt isn't`() {
+            val result = raw.copy(
+                testType = null,
+                reportedAt = reportedAt
+            ).cook()
+
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `cooking should return null if testType can not be parsed`() {
+            val result = raw.copy(
+                testType = "invalid"
             ).cook()
 
             assertThat(result).isNull()

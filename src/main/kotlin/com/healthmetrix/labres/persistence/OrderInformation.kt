@@ -5,9 +5,11 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable
+import com.healthmetrix.labres.lab.TestType
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Status
+import java.lang.IllegalArgumentException
 import java.util.Date
 import java.util.UUID
 
@@ -22,7 +24,7 @@ data class OrderInformation(
     val notifiedAt: Date? = null,
     val notificationUrl: String? = null,
     val enteredLabAt: Date? = null,
-    val testType: String? = null
+    val testType: TestType? = null
 ) {
     internal fun raw() = RawOrderInformation(
         id = id,
@@ -34,7 +36,7 @@ data class OrderInformation(
         notifiedAt = notifiedAt,
         notificationUrl = notificationUrl,
         enteredLabAt = enteredLabAt,
-        testType = testType,
+        testType = testType?.toString(),
         labId = labId,
         testSiteId = testSiteId
     )
@@ -113,11 +115,18 @@ data class RawOrderInformation(
             return null
         }
 
+        val cookedTestType = try {
+            cookTestType()
+        } catch (ex: IllegalStateException) {
+            logger.warn("Unable to cook $id: ${ex.message}")
+            return null
+        }
+
         return OrderInformation(
             id = id,
             orderNumber = orderNumber,
             status = status,
-            testType = testType,
+            testType = cookedTestType,
             labId = labId,
             testSiteId = testSiteId,
             notificationUrl = notificationUrl,
@@ -127,4 +136,25 @@ data class RawOrderInformation(
             enteredLabAt = enteredLabAt
         )
     }
+
+    private fun cookTestType(): TestType? {
+        // for smart casts
+        val rawTestType = testType
+
+        if (testTypeShouldHaveBeenReported() && rawTestType == null) {
+            throw IllegalStateException("Attribute testType must not be null when the lab has already updated the result")
+        }
+
+        if (rawTestType == null)
+            return null
+
+        return try {
+            TestType.valueOf(rawTestType)
+        } catch (ex: IllegalArgumentException) {
+            throw IllegalStateException("'$rawTestType' could not be parsed to attribute testType")
+        }
+    }
+
+    private fun testTypeShouldHaveBeenReported() =
+        enteredLabAt != null || reportedAt != null
 }

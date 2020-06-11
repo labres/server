@@ -31,7 +31,7 @@ class UpdateResultUseCase(
         val update = orderInfo.copy(
             status = updateResultRequest.result.asStatus(),
             labId = labId,
-            testType = updateResultRequest.type.toString() // TODO
+            testType = updateResultRequest.type
         )
 
         updateTimestamp(update, updateResultRequest.result, now)
