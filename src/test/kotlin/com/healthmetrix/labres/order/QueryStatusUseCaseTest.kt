@@ -24,7 +24,8 @@ internal class QueryStatusUseCaseTest {
         id = UUID.randomUUID(),
         orderNumber = eon,
         status = orderStatus,
-        issuedAt = Date.from(Instant.now())
+        issuedAt = Date.from(Instant.now()),
+        sample = Sample.SALIVA
     )
 
     @Test

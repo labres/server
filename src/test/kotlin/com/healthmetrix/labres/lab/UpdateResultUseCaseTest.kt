@@ -2,6 +2,7 @@ package com.healthmetrix.labres.lab
 
 import com.healthmetrix.labres.notifications.NotifyOnStatusChangeUseCase
 import com.healthmetrix.labres.order.OrderNumber
+import com.healthmetrix.labres.order.Sample
 import com.healthmetrix.labres.order.Status
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
@@ -30,7 +31,8 @@ class UpdateResultUseCaseTest {
         issuedAt = Date.from(Instant.now()),
         orderNumber = orderNumber,
         status = Status.IN_PROGRESS,
-        notificationUrl = notificationUrl
+        notificationUrl = notificationUrl,
+        sample = Sample.SALIVA
     )
     private val labId = "labId"
     private val issuerId = "issuerId"

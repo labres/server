@@ -23,7 +23,8 @@ internal class IssueExternalOrderNumberUseCaseTest {
         id = orderId,
         orderNumber = orderNumber,
         status = Status.IN_PROGRESS,
-        issuedAt = Date.from(Instant.now())
+        issuedAt = Date.from(Instant.now()),
+        sample = Sample.SALIVA
     )
 
     private val underTest = IssueExternalOrderNumberUseCase(repository, registerOrder)

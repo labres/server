@@ -30,7 +30,8 @@ class RegisterOrderUseCase(
             status = Status.IN_PROGRESS,
             notificationUrl = notificationUrl,
             issuedAt = Date.from(now),
-            testSiteId = testSiteId
+            testSiteId = testSiteId,
+            sample = sample
         )
 
         return repository.save(orderInfo)

@@ -8,6 +8,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable
 import com.healthmetrix.labres.lab.TestType
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
+import com.healthmetrix.labres.order.Sample
 import com.healthmetrix.labres.order.Status
 import java.lang.IllegalArgumentException
 import java.util.Date
@@ -18,6 +19,7 @@ data class OrderInformation(
     val orderNumber: OrderNumber,
     val status: Status,
     val issuedAt: Date,
+    val sample: Sample,
     val labId: String? = null,
     val testSiteId: String? = null,
     val reportedAt: Date? = null,
@@ -38,7 +40,8 @@ data class OrderInformation(
         enteredLabAt = enteredLabAt,
         testType = testType?.toString(),
         labId = labId,
-        testSiteId = testSiteId
+        testSiteId = testSiteId,
+        sample = sample.toString()
     )
 }
 
@@ -79,7 +82,10 @@ data class RawOrderInformation(
     var enteredLabAt: Date? = null,
 
     @DynamoDBAttribute
-    var testType: String? = null
+    var testType: String? = null,
+
+    @DynamoDBAttribute
+    var sample: String? = null
 ) {
     fun cook(): OrderInformation? {
         // for smart casts
@@ -115,6 +121,17 @@ data class RawOrderInformation(
             return null
         }
 
+        val cookedSample = try {
+            sample?.let(Sample::valueOf)
+        } catch (ex: IllegalArgumentException) {
+            null
+        }
+
+        if (cookedSample == null) {
+            logger.warn("Unable to cook $id: Attribute sample was ${sample ?: "null"} and could not be parsed")
+            return null
+        }
+
         val cookedTestType = try {
             cookTestType()
         } catch (ex: IllegalStateException) {
@@ -133,7 +150,8 @@ data class RawOrderInformation(
             issuedAt = issuedAt,
             reportedAt = reportedAt,
             notifiedAt = notifiedAt,
-            enteredLabAt = enteredLabAt
+            enteredLabAt = enteredLabAt,
+            sample = cookedSample
         )
     }
 

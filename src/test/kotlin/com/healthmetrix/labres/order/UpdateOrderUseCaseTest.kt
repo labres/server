@@ -30,7 +30,8 @@ class UpdateOrderUseCaseTest {
         id = orderId,
         orderNumber = eon,
         status = Status.IN_PROGRESS,
-        issuedAt = Date.from(Instant.now())
+        issuedAt = Date.from(Instant.now()),
+        sample = Sample.SALIVA
     )
 
     @Test
