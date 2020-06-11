@@ -19,7 +19,7 @@ class RegisterOrderUseCase(
         notificationUrl: String?,
         now: Instant = Instant.now()
     ): OrderInformation? {
-        val existing = repository.findByOrderNumber(orderNumber)
+        val existing = repository.findByOrderNumberAndSample(orderNumber, sample)
 
         if (existing != null)
             return null

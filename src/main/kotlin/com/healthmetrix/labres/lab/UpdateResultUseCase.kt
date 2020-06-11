@@ -25,7 +25,8 @@ class UpdateResultUseCase(
             return UpdateResult.INVALID_ORDER_NUMBER
         }
 
-        val orderInfo = repository.findByOrderNumber(orderNumber)
+        val sample = updateResultRequest.type.sample
+        val orderInfo = repository.findByOrderNumberAndSample(orderNumber, sample)
             ?: return UpdateResult.ORDER_NOT_FOUND
 
         val update = orderInfo.copy(
