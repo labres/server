@@ -34,6 +34,9 @@ class KevbLabResultMessageConverter : AbstractHttpMessageConverter<UpdateResultR
         val result = Result.from(csvParts[1])
             ?: throw HttpMessageNotReadableException("Failed to parse result", inputMessage)
 
-        return UpdateResultRequest(orderNumber, result, csvParts.getOrNull(2))
+        val testType = TestType.from(csvParts.getOrNull(2))
+            ?: throw HttpMessageNotReadableException("Failed to parse testType", inputMessage)
+
+        return UpdateResultRequest(orderNumber, result, testType)
     }
 }

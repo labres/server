@@ -12,10 +12,10 @@ internal class KevbLabResultMessageConverterTest {
 
     val orderNumber = "1234567890"
     val result = Result.POSITIVE
-    val testType = "multiple_choice"
+    private val testType = TestType.NGS
 
-    val underTest = KevbLabResultMessageConverter()
-    val inputMessage: HttpInputMessage = mockk()
+    private val underTest = KevbLabResultMessageConverter()
+    private val inputMessage: HttpInputMessage = mockk()
 
     @Test
     fun `readInternal should return updateResultRequest`() {
@@ -23,7 +23,7 @@ internal class KevbLabResultMessageConverterTest {
 
         val res = underTest.read(UpdateResultRequest::class.java, inputMessage)
 
-        assertThat(res).isEqualTo(UpdateResultRequest(orderNumber, result, null))
+        assertThat(res).isEqualTo(UpdateResultRequest(orderNumber, result, TestType.PCR))
     }
 
     @Test
