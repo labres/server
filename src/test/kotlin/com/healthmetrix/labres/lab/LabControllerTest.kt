@@ -155,7 +155,7 @@ class LabControllerTest {
                     any(),
                     any()
                 )
-            } returns com.healthmetrix.labres.lab.UpdateResult.ORDER_NOT_FOUND
+            } returns UpdateResult.ORDER_NOT_FOUND
 
             mockMvc.put("/v1/results") {
                 contentType = MediaType.APPLICATION_JSON
@@ -180,7 +180,7 @@ class LabControllerTest {
                     any(),
                     any()
                 )
-            } returns com.healthmetrix.labres.lab.UpdateResult.INVALID_ORDER_NUMBER
+            } returns UpdateResult.INVALID_ORDER_NUMBER
 
             mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
@@ -400,7 +400,7 @@ class LabControllerTest {
                     any(),
                     any()
                 )
-            } returns com.healthmetrix.labres.lab.UpdateResult.ORDER_NOT_FOUND
+            } returns UpdateResult.ORDER_NOT_FOUND
 
             mockMvc.put("/v1/results") {
                 contentType = APPLICATION_KEVB_CSV
@@ -420,7 +420,7 @@ class LabControllerTest {
                     any(),
                     any()
                 )
-            } returns com.healthmetrix.labres.lab.UpdateResult.INVALID_ORDER_NUMBER
+            } returns UpdateResult.INVALID_ORDER_NUMBER
 
             mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
