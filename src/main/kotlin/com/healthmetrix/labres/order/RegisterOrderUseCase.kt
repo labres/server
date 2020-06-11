@@ -15,6 +15,7 @@ class RegisterOrderUseCase(
     operator fun invoke(
         orderNumber: OrderNumber,
         testSiteId: String?,
+        sample: Sample,
         notificationUrl: String?,
         now: Instant = Instant.now()
     ): OrderInformation? {

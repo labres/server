@@ -12,7 +12,12 @@ class IssueExternalOrderNumberUseCase(
 ) {
     operator fun invoke(notificationUrl: String?): OrderInformation? {
         val eon = issueNewEon()
-        return registerOrder(eon, testSiteId = null, notificationUrl = notificationUrl)
+        return registerOrder(
+            eon,
+            testSiteId = null,
+            notificationUrl = notificationUrl,
+            sample = Sample.SALIVA
+        )
     }
 
     private fun issueNewEon(): OrderNumber.External {
