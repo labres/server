@@ -2,6 +2,7 @@ package com.healthmetrix.labres.persistence
 
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
+import com.healthmetrix.labres.order.Sample
 import java.util.UUID
 import org.socialsignin.spring.data.dynamodb.repository.EnableScan
 import org.springframework.context.annotation.Profile
@@ -13,7 +14,9 @@ interface OrderInformationRepository {
 
     fun save(orderInformation: OrderInformation): OrderInformation
 
-    fun findByOrderNumber(orderNumber: OrderNumber): OrderInformation?
+    fun findByOrderNumber(orderNumber: OrderNumber): List<OrderInformation>
+
+    fun findByOrderNumberAndSample(orderNumber: OrderNumber, sample: Sample): OrderInformation?
 
     // TODO delete after successful migration
     fun migrate(migration: (RawOrderInformation) -> RawOrderInformation?)
@@ -34,10 +37,22 @@ class DynamoOrderInformationRepository internal constructor(
         .orElse(null)
         ?.cook()
 
-    override fun findByOrderNumber(orderNumber: OrderNumber): OrderInformation? = repository
-        .findByIssuerIdAndOrderNumber(orderNumber.issuerId, orderNumber.number)
-        .mapNotNull(RawOrderInformation::cook)
-        .singleOrNull()
+    override fun findByOrderNumber(orderNumber: OrderNumber): List<OrderInformation> =
+        repository.findByIssuerIdAndOrderNumber(orderNumber.issuerId, orderNumber.number)
+            .mapNotNull(RawOrderInformation::cook)
+
+    override fun findByOrderNumberAndSample(orderNumber: OrderNumber, sample: Sample): OrderInformation? {
+        val existingOrders = findByOrderNumber(orderNumber).filter { it.sample == sample }
+
+        if (existingOrders.size > 1) {
+            logger.warn(
+                "Conflict in finding order with orderNumber ${orderNumber.number}, issuerId ${orderNumber.issuerId} " +
+                    "and sample type $sample: More than one result found"
+            )
+        }
+
+        return existingOrders.maxBy { it.issuedAt }
+    }
 
     // TODO make it return nullable
     override fun save(orderInformation: OrderInformation) =
@@ -64,7 +79,12 @@ class InMemoryOrderInformationRepository : OrderInformationRepository {
         return map.getOrDefault(id, null)
     }
 
-    override fun findByOrderNumber(orderNumber: OrderNumber) = map.values.singleOrNull { it.orderNumber == orderNumber }
+    override fun findByOrderNumber(orderNumber: OrderNumber) =
+        map.values.filter { it.orderNumber == orderNumber }
+
+    override fun findByOrderNumberAndSample(orderNumber: OrderNumber, sample: Sample) =
+        map.values.singleOrNull { it.orderNumber == orderNumber && it.sample == sample }
+
     override fun migrate(migration: (RawOrderInformation) -> RawOrderInformation?) {
         map.values
             .map(OrderInformation::raw)

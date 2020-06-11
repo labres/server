@@ -4,14 +4,15 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.healthmetrix.labres.order.Sample
 
 const val PCR_LOINC = "94531-1"
 
 @JsonDeserialize(using = TestTypeJsonDeserializer::class)
-enum class TestType {
-    PCR,
-    NGS,
-    ANTIBODY;
+enum class TestType(val sample: Sample) {
+    PCR(Sample.SALIVA),
+    NGS(Sample.SALIVA),
+    ANTIBODY(Sample.BLOOD);
 
     companion object {
         fun from(s: String?): TestType? {

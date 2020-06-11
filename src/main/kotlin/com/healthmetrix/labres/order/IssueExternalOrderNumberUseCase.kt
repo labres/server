@@ -23,7 +23,7 @@ class IssueExternalOrderNumberUseCase(
     private fun issueNewEon(): OrderNumber.External {
         var eon = OrderNumber.External.random()
         var failedCounter = 0
-        while (repository.findByOrderNumber(eon) != null) {
+        while (repository.findByOrderNumber(eon).isNotEmpty()) {
             failedCounter++
             logger.warn("Tried issuing new orderNumber $failedCounter times")
             eon = OrderNumber.External.random()

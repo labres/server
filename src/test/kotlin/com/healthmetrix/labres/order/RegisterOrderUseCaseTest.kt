@@ -32,7 +32,7 @@ internal class RegisterOrderUseCaseTest {
     internal fun setUp() {
         clearMocks(repository)
         every { repository.save(any()) } answers { arg(0) }
-        every { repository.findByOrderNumber(any()) } returns null
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns null
     }
 
     @Test
@@ -67,7 +67,7 @@ internal class RegisterOrderUseCaseTest {
 
     @Test
     fun `it should return null if order has already been registered`() {
-        every { repository.findByOrderNumber(any()) } returns mockk()
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns mockk()
 
         val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
 
@@ -76,7 +76,7 @@ internal class RegisterOrderUseCaseTest {
 
     @Test
     fun `it should not save anything if order has already been registered`() {
-        every { repository.findByOrderNumber(any()) } returns mockk()
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns mockk()
 
         underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
 

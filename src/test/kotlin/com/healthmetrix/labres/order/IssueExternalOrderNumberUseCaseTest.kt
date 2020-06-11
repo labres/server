@@ -31,7 +31,7 @@ internal class IssueExternalOrderNumberUseCaseTest {
 
     @Test
     fun `it returns registered orderId and orderNumber`() {
-        every { repository.findByOrderNumber(any()) } returns null
+        every { repository.findByOrderNumber(any()) } returns emptyList()
         every { registerOrder(any(), any(), any(), any(), any()) } returns order
 
         assertThat(underTest(notificationUrl)).isEqualTo(order)
@@ -39,7 +39,11 @@ internal class IssueExternalOrderNumberUseCaseTest {
 
     @Test
     fun `it eventually called registerOrder after retrying to issue a new random eon`() {
-        every { repository.findByOrderNumber(any()) } returnsMany listOf(orderInformation, orderInformation, null)
+        every { repository.findByOrderNumber(any()) } returnsMany listOf(
+            listOf(orderInformation),
+            listOf(orderInformation, orderInformation),
+            emptyList()
+        )
         every { registerOrder(any(), any(), any(), any(), any()) } returns order
 
         underTest(notificationUrl)
@@ -49,17 +53,19 @@ internal class IssueExternalOrderNumberUseCaseTest {
 
     @Test
     fun `it calls registerOrder with default sample type SALIVA`() {
-        every { repository.findByOrderNumber(any()) } returns null
+        every { repository.findByOrderNumber(any()) } returns emptyList()
         every { registerOrder(any(), any(), any(), any(), any()) } returns order
 
         underTest(notificationUrl)
 
-        verify { registerOrder(
-            orderNumber = any(),
-            testSiteId = any(),
-            sample = Sample.SALIVA,
-            notificationUrl = any(),
-            now = any())
+        verify {
+            registerOrder(
+                orderNumber = any(),
+                testSiteId = any(),
+                sample = Sample.SALIVA,
+                notificationUrl = any(),
+                now = any()
+            )
         }
     }
 }
