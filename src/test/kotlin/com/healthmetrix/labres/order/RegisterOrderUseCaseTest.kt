@@ -43,7 +43,8 @@ internal class RegisterOrderUseCaseTest {
             id = orderId,
             orderNumber = eon,
             status = Status.IN_PROGRESS,
-            issuedAt = Date.from(now)
+            issuedAt = Date.from(now),
+            sample = Sample.SALIVA
         ))
     }
 
@@ -58,7 +59,8 @@ internal class RegisterOrderUseCaseTest {
                 status = Status.IN_PROGRESS,
                 notificationUrl = notificationUrl,
                 testSiteId = testSiteId,
-                issuedAt = Date.from(now)
+                issuedAt = Date.from(now),
+                sample = Sample.SALIVA
             ))
         }
     }

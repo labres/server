@@ -49,7 +49,8 @@ class ExternalOrderNumberControllerTest {
         id = orderId,
         orderNumber = orderNumber,
         status = Status.IN_PROGRESS,
-        issuedAt = Date.from(Instant.now())
+        issuedAt = Date.from(Instant.now()),
+        sample = Sample.SALIVA
     )
 
     @Nested

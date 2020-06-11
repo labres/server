@@ -2,6 +2,7 @@ package com.healthmetrix.labres.persistence
 
 import com.healthmetrix.labres.lab.TestType
 import com.healthmetrix.labres.order.OrderNumber
+import com.healthmetrix.labres.order.Sample
 import com.healthmetrix.labres.order.Status
 import java.time.Instant
 import java.util.Date
@@ -30,6 +31,7 @@ internal class RawOrderInformationTest {
         issuerId = issuerId,
         orderNumber = orderNumberString,
         status = status.toString(),
+        sample = Sample.BLOOD.toString(),
         labId = labId,
         testSiteId = testSiteId,
         testType = testType.toString(),
@@ -51,7 +53,8 @@ internal class RawOrderInformationTest {
         notificationUrl = notificationUrl,
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
-        enteredLabAt = enteredLabAt
+        enteredLabAt = enteredLabAt,
+        sample = Sample.BLOOD
     )
 
     @Nested
@@ -156,6 +159,24 @@ internal class RawOrderInformationTest {
         fun `cooking should return null if testType can not be parsed`() {
             val result = raw.copy(
                 testType = "invalid"
+            ).cook()
+
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `cooking should return null if sample is null`() {
+            val result = raw.copy(
+                sample = null
+            ).cook()
+
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `cooking should return null if sample can not be parsed`() {
+            val result = raw.copy(
+                sample = "invalid"
             ).cook()
 
             assertThat(result).isNull()

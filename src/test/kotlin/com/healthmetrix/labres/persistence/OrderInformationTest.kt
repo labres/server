@@ -1,6 +1,7 @@
 package com.healthmetrix.labres.persistence
 
 import com.healthmetrix.labres.order.OrderNumber
+import com.healthmetrix.labres.order.Sample
 import com.healthmetrix.labres.order.Status
 import java.time.Instant
 import java.util.Date
@@ -15,6 +16,7 @@ class OrderInformationTest {
         orderNumber = "0123456789",
         status = "NEGATIVE",
         issuedAt = Date.from(Instant.now()),
+        sample = Sample.SALIVA.toString(),
         reportedAt = null,
         notifiedAt = null,
         notificationUrl = null
@@ -27,7 +29,8 @@ class OrderInformationTest {
                 id = baseRawOrderInformation.id!!,
                 orderNumber = OrderNumber.External.from(baseRawOrderInformation.orderNumber!!),
                 status = Status.NEGATIVE,
-                issuedAt = baseRawOrderInformation.issuedAt!!
+                issuedAt = baseRawOrderInformation.issuedAt!!,
+                sample = Sample.SALIVA
             )
         )
     }

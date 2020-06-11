@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
 
+// TODO delete when successfully migrated
 @Service
 @Profile("migrate-test-types")
 class TestTypeMigration(private val repository: OrderInformationRepository) {
@@ -26,7 +27,7 @@ class TestTypeMigration(private val repository: OrderInformationRepository) {
         }
 
         if (newTestType == null) {
-            logger.warn("Failed to migrate ${rawOrder.id}: TestType is ${rawOrder.testType}")
+            logger.warn("Failed to migrate ${rawOrder.id}: TestType is '${rawOrder.testType}'")
             return null
         }
 
