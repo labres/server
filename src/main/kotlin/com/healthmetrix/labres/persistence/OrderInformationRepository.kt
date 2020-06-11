@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.persistence
 
+import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
 import java.util.UUID
 import org.socialsignin.spring.data.dynamodb.repository.EnableScan
@@ -13,6 +14,9 @@ interface OrderInformationRepository {
     fun save(orderInformation: OrderInformation): OrderInformation
 
     fun findByOrderNumber(orderNumber: OrderNumber): OrderInformation?
+
+    // TODO delete after successful migration
+    fun migrate(migration: (RawOrderInformation) -> RawOrderInformation?)
 }
 
 @EnableScan
@@ -38,6 +42,16 @@ class DynamoOrderInformationRepository internal constructor(
     // TODO make it return nullable
     override fun save(orderInformation: OrderInformation) =
         repository.save(orderInformation.raw()).cook()!!
+
+    override fun migrate(migration: (RawOrderInformation) -> RawOrderInformation?) {
+        val numberOfRows = repository
+            .findAll()
+            .mapNotNull(migration)
+            .map(repository::save)
+            .count()
+
+        logger.info("Database migration: $numberOfRows rows migrated")
+    }
 }
 
 @Component
@@ -51,6 +65,13 @@ class InMemoryOrderInformationRepository : OrderInformationRepository {
     }
 
     override fun findByOrderNumber(orderNumber: OrderNumber) = map.values.singleOrNull { it.orderNumber == orderNumber }
+    override fun migrate(migration: (RawOrderInformation) -> RawOrderInformation?) {
+        map.values
+            .map(OrderInformation::raw)
+            .mapNotNull(migration)
+            .mapNotNull(RawOrderInformation::cook)
+            .forEach { order -> map[order.id] = order }
+    }
 
     override fun save(orderInformation: OrderInformation): OrderInformation {
         map[orderInformation.id] = orderInformation

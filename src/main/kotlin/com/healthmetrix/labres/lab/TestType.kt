@@ -39,7 +39,7 @@ class TestTypeJsonDeserializer : StdDeserializer<TestType>(TestType::class.java)
         return TestType.from(jsonString)
             ?: throw IllegalArgumentException(
                 "Error occurred parsing $jsonString to TestType. Allowed values are ${TestType.values()
-                    .joinToString(", ")}, 94531-1"
+                    .joinToString(", ")}, $PCR_LOINC"
             )
     }
 }

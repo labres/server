@@ -37,7 +37,7 @@ class UpdateResultUseCaseTest {
     private val testType = TestType.ANTIBODY
     private val now = Date.from(Instant.now())
     private val updateResultRequest = UpdateResultRequest(orderNumber.number, Result.POSITIVE, TestType.PCR)
-    private val updated = orderInfo.copy(status = Status.POSITIVE, labId = labId, testType = TestType.PCR.toString())
+    private val updated = orderInfo.copy(status = Status.POSITIVE, labId = labId, testType = TestType.PCR)
 
     @BeforeEach
     internal fun setUp() {
@@ -111,7 +111,7 @@ class UpdateResultUseCaseTest {
         clearMocks(repository)
 
         every { repository.findByOrderNumber(any()) } returns orderInfo
-        val updated = updated.copy(reportedAt = now, testType = testType.toString())
+        val updated = updated.copy(reportedAt = now, testType = testType)
         every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
 
