@@ -205,7 +205,7 @@ class LabResultsTest {
     inner class PON {
         @Test
         fun `an orderInformation has IN_PROGRESS when first registered`() {
-            val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+            val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
                 testSiteId = null,
                 notificationUrl = null
@@ -222,7 +222,7 @@ class LabResultsTest {
 
         @Test
         fun `an orderInformation can be created with notification url and testSiteId`() {
-            val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+            val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
                 testSiteId = testSiteId,
                 notificationUrl = notificationUrl
@@ -240,7 +240,7 @@ class LabResultsTest {
 
         @Test
         fun `a lab result can be successfully created, fetched, and updated`() {
-            val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+            val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
                 testSiteId = testSiteId,
                 notificationUrl = notificationUrl
@@ -335,19 +335,19 @@ class LabResultsTest {
 
         @Test
         fun `bulk upload works`() {
-            val request1 = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+            val request1 = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
                 testSiteId = testSiteId,
                 notificationUrl = notificationUrl
             )
 
-            val request2 = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+            val request2 = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = "orderNumber2",
                 testSiteId = testSiteId,
                 notificationUrl = notificationUrl
             )
 
-            val request3 = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+            val request3 = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = "orderNumber3",
                 testSiteId = testSiteId,
                 notificationUrl = notificationUrl

@@ -59,9 +59,9 @@ class PreIssuedOrderNumberControllerTest {
     inner class RegisterOrderEndpointTest {
         @Test
         fun `registering a preissued order number returns status 201`() {
-            every { registerOrder.invoke(any(), any(), any(), any()) } returns order
+            every { registerOrder.invoke(any(), any(), any(), any(), any()) } returns order
 
-            val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+            val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
                 testSiteId = testSiteId,
                 notificationUrl = notificationUrl
@@ -77,9 +77,9 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number returns order number and id`() {
-            every { registerOrder.invoke(any(), any(), any(), any()) } returns order
+            every { registerOrder.invoke(any(), any(), any(), any(), any()) } returns order
 
-            val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+            val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
                 testSiteId = null,
                 notificationUrl = null
@@ -96,9 +96,9 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number returns 409 if it has already been registered before`() {
-            every { registerOrder.invoke(any(), any(), any(), any()) } returns null
+            every { registerOrder.invoke(any(), any(), any(), any(), any()) } returns null
 
-            val request = PreIssuedOrderNumberController.RegisterOrderRequestBody(
+            val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
                 testSiteId = null,
                 notificationUrl = null

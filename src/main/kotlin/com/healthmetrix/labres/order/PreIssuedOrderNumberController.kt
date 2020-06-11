@@ -103,12 +103,13 @@ class PreIssuedOrderNumberController(
             )
         )
         @PathVariable issuerId: String,
-        @RequestBody requestBody: RegisterOrderRequestBody
+        @RequestBody request: RegisterOrderRequest
     ): ResponseEntity<RegisterOrderResponse> {
         val order = registerOrderUseCase(
-            orderNumber = OrderNumber.from(issuerId, requestBody.orderNumber),
-            testSiteId = requestBody.testSiteId,
-            notificationUrl = requestBody.notificationUrl
+            orderNumber = OrderNumber.from(issuerId, request.orderNumber),
+            testSiteId = request.testSiteId,
+            sample = request.sample,
+            notificationUrl = request.notificationUrl
         ) ?: return RegisterOrderResponse.Conflict.asEntity()
 
         return RegisterOrderResponse.Created(order.id, order.orderNumber.number).asEntity()
@@ -245,7 +246,7 @@ class PreIssuedOrderNumberController(
         }.asEntity()
     }
 
-    data class RegisterOrderRequestBody(
+    data class RegisterOrderRequest(
         @Schema(
             type = "string",
             description = "Order number that has been issued by an issuer to identify a laboratory order. Must be unique for the given issuer id.",
@@ -264,7 +265,15 @@ class PreIssuedOrderNumberController(
             example = "https://client.labres.de/notification",
             required = false
         )
-        val notificationUrl: String?
+        val notificationUrl: String?,
+        @Schema(
+            description = "The sample type that is being used for the lab test.",
+            nullable = true,
+            required = false,
+            defaultValue = "SALIVA",
+            example = "BLOOD"
+        )
+        val sample: Sample = Sample.SALIVA
     )
 
     sealed class RegisterOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :
