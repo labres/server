@@ -1,13 +1,13 @@
 package com.healthmetrix.labres.lab
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.healthmetrix.labres.LabResTestApplication
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.healthmetrix.labres.encodeBase64
 import com.healthmetrix.labres.order.EON_ISSUER_ID
 import com.healthmetrix.labres.order.Status
-import com.ninjasquad.springmockk.MockkBean
 import io.mockk.clearMocks
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.verify
 import org.hamcrest.core.Is
 import org.junit.jupiter.api.BeforeEach
@@ -15,35 +15,25 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.MockMvc
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
 import org.springframework.test.web.servlet.put
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
-@SpringBootTest(
-    classes = [LabResTestApplication::class],
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
-@AutoConfigureMockMvc
 class LabControllerTest {
+    private val updateResultUseCase: UpdateResultUseCase = mockk()
+    private val bulkUpdateResultsUseCase: BulkUpdateResultsUseCase = mockk()
+    private val labRegistry: LabRegistry = mockk()
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    private val underTest = LabController(updateResultUseCase, bulkUpdateResultsUseCase, labRegistry)
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
-    @MockkBean
-    private lateinit var updateResultUseCase: UpdateResultUseCase
-
-    @MockkBean
-    private lateinit var bulkUpdateResultsUseCase: BulkUpdateResultsUseCase
-
-    @MockkBean
-    private lateinit var labRegistry: LabRegistry
+    private val objectMapper = ObjectMapper().registerKotlinModule()
+    private val jsonMessageConverter = MappingJackson2HttpMessageConverter(objectMapper)
+    private val mockMvc = MockMvcBuilders
+        .standaloneSetup(underTest)
+        .setMessageConverters(jsonMessageConverter, KevbLabResultMessageConverter()) // rather mock?
+        .build()
 
     private val labId = "test-lab"
     private val issuerId = "test-issuer"
@@ -381,7 +371,7 @@ class LabControllerTest {
                 updateResultUseCase.invoke(
                     updateResultRequest = match {
                         it.orderNumber == orderNumber &&
-                            it.result == Result.NEGATIVE &&
+                            it.result == Result.POSITIVE &&
                             it.type == TestType.PCR
                     },
                     labId = labId,
