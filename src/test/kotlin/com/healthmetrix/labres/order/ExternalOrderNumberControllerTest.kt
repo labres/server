@@ -1,46 +1,31 @@
 package com.healthmetrix.labres.order
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.healthmetrix.labres.LabResTestApplication
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.healthmetrix.labres.persistence.OrderInformation
-import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.mockk
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
 import org.hamcrest.core.Is
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
-@SpringBootTest(
-    classes = [LabResTestApplication::class],
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
-@AutoConfigureMockMvc
 class ExternalOrderNumberControllerTest {
+    private val issueExternalOrderNumberUseCase: IssueExternalOrderNumberUseCase = mockk()
+    private val updateOrderUseCase: UpdateOrderUseCase = mockk()
+    private val queryStatusUseCase: QueryStatusUseCase = mockk()
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    private val underTest = ExternalOrderNumberController(issueExternalOrderNumberUseCase, updateOrderUseCase, queryStatusUseCase)
 
-    @MockkBean
-    private lateinit var issueExternalOrderNumber: IssueExternalOrderNumberUseCase
-
-    @MockkBean
-    private lateinit var updateOrderUseCase: UpdateOrderUseCase
-
-    @MockkBean
-    private lateinit var queryStatus: QueryStatusUseCase
-
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
+    private val objectMapper = ObjectMapper().registerKotlinModule()
+    private val mockMvc = MockMvcBuilders.standaloneSetup(underTest).build()
 
     private val orderId = UUID.randomUUID()
     private val orderNumberString = "1234567890"
@@ -57,7 +42,7 @@ class ExternalOrderNumberControllerTest {
     inner class CreateOrderEndpointTest {
         @Test
         fun `issuing an external order number returns status 201`() {
-            every { issueExternalOrderNumber.invoke(any()) } returns order
+            every { issueExternalOrderNumberUseCase.invoke(any()) } returns order
 
             mockMvc.post("/v1/orders") {
                 contentType = MediaType.APPLICATION_JSON
@@ -69,7 +54,7 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `issuing an external order number returns order number and id`() {
-            every { issueExternalOrderNumber.invoke(any()) } returns order
+            every { issueExternalOrderNumberUseCase.invoke(any()) } returns order
 
             mockMvc.post("/v1/orders") {
                 contentType = MediaType.APPLICATION_JSON
@@ -85,7 +70,7 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `querying the status of an order returns 200`() {
-            every { queryStatus.invoke(any(), any()) } returns Status.POSITIVE
+            every { queryStatusUseCase.invoke(any(), any()) } returns Status.POSITIVE
 
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isOk }
@@ -94,7 +79,7 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `querying the status of an order returns status`() {
-            every { queryStatus.invoke(any(), any()) } returns Status.POSITIVE
+            every { queryStatusUseCase.invoke(any(), any()) } returns Status.POSITIVE
 
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 jsonPath("$.status", Is.`is`(Status.POSITIVE.toString()))
@@ -110,7 +95,7 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `returns status 404 when no order is found`() {
-            every { queryStatus.invoke(any(), any()) } returns null
+            every { queryStatusUseCase.invoke(any(), any()) } returns null
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isNotFound }
             }
