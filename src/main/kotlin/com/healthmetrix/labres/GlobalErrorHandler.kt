@@ -41,7 +41,7 @@ class GlobalErrorHandler {
     @ExceptionHandler(HttpMessageNotReadableException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun onHttpMessageNotReadable(exception: HttpMessageNotReadableException) =
-        badRequest(exception, "Malformed request body. Cause: ${exception.cause?.javaClass?.simpleName ?: "unknown"}")
+        badRequest(exception, "Malformed request body. Cause: ${exception.message ?: "unknown"}")
 
     private fun badRequest(exception: Exception, msg: String? = null): ResponseEntity<Error.BadRequest> {
         val id = UUID.randomUUID()
