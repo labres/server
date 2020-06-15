@@ -105,13 +105,21 @@ class PreIssuedOrderNumberController(
         @PathVariable issuerId: String,
         @RequestBody request: RegisterOrderRequest
     ): ResponseEntity<RegisterOrderResponse> {
+        val requestId = UUID.randomUUID()
+        logger.info("[$requestId]: Register order - $request, issuer: $issuerId")
         val order = registerOrderUseCase(
             orderNumber = OrderNumber.from(issuerId, request.orderNumber),
             testSiteId = request.testSiteId,
             sample = request.sample,
             notificationUrl = request.notificationUrl
-        ) ?: return RegisterOrderResponse.Conflict.asEntity()
+        )
 
+        if (order == null) {
+            logger.info("[$requestId]: Order already exists")
+            return RegisterOrderResponse.Conflict.asEntity()
+        }
+
+        logger.info("[$requestId]: Created")
         return RegisterOrderResponse.Created(order.id, order.orderNumber.number).asEntity()
     }
 
@@ -159,18 +167,26 @@ class PreIssuedOrderNumberController(
         )
         @PathVariable orderId: String
     ): ResponseEntity<StatusResponse> {
+        val requestId = UUID.randomUUID()
+        logger.info("[$requestId]: Get id $orderId, issuer: $issuerId")
+
         val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
-            logger.info(message, ex)
+            logger.info("[$requestId]: $message", ex)
             return StatusResponse.BadRequest(message).asEntity()
         }
 
-        return (queryStatusUseCase(id, issuerId)
-            ?.let(StatusResponse::Found)
-            ?: StatusResponse.NotFound)
-            .asEntity()
+        val result = queryStatusUseCase(id, issuerId)
+
+        return if (result != null) {
+            logger.info("[$requestId]: Found $result")
+            StatusResponse.Found(result).asEntity()
+        } else {
+            logger.info("[$requestId]: Not found")
+            StatusResponse.NotFound.asEntity()
+        }
     }
 
     @PutMapping(
@@ -232,15 +248,21 @@ class PreIssuedOrderNumberController(
         @RequestBody
         updateOrderRequestBody: ExternalOrderNumberController.UpdateOrderRequestBody
     ): ResponseEntity<UpdateOrderResponse> {
+        val requestId = UUID.randomUUID()
+        logger.info("[$requestId]: Update order id $orderId, issuer $issuerId: $updateOrderRequestBody")
+
         val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
-            logger.info(message, ex)
+            logger.info("[$requestId]: $message", ex)
             return UpdateOrderResponse.BadRequest(message).asEntity()
         }
 
-        return when (updateOrderUseCase(id, issuerId, updateOrderRequestBody.notificationUrl)) {
+        val result = updateOrderUseCase(id, issuerId, updateOrderRequestBody.notificationUrl)
+        logger.info("[$requestId]: $result")
+
+        return when (result) {
             UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
             UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
         }.asEntity()

@@ -27,15 +27,21 @@ class KevbLabResultMessageConverter : AbstractHttpMessageConverter<UpdateResultR
         val csvParts = csv.trim().split(",")
 
         if (csvParts.size < 2)
-            throw HttpMessageNotReadableException("CSV string contains less than 2 values", inputMessage)
+            throw HttpMessageNotReadableException("CSV string contains less than 2 values", inputMessage).also {
+                logger.info(it.message)
+            }
 
         val orderNumber = csvParts[0]
 
         val result = Result.from(csvParts[1])
-            ?: throw HttpMessageNotReadableException("Failed to parse result", inputMessage)
+            ?: throw HttpMessageNotReadableException("Failed to parse result", inputMessage).also {
+                logger.info(it.message)
+            }
 
         val testType = TestType.from(csvParts.getOrNull(2))
-            ?: throw HttpMessageNotReadableException("Failed to parse testType", inputMessage)
+            ?: throw HttpMessageNotReadableException("Failed to parse testType", inputMessage).also {
+                logger.info(it.message)
+            }
 
         return UpdateResultRequest(orderNumber, result, testType)
     }

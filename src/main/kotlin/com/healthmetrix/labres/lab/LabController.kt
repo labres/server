@@ -6,6 +6,8 @@ import com.healthmetrix.labres.LABORATORY_BULK_API_TAG
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.decodeBase64
+import com.healthmetrix.labres.logger
+import com.healthmetrix.labres.order.EON_ISSUER_ID
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.headers.Header
 import io.swagger.v3.oas.annotations.media.Content
@@ -14,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import java.util.UUID
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -112,14 +115,32 @@ class LabController(
         @RequestBody
         request: UpdateResultRequest
     ): ResponseEntity<UpdateResultResponse> {
-        val lab = extractLabIdFrom(authorizationHeader)
-            ?.let(labRegistry::get)
-            ?: return UpdateResultResponse.Unauthorized.asEntity()
+        val requestId = UUID.randomUUID()
+        logger.info("[$requestId]: Update result - $request, issuer ${issuerId ?: EON_ISSUER_ID}")
 
-        if (!lab.canUpdateResultFor(issuerId))
+        val labName = extractLabIdFrom(authorizationHeader)
+        if (labName == null) {
+            logger.info("[$requestId]: Unauthorized - Authorization header incorrect")
+            return UpdateResultResponse.Unauthorized.asEntity()
+        }
+
+        val lab = labRegistry.get(labName)
+        if (lab == null) {
+            logger.info("[$requestId]: Unauthorized - Lab $labName not registered")
+            return UpdateResultResponse.Unauthorized.asEntity()
+        }
+
+        if (!lab.canUpdateResultFor(issuerId)) {
+            logger.info("[$requestId]: Unauthorized - Lab $labName not allowed to upload results for issuer $issuerId")
             return UpdateResultResponse.Forbidden.asEntity()
+        }
 
-        return when (updateResultUseCase(request, lab.id, issuerId)) {
+        logger.info("[$requestId]: Authorized lab $labName")
+
+        val result = updateResultUseCase(request, lab.id, issuerId)
+        logger.info("[$requestId]: Result $result")
+
+        return when (result) {
             UpdateResult.INVALID_ORDER_NUMBER -> UpdateResultResponse.InvalidRequest("Failed to parse orderNumber: ${request.orderNumber}")
             UpdateResult.ORDER_NOT_FOUND -> UpdateResultResponse.OrderNotFound
             UpdateResult.SUCCESS -> UpdateResultResponse.Success

@@ -72,7 +72,7 @@ labres:
 spring:
   profiles: prod
   # TODO: find out why notify doesn't work
-  profiles.include: dynamo, notify, secrets
+  profiles.include: dynamo, notify, secrets, migrate-test-types, migrate-samples
 
 dynamo.local-endpoint:
 
