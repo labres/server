@@ -45,6 +45,8 @@ labres:
         issuers: hmx, labres
       - id: d4l
         issuers: labres
+      - id: pentest
+        issuers: labres
 
 spring:
   profiles: dev
