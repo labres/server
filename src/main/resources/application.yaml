@@ -48,15 +48,14 @@ labres:
 
 spring:
   profiles: dev
-  # TODO: find out why notify doesn't work
   profiles.include: dynamo, notify, secrets
 
 dynamo.local-endpoint:
 
 documentation-info:
   servers:
-    - url: https://api.labres.de
-      description: production environment for LabRes
+    - url: https://api.dev.labres.de
+      description: dev environment for LabRes
       version: v1
 
 ---
@@ -71,13 +70,12 @@ labres:
 
 spring:
   profiles: prod
-  # TODO: find out why notify doesn't work
-  profiles.include: dynamo, notify, secrets, migrate-test-types, migrate-samples
+  profiles.include: dynamo, notify, secrets
 
 dynamo.local-endpoint:
 
 documentation-info:
   servers:
-    - url: https://prod.api.labres.de
+    - url: https://api.labres.de
       description: production environment for LabRes
       version: v1
