@@ -247,7 +247,7 @@ class LabController(
 
 data class UpdateResultRequest(
     @Schema(
-        description = "The external order number",
+        description = "The order number",
         example = "1234567890"
     )
     val orderNumber: String,
