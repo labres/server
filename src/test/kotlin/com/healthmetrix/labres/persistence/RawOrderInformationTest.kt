@@ -4,12 +4,12 @@ import com.healthmetrix.labres.lab.TestType
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Sample
 import com.healthmetrix.labres.order.Status
-import java.time.Instant
-import java.util.Date
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.util.Date
+import java.util.UUID
 
 internal class RawOrderInformationTest {
 

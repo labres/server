@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
-import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -24,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import java.util.UUID
 
 @RestController
 @ApiResponses(
@@ -37,7 +37,8 @@ import org.springframework.web.bind.annotation.RestController
                         type = "object",
                         implementation = GlobalErrorHandler.Error.BadRequest::class
                     )
-                )]
+                )
+            ]
         ),
         ApiResponse(
             responseCode = "401",
@@ -118,13 +119,15 @@ class ExternalOrderNumberController(
             ApiResponse(
                 responseCode = "404",
                 description = "No order for the given id found",
-                content = [Content(
-                    schema = Schema(
-                        type = "object",
-                        implementation = StatusResponse.NotFound::class,
-                        hidden = true
+                content = [
+                    Content(
+                        schema = Schema(
+                            type = "object",
+                            implementation = StatusResponse.NotFound::class,
+                            hidden = true
+                        )
                     )
-                )]
+                ]
             )
         ]
     )
@@ -144,9 +147,11 @@ class ExternalOrderNumberController(
             return StatusResponse.BadRequest(message).asEntity()
         }
 
-        return (queryStatusUseCase(id, null)
-            ?.let(StatusResponse::Found)
-            ?: StatusResponse.NotFound)
+        return (
+            queryStatusUseCase(id, null)
+                ?.let(StatusResponse::Found)
+                ?: StatusResponse.NotFound
+            )
             .asEntity()
     }
 
@@ -184,7 +189,8 @@ class ExternalOrderNumberController(
                             implementation = UpdateOrderResponse.NotFound::class,
                             hidden = true
                         )
-                    )]
+                    )
+                ]
             )
         ]
     )

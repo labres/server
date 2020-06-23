@@ -25,6 +25,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator:$springBootVersion")
     implementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
 
+    // structured logging
+    implementation("net.logstash.logback:logstash-logback-encoder:6.3")
+
     // serialization
     val jacksonVersion = "2.11.0"
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
@@ -94,11 +97,11 @@ tasks {
         // or whatever the heck jaxb-api is using
         rejectVersionIf {
             candidate.version.contains("alpha") or
-                    candidate.version.contains("beta") or
-                    candidate.version.contains(Regex("M[0-9]*(-.*)?$")) or
-                    candidate.version.contains("RC", ignoreCase = true) or
-                    candidate.version.contains(Regex("b[0-9]+\\.[0-9]+$")) or
-                    candidate.version.contains("eap")
+                candidate.version.contains("beta") or
+                candidate.version.contains(Regex("M[0-9]*(-.*)?$")) or
+                candidate.version.contains("RC", ignoreCase = true) or
+                candidate.version.contains(Regex("b[0-9]+\\.[0-9]+$")) or
+                candidate.version.contains("eap")
         }
     }
 }

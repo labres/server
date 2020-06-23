@@ -2,10 +2,10 @@ package com.healthmetrix.labres.order
 
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
+import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
-import org.springframework.stereotype.Component
 
 @Component
 class RegisterOrderUseCase(

@@ -11,13 +11,13 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.verify
-import java.time.Instant
-import java.util.Date
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.util.Date
+import java.util.UUID
 
 class UpdateResultUseCaseTest {
     private val repository: OrderInformationRepository = mockk()

@@ -6,12 +6,12 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import java.time.Instant
-import java.util.Date
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.util.Date
+import java.util.UUID
 
 internal class RegisterOrderUseCaseTest {
 
@@ -39,13 +39,15 @@ internal class RegisterOrderUseCaseTest {
     fun `it should return the registered order for an eon`() {
         val result = underTest.invoke(eon, null, Sample.SALIVA, null, now)
 
-        assertThat(result).isEqualTo(OrderInformation(
-            id = orderId,
-            orderNumber = eon,
-            status = Status.IN_PROGRESS,
-            issuedAt = Date.from(now),
-            sample = Sample.SALIVA
-        ))
+        assertThat(result).isEqualTo(
+            OrderInformation(
+                id = orderId,
+                orderNumber = eon,
+                status = Status.IN_PROGRESS,
+                issuedAt = Date.from(now),
+                sample = Sample.SALIVA
+            )
+        )
     }
 
     @Test
@@ -53,15 +55,17 @@ internal class RegisterOrderUseCaseTest {
         underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
 
         verify(exactly = 1) {
-            repository.save(OrderInformation(
-                id = orderId,
-                orderNumber = preIssuedOrderNumber,
-                status = Status.IN_PROGRESS,
-                notificationUrl = notificationUrl,
-                testSiteId = testSiteId,
-                issuedAt = Date.from(now),
-                sample = Sample.SALIVA
-            ))
+            repository.save(
+                OrderInformation(
+                    id = orderId,
+                    orderNumber = preIssuedOrderNumber,
+                    status = Status.IN_PROGRESS,
+                    notificationUrl = notificationUrl,
+                    testSiteId = testSiteId,
+                    issuedAt = Date.from(now),
+                    sample = Sample.SALIVA
+                )
+            )
         }
     }
 

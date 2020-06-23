@@ -15,7 +15,6 @@ import com.healthmetrix.labres.persistence.InMemoryOrderInformationRepository
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.SpykBean
 import io.mockk.verify
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,6 +27,7 @@ import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
+import java.util.UUID
 
 @SpringBootTest(
     classes = [LabResApplication::class],
@@ -69,7 +69,7 @@ class IlluminaFlowTest {
         assertThat(result).isNotNull
         assertThat(result!!).matches { order ->
             order.status == Status.IN_PROGRESS &&
-            order.sample == Sample.SALIVA
+                order.sample == Sample.SALIVA
         }
     }
 
