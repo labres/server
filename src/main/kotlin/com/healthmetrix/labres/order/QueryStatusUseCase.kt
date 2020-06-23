@@ -2,8 +2,8 @@ package com.healthmetrix.labres.order
 
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
-import java.util.UUID
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 @Service
 class QueryStatusUseCase(private val repository: OrderInformationRepository) {

@@ -30,7 +30,11 @@ notification to the registered token.
 
 - `secrets`: When enabled, tries to fetch secrets from the AWS secret manager instead of accessing static mock values.
 
-- `dev`: Sets sane defaults for a dev environment next to including the profiles `dynamo`, `notify` and `secrets`
+- `jsonlog`: When enabled, outputs log messages in json format
+
+- `dev`: Sets sane defaults for a dev environment next to including the profiles `dynamo`, `notify`, `secrets` and `jsonlog`
+
+- `prod`: Sets sane defaults for a dev environment next to including the profiles `dynamo`, `notify`, `secrets` and `jsonlog`
 
   
 ## License

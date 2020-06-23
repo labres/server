@@ -4,9 +4,9 @@ import com.healthmetrix.labres.notifications.NotifyOnStatusChangeUseCase
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
+import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.Date
-import org.springframework.stereotype.Component
 
 @Component
 class UpdateResultUseCase(

@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
-import java.util.UUID
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -27,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.util.UUID
 
 const val LAB_API_BASE = "/v1/results"
 private const val AUTHORIZATION_REALM = "Basic realm=\"labres:labresults:write\""
@@ -43,7 +43,8 @@ private const val AUTHORIZATION_REALM = "Basic realm=\"labres:labresults:write\"
                         type = "object",
                         implementation = GlobalErrorHandler.Error.BadRequest::class
                     )
-                )]
+                )
+            ]
         ),
         ApiResponse(
             responseCode = "401",
@@ -275,7 +276,8 @@ sealed class UpdateResultResponse(
     object OrderNotFound : UpdateResultResponse(HttpStatus.NOT_FOUND)
     data class InvalidRequest(val message: String) : UpdateResultResponse(HttpStatus.BAD_REQUEST, hasBody = true)
     object Unauthorized : UpdateResultResponse(
-        HttpStatus.UNAUTHORIZED, headers = mapOf(
+        HttpStatus.UNAUTHORIZED,
+        headers = mapOf(
             HttpHeaders.WWW_AUTHENTICATE to listOf(
                 AUTHORIZATION_REALM
             )
@@ -299,7 +301,8 @@ sealed class BulkUpdateResultResponse(
         BulkUpdateResultResponse(HttpStatus.BAD_REQUEST, hasBody = true)
 
     object Unauthorized : BulkUpdateResultResponse(
-        HttpStatus.UNAUTHORIZED, headers = mapOf(
+        HttpStatus.UNAUTHORIZED,
+        headers = mapOf(
             HttpHeaders.WWW_AUTHENTICATE to listOf(
                 AUTHORIZATION_REALM
             )

@@ -1,8 +1,8 @@
 package com.healthmetrix.labres.order
 
 import com.healthmetrix.labres.persistence.OrderInformationRepository
-import java.util.UUID
 import org.springframework.stereotype.Component
+import java.util.UUID
 
 @Component
 class UpdateOrderUseCase(

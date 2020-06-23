@@ -5,9 +5,6 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.healthmetrix.labres.persistence.OrderInformation
 import io.mockk.every
 import io.mockk.mockk
-import java.time.Instant
-import java.util.Date
-import java.util.UUID
 import org.hamcrest.core.Is
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -16,6 +13,9 @@ import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import java.time.Instant
+import java.util.Date
+import java.util.UUID
 
 class ExternalOrderNumberControllerTest {
     private val issueExternalOrderNumberUseCase: IssueExternalOrderNumberUseCase = mockk()

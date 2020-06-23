@@ -50,7 +50,7 @@ labres:
 
 spring:
   profiles: dev
-  profiles.include: dynamo, notify, secrets
+  profiles.include: dynamo, notify, secrets, jsonlog
 
 dynamo.local-endpoint:
 
@@ -72,7 +72,7 @@ labres:
 
 spring:
   profiles: prod
-  profiles.include: dynamo, notify, secrets
+  profiles.include: dynamo, notify, secrets, jsonlog
 
 dynamo.local-endpoint:
 

@@ -3,11 +3,11 @@ package com.healthmetrix.labres.persistence
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Sample
-import java.util.UUID
 import org.socialsignin.spring.data.dynamodb.repository.EnableScan
 import org.springframework.context.annotation.Profile
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Component
+import java.util.UUID
 
 interface OrderInformationRepository {
     fun findById(id: UUID): OrderInformation?

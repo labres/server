@@ -1,8 +1,8 @@
 package com.healthmetrix.labres.notifications
 
 import com.healthmetrix.labres.logger
-import java.util.UUID
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 @Service
 class NotifyOnStatusChangeUseCase(

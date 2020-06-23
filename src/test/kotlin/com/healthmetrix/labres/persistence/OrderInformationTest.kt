@@ -3,11 +3,11 @@ package com.healthmetrix.labres.persistence
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Sample
 import com.healthmetrix.labres.order.Status
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
 
 class OrderInformationTest {
     private val baseRawOrderInformation = RawOrderInformation(
