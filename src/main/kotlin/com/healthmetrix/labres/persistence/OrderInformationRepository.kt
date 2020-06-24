@@ -3,6 +3,7 @@ package com.healthmetrix.labres.persistence
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Sample
+import net.logstash.logback.argument.StructuredArguments.kv
 import org.socialsignin.spring.data.dynamodb.repository.EnableScan
 import org.springframework.context.annotation.Profile
 import org.springframework.data.repository.CrudRepository
@@ -45,9 +46,12 @@ class DynamoOrderInformationRepository internal constructor(
         val existingOrders = findByOrderNumber(orderNumber).filter { it.sample == sample }
 
         if (existingOrders.size > 1) {
-            logger.warn(
+            logger.error(
                 "Conflict in finding order with orderNumber ${orderNumber.number}, issuerId ${orderNumber.issuerId} " +
-                    "and sample type $sample: More than one result found"
+                    "and sample type $sample: More than one result found",
+                kv("orderNumber", orderNumber.number),
+                kv("issuerId", orderNumber.issuerId),
+                kv("sample", sample)
             )
         }
 

@@ -10,6 +10,7 @@ import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Sample
 import com.healthmetrix.labres.order.Status
+import net.logstash.logback.argument.StructuredArguments.kv
 import java.lang.IllegalArgumentException
 import java.util.Date
 import java.util.UUID
@@ -96,28 +97,55 @@ data class RawOrderInformation(
         val status = status?.let(Status.Companion::from)
 
         if (id == null) {
-            logger.warn("Unable to cook: Attribute id must not be null")
+            logger.warn(
+                "Unable to cook: Attribute id must not be null",
+                kv("orderNumber", orderNumber),
+                kv("issuerId", issuerId),
+                kv("sample", sample)
+            )
             return null
         }
 
         if (issuerId == null) {
-            logger.warn("Unable to cook $id: Attribute issuerId must not be null")
+            logger.warn(
+                "Unable to cook $id: Attribute issuerId must not be null",
+                kv("orderNumber", orderNumber),
+                kv("orderId", id),
+                kv("sample", sample)
+            )
             return null
         }
 
         val orderNumber = orderNumber?.let { OrderNumber.from(issuerId, it) }
         if (orderNumber == null) {
-            logger.warn("Unable to cook $id: Attribute orderNumber must not be null")
+            logger.warn(
+                "Unable to cook $id: Attribute orderNumber must not be null",
+                kv("issuerId", issuerId),
+                kv("orderId", id),
+                kv("sample", sample)
+            )
             return null
         }
 
         if (status == null) {
-            logger.warn("Unable to cook $id: Attribute status must not be null")
+            logger.warn(
+                "Unable to cook $id: Attribute status must not be null",
+                kv("issuerId", issuerId),
+                kv("orderNumber", orderNumber),
+                kv("orderId", id),
+                kv("sample", sample)
+            )
             return null
         }
 
         if (issuedAt == null) {
-            logger.warn("Unable to cook $id: Attribute issuedAt must not be null")
+            logger.warn(
+                "Unable to cook $id: Attribute issuedAt must not be null",
+                kv("issuerId", issuerId),
+                kv("orderNumber", orderNumber),
+                kv("orderId", id),
+                kv("sample", sample)
+            )
             return null
         }
 
@@ -128,14 +156,25 @@ data class RawOrderInformation(
         }
 
         if (cookedSample == null) {
-            logger.warn("Unable to cook $id: Attribute sample was ${sample ?: "null"} and could not be parsed")
+            logger.warn(
+                "Unable to cook $id: Attribute sample was ${sample ?: "null"} and could not be parsed",
+                kv("issuerId", issuerId),
+                kv("orderNumber", orderNumber),
+                kv("orderId", id)
+            )
             return null
         }
 
         val cookedTestType = try {
             cookTestType()
         } catch (ex: IllegalStateException) {
-            logger.warn("Unable to cook $id: ${ex.message}")
+            logger.warn(
+                "Unable to cook $id: ${ex.message}",
+                kv("issuerId", issuerId),
+                kv("orderNumber", orderNumber),
+                kv("orderId", id),
+                kv("sample", sample)
+            )
             return null
         }
 

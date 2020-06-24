@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import net.logstash.logback.argument.StructuredArguments.kv
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -117,29 +118,76 @@ class LabController(
         request: UpdateResultRequest
     ): ResponseEntity<UpdateResultResponse> {
         val requestId = UUID.randomUUID()
-        logger.info("[$requestId]: Update result - $request, issuer ${issuerId ?: EON_ISSUER_ID}")
+        logger.info(
+            "[{}]: for issuerId {}: $request",
+            kv("method", "updateResult"),
+            kv("issuerId", issuerId ?: EON_ISSUER_ID),
+            kv("orderNumber", request.orderNumber),
+            kv("testType", request.type),
+            kv("result", request.result),
+            kv("requestId", requestId)
+        )
 
         val labName = extractLabIdFrom(authorizationHeader)
         if (labName == null) {
-            logger.info("[$requestId]: Unauthorized - Authorization header incorrect")
+            logger.warn(
+                "[{}]: Unauthorized - Authorization header incorrect",
+                kv("method", "updateResult"),
+                kv("issuerId", issuerId ?: EON_ISSUER_ID),
+                kv("orderNumber", request.orderNumber),
+                kv("testType", request.type),
+                kv("requestId", requestId)
+            )
             return UpdateResultResponse.Unauthorized.asEntity()
         }
 
         val lab = labRegistry.get(labName)
         if (lab == null) {
-            logger.info("[$requestId]: Unauthorized - Lab $labName not registered")
+            logger.warn(
+                "[{}]: Unauthorized - Lab $labName not registered",
+                kv("method", "updateResult"),
+                kv("issuerId", issuerId ?: EON_ISSUER_ID),
+                kv("orderNumber", request.orderNumber),
+                kv("testType", request.type),
+                kv("requestId", requestId)
+            )
             return UpdateResultResponse.Unauthorized.asEntity()
         }
 
         if (!lab.canUpdateResultFor(issuerId)) {
-            logger.info("[$requestId]: Unauthorized - Lab $labName not allowed to upload results for issuer $issuerId")
+            logger.warn(
+                "[{}]: Unauthorized - Lab $labName not allowed to upload results for issuer {}",
+                kv("method", "updateResult"),
+                kv("issuerId", issuerId ?: EON_ISSUER_ID),
+                kv("orderNumber", request.orderNumber),
+                kv("testType", request.type),
+                kv("requestId", requestId),
+                kv("labId", lab.id)
+            )
             return UpdateResultResponse.Forbidden.asEntity()
         }
 
-        logger.info("[$requestId]: Authorized lab $labName")
+        logger.info(
+            "[{}]: Authorized lab $labName",
+            kv("method", "updateResult"),
+            kv("issuerId", issuerId ?: EON_ISSUER_ID),
+            kv("orderNumber", request.orderNumber),
+            kv("testType", request.type),
+            kv("requestId", requestId),
+            kv("labId", lab.id)
+        )
 
         val result = updateResultUseCase(request, lab.id, issuerId)
-        logger.info("[$requestId]: Result $result")
+        logger.info(
+            "[{}]: Result $result",
+            kv("method", "updateResult"),
+            kv("issuerId", issuerId ?: EON_ISSUER_ID),
+            kv("orderNumber", request.orderNumber),
+            kv("testType", request.type),
+            kv("testResult", request.result),
+            kv("requestId", requestId),
+            kv("labId", lab.id)
+        )
 
         return when (result) {
             UpdateResult.INVALID_ORDER_NUMBER -> UpdateResultResponse.InvalidRequest("Failed to parse orderNumber: ${request.orderNumber}")

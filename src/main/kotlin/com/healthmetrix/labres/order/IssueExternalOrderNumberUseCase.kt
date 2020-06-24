@@ -3,6 +3,7 @@ package com.healthmetrix.labres.order
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
+import net.logstash.logback.argument.StructuredArguments.kv
 import org.springframework.stereotype.Service
 
 @Service
@@ -25,7 +26,7 @@ class IssueExternalOrderNumberUseCase(
         var failedCounter = 0
         while (repository.findByOrderNumber(eon).isNotEmpty()) {
             failedCounter++
-            logger.warn("Tried issuing new orderNumber $failedCounter times")
+            logger.warn("Tried issuing new EON {} $failedCounter times", kv("orderNumber", eon), kv("issuerId", EON_ISSUER_ID))
             eon = OrderNumber.External.random()
         }
         return eon
