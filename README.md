@@ -32,9 +32,11 @@ notification to the registered token.
 
 - `jsonlog`: When enabled, outputs log messages in json format
 
-- `dev`: Sets sane defaults for a dev environment next to including the profiles `dynamo`, `notify`, `secrets` and `jsonlog`
+- `cloudwatch`: When enabled, uploads metrics to cloudwatch instead of collecting them in memory.
 
-- `prod`: Sets sane defaults for a dev environment next to including the profiles `dynamo`, `notify`, `secrets` and `jsonlog`
+- `dev`: Sets sane defaults for a dev environment next to including the profiles `dynamo`, `notify`, `secrets`, `jsonlog` and `cloudwatch`
+
+- `prod`: Sets sane defaults for a dev environment next to including the profiles `dynamo`, `notify`, `secrets`, `jsonlog` and `cloudwatch`
 
   
 ## License
