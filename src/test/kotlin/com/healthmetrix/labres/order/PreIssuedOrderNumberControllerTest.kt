@@ -21,8 +21,10 @@ class PreIssuedOrderNumberControllerTest {
     private val registerOrderUseCase: RegisterOrderUseCase = mockk()
     private val updateOrderUseCase: UpdateOrderUseCase = mockk()
     private val queryStatusUseCase: QueryStatusUseCase = mockk()
+    private val metrics: OrderMetrics = mockk(relaxUnitFun = true)
 
-    private val underTest = PreIssuedOrderNumberController(registerOrderUseCase, updateOrderUseCase, queryStatusUseCase)
+    private val underTest =
+        PreIssuedOrderNumberController(registerOrderUseCase, updateOrderUseCase, queryStatusUseCase, metrics)
     private val mockMvc = MockMvcBuilders.standaloneSetup(underTest).build()
 
     private val objectMapper = ObjectMapper().registerKotlinModule()

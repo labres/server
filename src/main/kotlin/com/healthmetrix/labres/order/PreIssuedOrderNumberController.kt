@@ -66,7 +66,8 @@ import java.util.UUID
 class PreIssuedOrderNumberController(
     private val registerOrderUseCase: RegisterOrderUseCase,
     private val updateOrderUseCase: UpdateOrderUseCase,
-    private val queryStatusUseCase: QueryStatusUseCase
+    private val queryStatusUseCase: QueryStatusUseCase,
+    private val metrics: OrderMetrics
 ) {
     @PostMapping(
         path = ["/v1/issuers/{issuerId}/orders"],
@@ -108,7 +109,7 @@ class PreIssuedOrderNumberController(
         @RequestBody request: RegisterOrderRequest
     ): ResponseEntity<RegisterOrderResponse> {
         val requestId = UUID.randomUUID()
-        logger.info(
+        logger.debug(
             "[{}] for issuerId {} with request $request",
             kv("method", "registerOrder"),
             kv("issuerId", issuerId),
@@ -132,10 +133,11 @@ class PreIssuedOrderNumberController(
                 kv("sample", request.sample),
                 kv("requestId", requestId)
             )
+            metrics.countConflictOnRegisteringOrders(issuerId)
             return RegisterOrderResponse.Conflict.asEntity()
         }
 
-        logger.info(
+        logger.debug(
             "[{}] Order successfully registered",
             kv("method", "registerOrder"),
             kv("issuerId", issuerId),
@@ -143,6 +145,8 @@ class PreIssuedOrderNumberController(
             kv("sample", request.sample),
             kv("requestId", requestId)
         )
+
+        metrics.countRegisteredOrders(issuerId)
         return RegisterOrderResponse.Created(order.id, order.orderNumber.number).asEntity()
     }
 
@@ -193,7 +197,7 @@ class PreIssuedOrderNumberController(
         @PathVariable orderId: String
     ): ResponseEntity<StatusResponse> {
         val requestId = UUID.randomUUID()
-        logger.info(
+        logger.debug(
             "[{}] for issuerId {} and orderId {}",
             kv("method", "getOrderNumber"),
             kv("issuerId", issuerId),
@@ -205,7 +209,7 @@ class PreIssuedOrderNumberController(
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
-            logger.warn(
+            logger.info(
                 "[{}]: $message",
                 kv("method", "getOrderNumber"),
                 kv("issuerId", issuerId),
@@ -213,13 +217,14 @@ class PreIssuedOrderNumberController(
                 kv("requestId", requestId),
                 ex
             )
+            metrics.countErrorOnParsingOrderNumbersOnGet(issuerId)
             return StatusResponse.BadRequest(message).asEntity()
         }
 
         val result = queryStatusUseCase(id, issuerId)
 
         return if (result != null) {
-            logger.info(
+            logger.debug(
                 "[{}]: Found $result",
                 kv("method", "getOrderNumber"),
                 kv("issuerId", issuerId),
@@ -235,6 +240,7 @@ class PreIssuedOrderNumberController(
                 kv("orderId", orderId),
                 kv("requestId", requestId)
             )
+            metrics.countOrderNotFoundOnGet(issuerId)
             StatusResponse.NotFound.asEntity()
         }
     }
@@ -300,7 +306,7 @@ class PreIssuedOrderNumberController(
         updateOrderRequestBody: ExternalOrderNumberController.UpdateOrderRequestBody
     ): ResponseEntity<UpdateOrderResponse> {
         val requestId = UUID.randomUUID()
-        logger.info(
+        logger.debug(
             "[{}]: Update order for issuerId {} and orderId {}: $updateOrderRequestBody",
             kv("method", "updateOrder"),
             kv("issuerId", issuerId),
@@ -312,7 +318,7 @@ class PreIssuedOrderNumberController(
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
-            logger.warn(
+            logger.info(
                 "[{}]: $message",
                 kv("method", "updateOrder"),
                 kv("issuerId", issuerId),
@@ -320,11 +326,12 @@ class PreIssuedOrderNumberController(
                 kv("requestId", requestId),
                 ex
             )
+            metrics.countErrorOnParsingOrderNumbersOnUpdate(issuerId)
             return UpdateOrderResponse.BadRequest(message).asEntity()
         }
 
         val result = updateOrderUseCase(id, issuerId, updateOrderRequestBody.notificationUrl)
-        logger.info(
+        logger.debug(
             "[{}]: $result",
             kv("method", "updateOrder"),
             kv("issuerId", issuerId),
@@ -334,7 +341,11 @@ class PreIssuedOrderNumberController(
 
         return when (result) {
             UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
-            UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
+            UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound.also {
+                metrics.countOrderNotFoundOnGet(
+                    issuerId
+                )
+            }
         }.asEntity()
     }
 

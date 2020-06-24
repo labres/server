@@ -28,6 +28,9 @@ dependencies {
     // structured logging
     implementation("net.logstash.logback:logstash-logback-encoder:6.4")
 
+    // metrics
+    implementation("io.micrometer:micrometer-registry-cloudwatch2:1.5.1")
+
     // serialization
     val jacksonVersion = "2.11.0"
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
