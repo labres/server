@@ -76,7 +76,8 @@ private const val AUTHORIZATION_REALM = "Basic realm=\"labres:labresults:write\"
 class LabController(
     private val updateResultUseCase: UpdateResultUseCase,
     private val bulkUpdateResultsUseCase: BulkUpdateResultsUseCase,
-    private val labRegistry: LabRegistry
+    private val labRegistry: LabRegistry,
+    private val metrics: LabMetrics
 ) {
 
     @PutMapping(
@@ -118,7 +119,7 @@ class LabController(
         request: UpdateResultRequest
     ): ResponseEntity<UpdateResultResponse> {
         val requestId = UUID.randomUUID()
-        logger.info(
+        logger.debug(
             "[{}]: for issuerId {}: $request",
             kv("method", "updateResult"),
             kv("issuerId", issuerId ?: EON_ISSUER_ID),
@@ -138,6 +139,7 @@ class LabController(
                 kv("testType", request.type),
                 kv("requestId", requestId)
             )
+            metrics.countUnauthorized()
             return UpdateResultResponse.Unauthorized.asEntity()
         }
 
@@ -151,6 +153,7 @@ class LabController(
                 kv("testType", request.type),
                 kv("requestId", requestId)
             )
+            metrics.countUnauthorized()
             return UpdateResultResponse.Unauthorized.asEntity()
         }
 
@@ -164,10 +167,11 @@ class LabController(
                 kv("requestId", requestId),
                 kv("labId", lab.id)
             )
+            metrics.countUnauthorized()
             return UpdateResultResponse.Forbidden.asEntity()
         }
 
-        logger.info(
+        logger.debug(
             "[{}]: Authorized lab $labName",
             kv("method", "updateResult"),
             kv("issuerId", issuerId ?: EON_ISSUER_ID),
@@ -178,16 +182,21 @@ class LabController(
         )
 
         val result = updateResultUseCase(request, lab.id, issuerId)
-        logger.info(
-            "[{}]: Result $result",
-            kv("method", "updateResult"),
-            kv("issuerId", issuerId ?: EON_ISSUER_ID),
-            kv("orderNumber", request.orderNumber),
-            kv("testType", request.type),
-            kv("testResult", request.result),
-            kv("requestId", requestId),
-            kv("labId", lab.id)
-        )
+        metrics.countUpdateResults(result, lab.id, issuerId)
+
+        if (result == UpdateResult.SUCCESS) {
+            logger.debug(
+                "[{}]: Result $result",
+                kv("method", "updateResult"),
+                kv("issuerId", issuerId ?: EON_ISSUER_ID),
+                kv("orderNumber", request.orderNumber),
+                kv("testType", request.type),
+                kv("testResult", request.result),
+                kv("requestId", requestId),
+                kv("labId", lab.id)
+            )
+            metrics.countPersistedTestResults(request.result, labName, issuerId)
+        }
 
         return when (result) {
             UpdateResult.INVALID_ORDER_NUMBER -> UpdateResultResponse.InvalidRequest("Failed to parse orderNumber: ${request.orderNumber}")

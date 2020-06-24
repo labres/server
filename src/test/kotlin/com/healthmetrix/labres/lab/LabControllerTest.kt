@@ -25,8 +25,9 @@ class LabControllerTest {
     private val updateResultUseCase: UpdateResultUseCase = mockk()
     private val bulkUpdateResultsUseCase: BulkUpdateResultsUseCase = mockk()
     private val labRegistry: LabRegistry = mockk()
+    private val metrics: LabMetrics = mockk(relaxUnitFun = true)
 
-    private val underTest = LabController(updateResultUseCase, bulkUpdateResultsUseCase, labRegistry)
+    private val underTest = LabController(updateResultUseCase, bulkUpdateResultsUseCase, labRegistry, metrics)
 
     private val objectMapper = ObjectMapper().registerKotlinModule()
     private val jsonMessageConverter = MappingJackson2HttpMessageConverter(objectMapper)

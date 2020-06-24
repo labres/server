@@ -28,6 +28,16 @@ documentation-info:
     url: https://www.labres.de
     email: admin@healthmetrix.com
 
+management:
+  metrics:
+    use-global-registry: false # to prevent spring from adding cloudwatch when starting locally
+    export.simple.enabled: true
+  endpoints:
+    web.exposure.include: health,info,beans,conditions,env,metrics
+    health:
+      show-details: always
+      show-components: always
+
 notification:
   basic-auth:
     user: # empty
@@ -40,6 +50,18 @@ cors-domains: "*"
 spring:
   profiles: jsonlog
   main.banner-mode: off
+
+---
+spring:
+  profiles: cloudwatch
+
+management:
+  metrics:
+    export.simple.enabled: false
+
+metrics:
+  cloudwatch:
+    stepInSeconds: 1
 
 ---
 labres:
@@ -55,7 +77,7 @@ labres:
 
 spring:
   profiles: dev
-  profiles.include: dynamo, notify, secrets, jsonlog
+  profiles.include: dynamo, notify, secrets, jsonlog, cloudwatch
 
 dynamo.local-endpoint:
 
@@ -64,6 +86,11 @@ documentation-info:
     - url: https://api.dev.labres.de
       description: dev environment for LabRes
       version: v1
+
+management:
+  endpoints:
+    web.exposure:
+      include: info,health
 
 ---
 labres:
@@ -88,3 +115,8 @@ documentation-info:
     - url: https://api.labres.de
       description: production environment for LabRes
       version: v1
+
+management:
+  endpoints:
+    web.exposure:
+      include: info,health
