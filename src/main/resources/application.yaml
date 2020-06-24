@@ -74,6 +74,8 @@ labres:
         issuers: labres
       - id: kevb
         issuers: kevb
+      - id: hmx
+        issuers: hmx
 
 spring:
   profiles: prod
