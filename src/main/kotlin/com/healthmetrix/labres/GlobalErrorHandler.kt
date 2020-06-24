@@ -1,6 +1,7 @@
 package com.healthmetrix.labres
 
 import io.swagger.v3.oas.annotations.media.Schema
+import net.logstash.logback.argument.StructuredArguments.kv
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -26,26 +27,38 @@ class GlobalErrorHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun onMethodNotSupported(exception: HttpRequestMethodNotSupportedException) =
-        badRequest(exception, exception.message ?: "Request method not supported")
+        badRequest(exception, exception.message ?: "Request method not supported").also {
+            logger.warn(exception.message ?: "Request method not supported")
+        }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun onContentTypeNotSupported(exception: HttpMediaTypeNotSupportedException) =
-        badRequest(exception, exception.message ?: "Content type not supported")
+        badRequest(exception, exception.message ?: "Content type not supported").also {
+            logger.warn(exception.message ?: "Content type not supported")
+        }
 
     @ExceptionHandler(MissingRequestHeaderException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun onMissingRequestHeader(exception: MissingRequestHeaderException) =
-        badRequest(exception, "Missing request header '${exception.headerName}'")
+        badRequest(exception, "Missing request header '${exception.headerName}'").also {
+            logger.warn("Missing request header '${exception.headerName}'")
+        }
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun onHttpMessageNotReadable(exception: HttpMessageNotReadableException) =
-        badRequest(exception, "Malformed request body. Cause: ${exception.message ?: "unknown"}")
+        badRequest(exception, "Malformed request body. Cause: ${exception.message ?: "unknown"}").also {
+            logger.warn("Malformed request body. Cause: ${exception.message ?: "unknown"}")
+        }
 
     private fun badRequest(exception: Exception, msg: String? = null): ResponseEntity<Error.BadRequest> {
         val id = UUID.randomUUID()
-        logger.error("Exception caught incidentId=$id", exception)
+        logger.warn(
+            "Exception caught incidentId=$id",
+            kv("incidentId", id),
+            exception
+        )
         return Error.BadRequest(msg ?: id.toString()).asEntity()
     }
 

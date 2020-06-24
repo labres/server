@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import net.logstash.logback.argument.StructuredArguments.kv
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -107,7 +108,14 @@ class PreIssuedOrderNumberController(
         @RequestBody request: RegisterOrderRequest
     ): ResponseEntity<RegisterOrderResponse> {
         val requestId = UUID.randomUUID()
-        logger.info("[$requestId]: Register order - $request, issuer: $issuerId")
+        logger.info(
+            "[{}] for issuerId {} with request $request",
+            kv("method", "registerOrder"),
+            kv("issuerId", issuerId),
+            kv("orderNumber", request.orderNumber),
+            kv("sample", request.sample),
+            kv("requestId", requestId)
+        )
         val order = registerOrderUseCase(
             orderNumber = OrderNumber.from(issuerId, request.orderNumber),
             testSiteId = request.testSiteId,
@@ -116,11 +124,25 @@ class PreIssuedOrderNumberController(
         )
 
         if (order == null) {
-            logger.info("[$requestId]: Order already exists")
+            logger.info(
+                "[{}] Order already exists",
+                kv("method", "registerOrder"),
+                kv("issuerId", issuerId),
+                kv("orderNumber", request.orderNumber),
+                kv("sample", request.sample),
+                kv("requestId", requestId)
+            )
             return RegisterOrderResponse.Conflict.asEntity()
         }
 
-        logger.info("[$requestId]: Created")
+        logger.info(
+            "[{}] Order successfully registered",
+            kv("method", "registerOrder"),
+            kv("issuerId", issuerId),
+            kv("orderNumber", request.orderNumber),
+            kv("sample", request.sample),
+            kv("requestId", requestId)
+        )
         return RegisterOrderResponse.Created(order.id, order.orderNumber.number).asEntity()
     }
 
@@ -171,23 +193,48 @@ class PreIssuedOrderNumberController(
         @PathVariable orderId: String
     ): ResponseEntity<StatusResponse> {
         val requestId = UUID.randomUUID()
-        logger.info("[$requestId]: Get id $orderId, issuer: $issuerId")
+        logger.info(
+            "[{}] for issuerId {} and orderId {}",
+            kv("method", "getOrderNumber"),
+            kv("issuerId", issuerId),
+            kv("orderId", orderId),
+            kv("requestId", requestId)
+        )
 
         val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
-            logger.info("[$requestId]: $message", ex)
+            logger.warn(
+                "[{}]: $message",
+                kv("method", "getOrderNumber"),
+                kv("issuerId", issuerId),
+                kv("orderId", orderId),
+                kv("requestId", requestId),
+                ex
+            )
             return StatusResponse.BadRequest(message).asEntity()
         }
 
         val result = queryStatusUseCase(id, issuerId)
 
         return if (result != null) {
-            logger.info("[$requestId]: Found $result")
+            logger.info(
+                "[{}]: Found $result",
+                kv("method", "getOrderNumber"),
+                kv("issuerId", issuerId),
+                kv("orderId", orderId),
+                kv("requestId", requestId)
+            )
             StatusResponse.Found(result).asEntity()
         } else {
-            logger.info("[$requestId]: Not found")
+            logger.info(
+                "[{}]: Not found",
+                kv("method", "getOrderNumber"),
+                kv("issuerId", issuerId),
+                kv("orderId", orderId),
+                kv("requestId", requestId)
+            )
             StatusResponse.NotFound.asEntity()
         }
     }
@@ -253,18 +300,37 @@ class PreIssuedOrderNumberController(
         updateOrderRequestBody: ExternalOrderNumberController.UpdateOrderRequestBody
     ): ResponseEntity<UpdateOrderResponse> {
         val requestId = UUID.randomUUID()
-        logger.info("[$requestId]: Update order id $orderId, issuer $issuerId: $updateOrderRequestBody")
+        logger.info(
+            "[{}]: Update order for issuerId {} and orderId {}: $updateOrderRequestBody",
+            kv("method", "updateOrder"),
+            kv("issuerId", issuerId),
+            kv("orderId", orderId),
+            kv("requestId", requestId)
+        )
 
         val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
-            logger.info("[$requestId]: $message", ex)
+            logger.warn(
+                "[{}]: $message",
+                kv("method", "updateOrder"),
+                kv("issuerId", issuerId),
+                kv("orderId", orderId),
+                kv("requestId", requestId),
+                ex
+            )
             return UpdateOrderResponse.BadRequest(message).asEntity()
         }
 
         val result = updateOrderUseCase(id, issuerId, updateOrderRequestBody.notificationUrl)
-        logger.info("[$requestId]: $result")
+        logger.info(
+            "[{}]: $result",
+            kv("method", "updateOrder"),
+            kv("issuerId", issuerId),
+            kv("orderId", orderId),
+            kv("requestId", requestId)
+        )
 
         return when (result) {
             UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated

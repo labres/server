@@ -37,6 +37,11 @@ notification:
 cors-domains: "*"
 
 ---
+spring:
+  profiles: jsonlog
+  main.banner-mode: off
+
+---
 labres:
   stage: dev
   registry:
