@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component
 class OrderMetrics(private val meterRegistry: MeterRegistry) {
 
     fun countRegisteredOrders(issuerId: String?): Unit = Counter
-        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.registration.registered.count")
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.registration.registered")
         .description("Increments the sum of registered preissued order for issuer $issuerId")
         .tags(
             listOf(
@@ -24,7 +24,7 @@ class OrderMetrics(private val meterRegistry: MeterRegistry) {
         .increment()
 
     fun countConflictOnRegisteringOrders(issuerId: String?): Unit = Counter
-        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.registration.conflict.count")
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.registration.conflict")
         .description("Increments the sum of conflicts on registering preissued order for issuer $issuerId")
         .tags(
             listOf(
@@ -39,7 +39,7 @@ class OrderMetrics(private val meterRegistry: MeterRegistry) {
         .increment()
 
     fun countErrorOnParsingOrderNumbersOnGet(issuerId: String?): Unit = Counter
-        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.get.orderNumberParseErrors.count")
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.get.orderNumberParseErrors")
         .description("Increments the sum of errors parsing an order number for issuer $issuerId when getting an order")
         .tags(
             listOf(
@@ -54,7 +54,7 @@ class OrderMetrics(private val meterRegistry: MeterRegistry) {
         .increment()
 
     fun countOrderNotFoundOnGet(issuerId: String?): Unit = Counter
-        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.get.orderNotFound.count")
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.get.orderNotFound")
         .description("Increments the sum of orderNotFound for issuer $issuerId when getting an order")
         .tags(
             listOf(
@@ -69,7 +69,7 @@ class OrderMetrics(private val meterRegistry: MeterRegistry) {
         .increment()
 
     fun countErrorOnParsingOrderNumbersOnUpdate(issuerId: String?): Unit = Counter
-        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.update.orderNumberParseErrors.count")
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.update.orderNumberParseErrors")
         .description("Increments the sum of errors parsing an order number for issuer $issuerId when updating an order")
         .tags(
             listOf(
@@ -84,7 +84,7 @@ class OrderMetrics(private val meterRegistry: MeterRegistry) {
         .increment()
 
     fun countOrderNotFoundOnUpdate(issuerId: String?): Unit = Counter
-        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.update.orderNotFound.count")
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.update.orderNotFound")
         .description("Increments the sum of orderNotFound for issuer $issuerId when updating an order")
         .tags(
             listOf(

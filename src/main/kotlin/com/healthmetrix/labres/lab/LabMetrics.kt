@@ -12,7 +12,7 @@ class LabMetrics(
 ) {
 
     fun countPersistedTestResults(testResult: Result, labId: String, issuerId: String?): Unit = Counter
-        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.labs.$labId.testResults.persisted.$testResult.count")
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.labs.$labId.testResults.persisted.$testResult")
         .description("Increments the sum of $testResult testResults for issuer $issuerId and $labId")
         .tags(
             listOf(
@@ -28,7 +28,7 @@ class LabMetrics(
         .increment()
 
     fun countUpdateResults(updateResult: UpdateResult, labId: String, issuerId: String?): Unit = Counter
-        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.labs.$labId.updateResults.$updateResult.count")
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.labs.$labId.updateResults.$updateResult")
         .description("Increments the sum of $updateResult updateResults for issuer $issuerId and $labId")
         .tags(
             listOf(
@@ -44,7 +44,7 @@ class LabMetrics(
         .increment()
 
     fun countUnauthorized() = Counter
-        .builder("labApi.unauthorized.count")
+        .builder("labApi.unauthorized")
         .description("Increments the sum of unauthorized requests on the lab facing API")
         .tags(
             listOf(
