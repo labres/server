@@ -105,18 +105,47 @@ class PreIssuedOrderNumberController(
                 description = "A short descriptive issuer name having at most 16 characters"
             )
         )
-        @PathVariable issuerId: String,
-        @RequestBody request: RegisterOrderRequest
+        @PathVariable(value = "issuerId") rawIssuerId: String,
+        @RequestBody rawRequest: RegisterOrderRequest
     ): ResponseEntity<RegisterOrderResponse> {
         val requestId = UUID.randomUUID()
+
+        // BEGIN IOS ISSUERID QUICKFIX
+        val iOsReplacedIssuerIdWithTestSite = rawIssuerId == "hpi" || rawIssuerId == "wmt"
+
+        if (iOsReplacedIssuerIdWithTestSite) {
+            logger.warn(
+                "[{}] IOS ISSUERID BUG: incoming issuerId $rawIssuerId, incoming testSiteId ${rawRequest.testSiteId}",
+                kv("method", "registerOrder"),
+                kv("requestId", requestId)
+            )
+        }
+
+        val request = if (iOsReplacedIssuerIdWithTestSite) {
+            rawRequest.copy(
+                testSiteId = rawIssuerId
+            )
+        } else {
+            rawRequest
+        }
+
+        val issuerId = if (iOsReplacedIssuerIdWithTestSite) {
+            "mvz"
+        } else {
+            rawIssuerId
+        }
+        // END IOS ISSUERID QUICKFIX
+
         logger.debug(
             "[{}] for issuerId {} with request $request",
             kv("method", "registerOrder"),
             kv("issuerId", issuerId),
             kv("orderNumber", request.orderNumber),
             kv("sample", request.sample),
+            kv("testSiteId", request.testSiteId),
             kv("requestId", requestId)
         )
+
         val order = registerOrderUseCase(
             orderNumber = OrderNumber.from(issuerId, request.orderNumber),
             testSiteId = request.testSiteId,
