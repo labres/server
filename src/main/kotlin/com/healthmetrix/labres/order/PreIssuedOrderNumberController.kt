@@ -1,10 +1,15 @@
 package com.healthmetrix.labres.order
 
+import com.github.michaelbull.result.map
+import com.github.michaelbull.result.mapError
+import com.github.michaelbull.result.onFailure
+import com.github.michaelbull.result.onSuccess
 import com.healthmetrix.labres.GlobalErrorHandler
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.PRE_ISSUED_ORDER_NUMBER_API_TAG
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.logger
+import com.healthmetrix.labres.unify
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
@@ -122,16 +127,14 @@ class PreIssuedOrderNumberController(
             kv("requestId", requestId)
         )
 
-        val order = registerOrderUseCase(
+        return registerOrderUseCase(
             orderNumber = OrderNumber.from(issuerId, request.orderNumber),
             testSiteId = request.testSiteId,
             sample = request.sample,
             notificationUrl = request.notificationUrl
-        )
-
-        if (order == null) {
+        ).onFailure { msg ->
             logger.warn(
-                "[{}] Order already exists",
+                "[{}] Order already exists: $msg",
                 kv("method", "registerOrder"),
                 kv("issuerId", issuerId),
                 kv("orderNumber", request.orderNumber),
@@ -139,20 +142,21 @@ class PreIssuedOrderNumberController(
                 kv("requestId", requestId)
             )
             metrics.countConflictOnRegisteringOrders(issuerId)
-            return RegisterOrderResponse.Conflict.asEntity()
-        }
-
-        logger.debug(
-            "[{}] Order successfully registered",
-            kv("method", "registerOrder"),
-            kv("issuerId", issuerId),
-            kv("orderNumber", request.orderNumber),
-            kv("sample", request.sample),
-            kv("requestId", requestId)
-        )
-
-        metrics.countRegisteredOrders(issuerId)
-        return RegisterOrderResponse.Created(order.id, order.orderNumber.number).asEntity()
+        }.mapError {
+            RegisterOrderResponse.Conflict
+        }.onSuccess {
+            logger.debug(
+                "[{}] Order successfully registered",
+                kv("method", "registerOrder"),
+                kv("issuerId", issuerId),
+                kv("orderNumber", request.orderNumber),
+                kv("sample", request.sample),
+                kv("requestId", requestId)
+            )
+            metrics.countRegisteredOrders(issuerId)
+        }.map { order ->
+            RegisterOrderResponse.Created(order.id, order.orderNumber.number)
+        }.unify().asEntity()
     }
 
     @GetMapping(path = ["/v1/issuers/{issuerId}/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -347,7 +351,7 @@ class PreIssuedOrderNumberController(
         return when (result) {
             UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
             UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound.also {
-                metrics.countOrderNotFoundOnGet(
+                metrics.countOrderNotFoundOnUpdate(
                     issuerId
                 )
             }

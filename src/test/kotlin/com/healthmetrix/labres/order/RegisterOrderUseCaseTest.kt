@@ -1,5 +1,7 @@
 package com.healthmetrix.labres.order
 
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.unwrap
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import io.mockk.clearMocks
@@ -39,7 +41,7 @@ internal class RegisterOrderUseCaseTest {
     fun `it should return the registered order when there is no existing order in the database`() {
         val result = underTest.invoke(eon, null, Sample.SALIVA, null, now)
 
-        assertThat(result).isEqualTo(
+        assertThat(result.unwrap()).isEqualTo(
             OrderInformation(
                 id = orderId,
                 orderNumber = eon,
@@ -142,7 +144,7 @@ internal class RegisterOrderUseCaseTest {
 
         val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
 
-        assertThat(res).isNull()
+        assertThat(res).isInstanceOf(Err::class.java)
     }
 
     @Test
@@ -158,7 +160,7 @@ internal class RegisterOrderUseCaseTest {
 
         val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
 
-        assertThat(res).isNull()
+        assertThat(res).isInstanceOf(Err::class.java)
     }
 
     @Test

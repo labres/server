@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.order
 
+import com.github.michaelbull.result.getOr
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
@@ -18,7 +19,7 @@ class IssueExternalOrderNumberUseCase(
             testSiteId = null,
             notificationUrl = notificationUrl,
             sample = Sample.SALIVA
-        )
+        ).getOr { null }
     }
 
     private fun issueNewEon(): OrderNumber.External {
