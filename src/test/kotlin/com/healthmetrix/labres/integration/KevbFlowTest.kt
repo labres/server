@@ -73,6 +73,16 @@ class KevbFlowTest {
     }
 
     @Test
+    fun `an order with analyt can be registered`() {
+        val registeredResponse = registerOrder(orderNumber + "16")
+
+        val result = repository.findById(registeredResponse.id)
+
+        assertThat(result).isNotNull
+        assertThat(result!!).matches { it.status == Status.IN_PROGRESS && it.sample == Sample.SALIVA }
+    }
+
+    @Test
     fun `a lab result can be successfully created, fetched, updated and a result can be uploaded`() {
         val registeredResponse = registerOrder()
 
@@ -108,7 +118,7 @@ class KevbFlowTest {
         }
     }
 
-    private fun registerOrder(): PreIssuedOrderNumberController.RegisterOrderResponse.Created {
+    private fun registerOrder(orderNumber: String = this.orderNumber): PreIssuedOrderNumberController.RegisterOrderResponse.Created {
         return mockMvc.post("/v1/issuers/$issuerId/orders") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsBytes(
