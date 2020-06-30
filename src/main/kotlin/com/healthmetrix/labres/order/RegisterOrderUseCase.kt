@@ -29,7 +29,7 @@ class RegisterOrderUseCase(
                 id = idGenerator(),
                 orderNumber = orderNumber,
                 status = Status.IN_PROGRESS,
-                notificationUrls = notificationUrl.asList(),
+                notificationUrls = listOfNotNull(notificationUrl),
                 issuedAt = Date.from(now),
                 testSiteId = testSiteId,
                 sample = sample
@@ -45,11 +45,11 @@ class RegisterOrderUseCase(
             )
         }
 
-        if (alreadyHasResult(existing)) {
+        if (existing.alreadyHasResult()) {
             return Err("Order already has a result")
         }
 
-        if (alreadyHasResult(existing) || willHaveMoreThanThreeNotificationsUrls(existing, notificationUrl)) {
+        if (willHaveMoreThanThreeNotificationsUrls(existing, notificationUrl)) {
             return Err("Order already has three notificationUrls")
         }
 
@@ -60,16 +60,11 @@ class RegisterOrderUseCase(
         ).let(repository::save).let(::Ok)
     }
 
-    private fun alreadyHasResult(order: OrderInformation?) = order?.status != Status.IN_PROGRESS
+    private fun OrderInformation.alreadyHasResult() = this.status != Status.IN_PROGRESS
 
     private fun willHaveMoreThanThreeNotificationsUrls(order: OrderInformation, notificationUrl: String?) =
         order.notificationUrls.plus(notificationUrl).distinct().size > 3
 
-    private fun mergeNotificationUrls(existing: List<String>, new: String?) = existing.plus(new.asList()).distinct()
-
-    private fun String?.asList() = if (this == null) {
-        emptyList()
-    } else {
-        listOf(this)
-    }
+    private fun mergeNotificationUrls(existing: List<String>, new: String?) =
+        existing.plus(listOfNotNull(new)).distinct()
 }

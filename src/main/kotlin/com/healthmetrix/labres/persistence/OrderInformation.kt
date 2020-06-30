@@ -37,11 +37,7 @@ data class OrderInformation(
         issuedAt = issuedAt,
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
-        notificationUrl = if (notificationUrls.isEmpty()) {
-            null
-        } else {
-            notificationUrls.joinToString(",")
-        },
+        notificationUrl = notificationUrls.joinToString(",").ifEmpty { null },
         enteredLabAt = enteredLabAt,
         testType = testType?.toString(),
         labId = labId,
