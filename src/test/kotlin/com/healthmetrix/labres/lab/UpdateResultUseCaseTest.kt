@@ -10,6 +10,7 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -51,6 +52,7 @@ class UpdateResultUseCaseTest {
     @AfterEach
     internal fun tearDown() {
         clearMocks(OrderNumber)
+        unmockkObject(OrderNumber)
     }
 
     @Test

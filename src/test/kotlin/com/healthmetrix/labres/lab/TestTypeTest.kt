@@ -6,6 +6,7 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -59,6 +60,7 @@ internal class TestTypeTest {
         @AfterEach
         internal fun tearDown() {
             clearMocks(TestType.Companion)
+            unmockkObject(TestType.Companion)
         }
 
         @Test
