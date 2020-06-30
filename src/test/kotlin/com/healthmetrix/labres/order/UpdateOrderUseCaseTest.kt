@@ -20,11 +20,11 @@ class UpdateOrderUseCaseTest {
     val orderId = UUID.randomUUID()
 
     private val orderNumberString = "1234567891"
-    private val issuerId = "leKevin"
+    private val issuerId = "issuer"
     private val eon = OrderNumber.External.from(orderNumberString)
     private val preissuedOrderNumber = OrderNumber.PreIssued(issuerId, orderNumberString)
 
-    private val notificationUrl = "http://textme69.test"
+    private val notificationUrl = "http://textme.test"
 
     private val orderInfo = OrderInformation(
         id = orderId,
@@ -61,7 +61,49 @@ class UpdateOrderUseCaseTest {
 
         underTest(orderId, null, notificationUrl)
 
-        verify(exactly = 1) { orderInformationRepository.save(orderInfo.copy(notificationUrl = notificationUrl)) }
+        verify(exactly = 1) { orderInformationRepository.save(orderInfo.copy(notificationUrls = listOf(notificationUrl))) }
+    }
+
+    @Test
+    fun `it appends the new notification url to existing ones`() {
+        clearMocks(orderInformationRepository)
+
+        val existingNotificationUrls = listOf("a")
+
+        every { orderInformationRepository.findById(any()) } returns orderInfo.copy(notificationUrls = existingNotificationUrls)
+        every { orderInformationRepository.save(any()) } returns orderInfo
+
+        underTest(orderId, null, notificationUrl)
+
+        verify(exactly = 1) {
+            orderInformationRepository.save(
+                orderInfo.copy(
+                    notificationUrls = existingNotificationUrls.plus(
+                        notificationUrl
+                    )
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `it appends the new notification url to existing ones but removes duplicates`() {
+        clearMocks(orderInformationRepository)
+
+        val existingNotificationUrls = listOf("a", "a", "b", "c", notificationUrl)
+
+        every { orderInformationRepository.findById(any()) } returns orderInfo.copy(notificationUrls = existingNotificationUrls)
+        every { orderInformationRepository.save(any()) } returns orderInfo
+
+        underTest(orderId, null, notificationUrl)
+
+        verify(exactly = 1) {
+            orderInformationRepository.save(
+                orderInfo.copy(
+                    notificationUrls = listOf("a", "b", "c", notificationUrl)
+                )
+            )
+        }
     }
 
     @Test

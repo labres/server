@@ -25,7 +25,7 @@ data class OrderInformation(
     val testSiteId: String? = null,
     val reportedAt: Date? = null,
     val notifiedAt: Date? = null,
-    val notificationUrl: String? = null,
+    val notificationUrls: List<String> = emptyList(),
     val enteredLabAt: Date? = null,
     val testType: TestType? = null
 ) {
@@ -37,7 +37,7 @@ data class OrderInformation(
         issuedAt = issuedAt,
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
-        notificationUrl = notificationUrl,
+        notificationUrl = notificationUrls.joinToString(",").ifEmpty { null },
         enteredLabAt = enteredLabAt,
         testType = testType?.toString(),
         labId = labId,
@@ -178,6 +178,8 @@ data class RawOrderInformation(
             return null
         }
 
+        val notificationUrls = notificationUrl?.split(",") ?: emptyList()
+
         return OrderInformation(
             id = id,
             orderNumber = orderNumber,
@@ -185,7 +187,7 @@ data class RawOrderInformation(
             testType = cookedTestType,
             labId = labId,
             testSiteId = testSiteId,
-            notificationUrl = notificationUrl,
+            notificationUrls = notificationUrls,
             issuedAt = issuedAt,
             reportedAt = reportedAt,
             notifiedAt = notifiedAt,

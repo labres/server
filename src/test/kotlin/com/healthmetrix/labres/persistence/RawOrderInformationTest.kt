@@ -50,7 +50,7 @@ internal class RawOrderInformationTest {
         testSiteId = testSiteId,
         testType = testType,
         issuedAt = issuedAt,
-        notificationUrl = notificationUrl,
+        notificationUrls = listOf(notificationUrl),
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
         enteredLabAt = enteredLabAt,
@@ -78,7 +78,7 @@ internal class RawOrderInformationTest {
             ).cook()
 
             val expected = cooked.copy(
-                notificationUrl = null,
+                notificationUrls = emptyList(),
                 notifiedAt = null,
                 reportedAt = null,
                 labId = null,
@@ -197,7 +197,7 @@ internal class RawOrderInformationTest {
                 testSiteId = null,
                 reportedAt = null,
                 notifiedAt = null,
-                notificationUrl = null,
+                notificationUrls = emptyList(),
                 enteredLabAt = null,
                 testType = null
             ).raw()

@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.order
 
+import com.github.michaelbull.result.Ok
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import io.mockk.every
@@ -32,7 +33,7 @@ internal class IssueExternalOrderNumberUseCaseTest {
     @Test
     fun `it returns registered orderId and orderNumber`() {
         every { repository.findByOrderNumber(any()) } returns emptyList()
-        every { registerOrder(any(), any(), any(), any(), any()) } returns order
+        every { registerOrder(any(), any(), any(), any(), any()) } returns Ok(order)
 
         assertThat(underTest(notificationUrl)).isEqualTo(order)
     }
@@ -44,7 +45,7 @@ internal class IssueExternalOrderNumberUseCaseTest {
             listOf(orderInformation, orderInformation),
             emptyList()
         )
-        every { registerOrder(any(), any(), any(), any(), any()) } returns order
+        every { registerOrder(any(), any(), any(), any(), any()) } returns Ok(order)
 
         underTest(notificationUrl)
 
@@ -54,7 +55,7 @@ internal class IssueExternalOrderNumberUseCaseTest {
     @Test
     fun `it calls registerOrder with default sample type SALIVA`() {
         every { repository.findByOrderNumber(any()) } returns emptyList()
-        every { registerOrder(any(), any(), any(), any(), any()) } returns order
+        every { registerOrder(any(), any(), any(), any(), any()) } returns Ok(order)
 
         underTest(notificationUrl)
 

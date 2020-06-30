@@ -10,6 +10,7 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -25,13 +26,13 @@ class UpdateResultUseCaseTest {
     private val underTest = UpdateResultUseCase(repository, notifier)
     private val orderNumberString = "1234567891"
     private val orderNumber = OrderNumber.External.from(orderNumberString)
-    private val notificationUrl = "http://callMe.test"
+    private val notificationUrls = listOf("http://callMe.test")
     private val orderInfo = OrderInformation(
         id = UUID.randomUUID(),
         issuedAt = Date.from(Instant.now()),
         orderNumber = orderNumber,
         status = Status.IN_PROGRESS,
-        notificationUrl = notificationUrl,
+        notificationUrls = notificationUrls,
         sample = Sample.SALIVA
     )
     private val labId = "labId"
@@ -51,6 +52,7 @@ class UpdateResultUseCaseTest {
     @AfterEach
     internal fun tearDown() {
         clearMocks(OrderNumber)
+        unmockkObject(OrderNumber)
     }
 
     @Test
@@ -86,7 +88,7 @@ class UpdateResultUseCaseTest {
 
         underTest(updateResultRequest, labId, issuerId, now = now)
 
-        verify(exactly = 1) { notifier.invoke(orderInfo.id, notificationUrl) }
+        verify(exactly = 1) { notifier.invoke(orderInfo.id, notificationUrls) }
     }
 
     @Test

@@ -2,6 +2,8 @@ package com.healthmetrix.labres.order
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import com.healthmetrix.labres.persistence.OrderInformation
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -56,7 +58,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number returns status 201`() {
-            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns order
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Ok(order)
 
             val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
@@ -74,7 +76,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number for kevb with more than 8 digits truncates the analyt`() {
-            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns order
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Ok(order)
 
             val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = "0123456799",
@@ -95,7 +97,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number returns order number and id`() {
-            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns order
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Ok(order)
 
             val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
@@ -114,7 +116,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number returns 409 if it has already been registered before`() {
-            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns null
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Err("already exists")
 
             val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
