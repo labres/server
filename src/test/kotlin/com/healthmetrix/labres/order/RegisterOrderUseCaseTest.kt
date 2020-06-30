@@ -36,7 +36,7 @@ internal class RegisterOrderUseCaseTest {
     }
 
     @Test
-    fun `it should return the registered order for an eon`() {
+    fun `it should return the registered order when there is no existing order in the database`() {
         val result = underTest.invoke(eon, null, Sample.SALIVA, null, now)
 
         assertThat(result).isEqualTo(
@@ -51,7 +51,7 @@ internal class RegisterOrderUseCaseTest {
     }
 
     @Test
-    fun `it should save orderInformation`() {
+    fun `it should save orderInformation when there is no existing order in the database`() {
         underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
 
         verify(exactly = 1) {
@@ -60,7 +60,7 @@ internal class RegisterOrderUseCaseTest {
                     id = orderId,
                     orderNumber = preIssuedOrderNumber,
                     status = Status.IN_PROGRESS,
-                    notificationUrl = notificationUrl,
+                    notificationUrls = listOf(notificationUrl),
                     testSiteId = testSiteId,
                     issuedAt = Date.from(now),
                     sample = Sample.SALIVA
@@ -70,8 +70,75 @@ internal class RegisterOrderUseCaseTest {
     }
 
     @Test
-    fun `it should return null if order has already been registered`() {
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns mockk()
+    fun `it should save orderInformation when there is an existing order with less than 3 notification urls`() {
+        val existingNotificationUrls = listOf("a", "b")
+
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
+            id = orderId,
+            orderNumber = preIssuedOrderNumber,
+            status = Status.IN_PROGRESS,
+            issuedAt = Date.from(now),
+            sample = Sample.SALIVA,
+            notificationUrls = existingNotificationUrls
+        )
+
+        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
+
+        verify(exactly = 1) {
+            repository.save(
+                OrderInformation(
+                    id = orderId,
+                    orderNumber = preIssuedOrderNumber,
+                    status = Status.IN_PROGRESS,
+                    notificationUrls = existingNotificationUrls.plus(notificationUrl),
+                    testSiteId = testSiteId,
+                    issuedAt = Date.from(now),
+                    sample = Sample.SALIVA
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `it should save orderInformation when there is an existing order with 3 notification urls including the new notificationUrl`() {
+        val existingNotificationUrls = listOf("a", "b", notificationUrl)
+
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
+            id = orderId,
+            orderNumber = preIssuedOrderNumber,
+            status = Status.IN_PROGRESS,
+            issuedAt = Date.from(now),
+            sample = Sample.SALIVA,
+            notificationUrls = existingNotificationUrls
+        )
+
+        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
+
+        verify(exactly = 1) {
+            repository.save(
+                OrderInformation(
+                    id = orderId,
+                    orderNumber = preIssuedOrderNumber,
+                    status = Status.IN_PROGRESS,
+                    notificationUrls = existingNotificationUrls,
+                    testSiteId = testSiteId,
+                    issuedAt = Date.from(now),
+                    sample = Sample.SALIVA
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `it should return null if order has already been registered with more than 3 different notificationUrls`() {
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
+            id = orderId,
+            orderNumber = eon,
+            status = Status.IN_PROGRESS,
+            issuedAt = Date.from(now),
+            sample = Sample.SALIVA,
+            notificationUrls = listOf("a", "b", "c")
+        )
 
         val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
 
@@ -79,8 +146,15 @@ internal class RegisterOrderUseCaseTest {
     }
 
     @Test
-    fun `it should not save anything if order has already been registered`() {
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns mockk()
+    fun `it should not save anything if order has already been registered three times`() {
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
+            id = orderId,
+            orderNumber = eon,
+            status = Status.IN_PROGRESS,
+            issuedAt = Date.from(now),
+            sample = Sample.SALIVA,
+            notificationUrls = listOf("a", "b", "c")
+        )
 
         underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
 

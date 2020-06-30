@@ -25,6 +25,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator:$springBootVersion")
     implementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
 
+    // kotlin-result
+    implementation("com.michael-bull.kotlin-result:kotlin-result:1.1.7")
+
     // structured logging
     implementation("net.logstash.logback:logstash-logback-encoder:6.4")
 

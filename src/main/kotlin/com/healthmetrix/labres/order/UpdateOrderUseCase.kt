@@ -14,7 +14,9 @@ class UpdateOrderUseCase(
         if (order.orderNumber.issuerId != (issuerId ?: EON_ISSUER_ID))
             return Result.NOT_FOUND
 
-        orderInformationRepository.save(order.copy(notificationUrl = notificationId))
+        orderInformationRepository.save(
+            order.copy(notificationUrls = order.notificationUrls.plus(notificationId).distinct())
+        )
 
         return Result.SUCCESS
     }

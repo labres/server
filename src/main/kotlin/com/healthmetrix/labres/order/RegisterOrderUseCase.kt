@@ -21,19 +21,49 @@ class RegisterOrderUseCase(
     ): OrderInformation? {
         val existing = repository.findByOrderNumberAndSample(orderNumber, sample)
 
-        if (existing != null)
+        if (existing != null && willHaveMoreThanThreeNotificationsUrls(existing, notificationUrl)) {
             return null
+        }
 
-        val orderInfo = OrderInformation(
-            id = idGenerator(),
+        return createNewOrderOrMergeExisting(
             orderNumber = orderNumber,
-            status = Status.IN_PROGRESS,
-            notificationUrl = notificationUrl,
-            issuedAt = Date.from(now),
             testSiteId = testSiteId,
-            sample = sample
-        )
+            sample = sample,
+            notificationUrl = notificationUrl,
+            existing = existing,
+            now = now
+        ).let(repository::save)
+    }
 
-        return repository.save(orderInfo)
+    private fun willHaveMoreThanThreeNotificationsUrls(order: OrderInformation, notificationUrl: String?) =
+        order.notificationUrls.plus(notificationUrl).distinct().size > 3
+
+    private fun createNewOrderOrMergeExisting(
+        orderNumber: OrderNumber,
+        testSiteId: String?,
+        sample: Sample,
+        notificationUrl: String?,
+        existing: OrderInformation?,
+        now: Instant = Instant.now()
+    ) = existing?.copy(
+        testSiteId = testSiteId,
+        issuedAt = Date.from(now),
+        notificationUrls = mergeNotificationUrls(existing.notificationUrls, notificationUrl)
+    ) ?: OrderInformation(
+        id = idGenerator(),
+        orderNumber = orderNumber,
+        status = Status.IN_PROGRESS,
+        notificationUrls = notificationUrl.asList(),
+        issuedAt = Date.from(now),
+        testSiteId = testSiteId,
+        sample = sample
+    )
+
+    private fun mergeNotificationUrls(existing: List<String>, new: String?) = existing.plus(new.asList()).distinct()
+
+    private fun String?.asList() = if (this == null) {
+        emptyList()
+    } else {
+        listOf(this)
     }
 }

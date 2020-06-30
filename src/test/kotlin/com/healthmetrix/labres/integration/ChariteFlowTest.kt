@@ -15,7 +15,6 @@ import com.healthmetrix.labres.order.StatusResponse
 import com.healthmetrix.labres.persistence.InMemoryOrderInformationRepository
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.SpykBean
-import com.ninjasquad.springmockk.clear
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -65,7 +64,7 @@ class ChariteFlowTest {
 
         assertThat(result).isNotNull
         assertThat(result!!).matches { order ->
-            order.notificationUrl == notificationUrl &&
+            order.notificationUrls == listOf(notificationUrl) &&
                 order.status == Status.IN_PROGRESS &&
                 order.sample == Sample.SALIVA
         }

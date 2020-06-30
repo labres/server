@@ -125,8 +125,8 @@ class PreIssuedOrderNumberController(
         )
 
         if (order == null) {
-            logger.info(
-                "[{}] Order already exists",
+            logger.warn(
+                "[{}] Order already exists with 3 notificationUrls",
                 kv("method", "registerOrder"),
                 kv("issuerId", issuerId),
                 kv("orderNumber", request.orderNumber),
@@ -303,7 +303,7 @@ class PreIssuedOrderNumberController(
         @PathVariable
         orderId: String,
         @RequestBody
-        updateOrderRequestBody: ExternalOrderNumberController.UpdateOrderRequestBody
+        updateOrderRequestBody: UpdateOrderRequestBody
     ): ResponseEntity<UpdateOrderResponse> {
         val requestId = UUID.randomUUID()
         logger.debug(

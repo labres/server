@@ -37,7 +37,7 @@ class UpdateResultUseCase(
 
         updateTimestamp(update, updateResultRequest.result, now)
             .let(repository::save)
-            .also { notifyOnStatusChange(it.id, it.notificationUrl) }
+            .also { notifyOnStatusChange(it.id, it.notificationUrls) }
 
         return UpdateResult.SUCCESS
     }

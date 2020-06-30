@@ -42,6 +42,6 @@ internal class ManualNotifierTest {
      */
     @Test
     fun `send test notification`() {
-        notifyOnStatusChangeUseCase.invoke(UUID.randomUUID(), target)
+        notifyOnStatusChangeUseCase.invoke(UUID.randomUUID(), listOf(target))
     }
 }

@@ -106,7 +106,7 @@ labres:
 
 spring:
   profiles: prod
-  profiles.include: dynamo, notify, secrets, jsonlog
+  profiles.include: dynamo, notify, secrets, jsonlog, cloudwatch
 
 dynamo.local-endpoint:
 
