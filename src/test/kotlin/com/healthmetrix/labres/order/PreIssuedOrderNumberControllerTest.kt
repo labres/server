@@ -87,8 +87,9 @@ class PreIssuedOrderNumberControllerTest {
                 content = objectMapper.writeValueAsString(request)
             }
 
+            val correct = OrderNumber.from("kevb", "01234567")
             verify(exactly = 1) {
-                registerOrderUseCase.invoke(OrderNumber.from("kevb", "01234567"), any(), any(), any(), any())
+                registerOrderUseCase.invoke(eq(correct), any(), any(), any(), any())
             }
         }
 
