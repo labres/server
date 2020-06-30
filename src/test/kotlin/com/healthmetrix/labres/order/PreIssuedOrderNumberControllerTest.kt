@@ -3,10 +3,12 @@ package com.healthmetrix.labres.order
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.healthmetrix.labres.persistence.OrderInformation
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.hamcrest.core.Is
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
@@ -46,6 +48,11 @@ class PreIssuedOrderNumberControllerTest {
 
     @Nested
     inner class RegisterOrderEndpointTest {
+
+        @BeforeEach
+        internal fun setUp() {
+            clearAllMocks()
+        }
 
         @Test
         fun `registering a preissued order number returns status 201`() {
