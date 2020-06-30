@@ -69,7 +69,7 @@ labres:
   registry:
     labs:
       - id: hmx
-        issuers: hmx, labres
+        issuers: hmx, labres, mvz, kevb
       - id: d4l
         issuers: labres
 
