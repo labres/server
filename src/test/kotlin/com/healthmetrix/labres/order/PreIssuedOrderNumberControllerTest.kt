@@ -5,9 +5,12 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.healthmetrix.labres.persistence.OrderInformation
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.hamcrest.core.Is
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
@@ -61,6 +64,26 @@ class PreIssuedOrderNumberControllerTest {
                 content = objectMapper.writeValueAsString(request)
             }.andExpect {
                 status { isCreated }
+            }
+        }
+
+        @Test
+        fun `registering a preissued order number for kevb with more than 8 digits truncates the analyt`() {
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns order
+
+            val request = PreIssuedOrderNumberController.RegisterOrderRequest(
+                orderNumber = "0123456799",
+                testSiteId = testSiteId,
+                notificationUrl = notificationUrl
+            )
+
+            mockMvc.post("/v1/issuers/kevb/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
+            }
+
+            verify(exactly = 1) {
+                registerOrderUseCase.invoke(OrderNumber.from("kevb", "01234567"), any(), any(), any(), any())
             }
         }
 
