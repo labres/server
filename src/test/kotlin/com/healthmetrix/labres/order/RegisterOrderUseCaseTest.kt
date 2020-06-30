@@ -146,7 +146,23 @@ internal class RegisterOrderUseCaseTest {
     }
 
     @Test
-    fun `it should not save anything if order has already been registered three times`() {
+    fun `it should return null if the order already has a status that is not IN_PROGRESS`() {
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
+            id = orderId,
+            orderNumber = eon,
+            status = Status.POSITIVE,
+            issuedAt = Date.from(now),
+            sample = Sample.SALIVA,
+            notificationUrls = listOf("a")
+        )
+
+        val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
+
+        assertThat(res).isNull()
+    }
+
+    @Test
+    fun `it should not save anything if the order has already been registered three times`() {
         every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
             id = orderId,
             orderNumber = eon,

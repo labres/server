@@ -4,6 +4,7 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -31,10 +32,44 @@ internal class NotifyOnStatusChangeUseCaseTest {
     }
 
     @Test
+    fun `it should send http notifications to multiple targets`() {
+        val notificationUrls = listOf("https://callme.test", "https://alsome.test")
+
+        underTest(UUID.randomUUID(), notificationUrls)
+
+        verify(exactly = 2) { httpNotifier.send(match { notificationUrls.contains(it.url) }) }
+    }
+
+    @Test
     fun `it should send fcm notification`() {
         underTest(UUID.randomUUID(), listOf("fcm://labres@test_token"))
 
         verify(exactly = 1) { fcmNotifier.send(any()) }
+    }
+
+    @Test
+    fun `it should send fcm notifications to multiple targets`() {
+        val notificationTokens = listOf("test_token", "test_token2")
+
+        underTest(UUID.randomUUID(), notificationTokens.map(this::addFcmPrefix))
+
+        verify(exactly = 2) { fcmNotifier.send(match { notificationTokens.contains(it.token) }) }
+    }
+
+    @Test
+    fun `it should send http and fcm notifications to multiple targets`() {
+        val httpUrl = "https://callme.test"
+        val fcmToken1 = "test_token"
+        val fcmToken2 = "test_token2"
+        val notificationTokens = listOf(addFcmPrefix(fcmToken1), httpUrl, addFcmPrefix(fcmToken2))
+
+        underTest(UUID.randomUUID(), notificationTokens)
+
+        verifyAll {
+            fcmNotifier.send(match { it.token == fcmToken1 })
+            fcmNotifier.send(match { it.token == fcmToken2 })
+            httpNotifier.send(match { it.url == httpUrl })
+        }
     }
 
     @Test
@@ -102,4 +137,32 @@ internal class NotifyOnStatusChangeUseCaseTest {
             httpNotifier.send(any())
         }
     }
+
+    @Test
+    fun `it should return true when all http and fcm notifications can be sent successfully`() {
+        val httpUrl = "https://callme.test"
+        val fcmToken1 = "test_token"
+        val fcmToken2 = "test_token2"
+        val notificationTokens = listOf(addFcmPrefix(fcmToken1), httpUrl, addFcmPrefix(fcmToken2))
+
+        val res = underTest(UUID.randomUUID(), notificationTokens)
+
+        assertThat(res).isTrue()
+    }
+
+    @Test
+    fun `it should return false when any http and fcm notifications fails to be sent successfully`() {
+        val httpUrl = "https://callme.test"
+        val fcmToken1 = "test_token"
+        val fcmToken2 = "test_token2"
+        val notificationTokens = listOf(addFcmPrefix(fcmToken1), httpUrl, addFcmPrefix(fcmToken2))
+
+        every { fcmNotifier.send(match { it.token == fcmToken2 }) } returns false
+
+        val res = underTest(UUID.randomUUID(), notificationTokens)
+
+        assertThat(res).isFalse()
+    }
+
+    private fun addFcmPrefix(token: String) = "fcm://labres@$token"
 }

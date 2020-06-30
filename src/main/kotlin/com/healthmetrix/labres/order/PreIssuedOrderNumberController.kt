@@ -131,7 +131,7 @@ class PreIssuedOrderNumberController(
 
         if (order == null) {
             logger.warn(
-                "[{}] Order already exists with 3 notificationUrls",
+                "[{}] Order already exists",
                 kv("method", "registerOrder"),
                 kv("issuerId", issuerId),
                 kv("orderNumber", request.orderNumber),
