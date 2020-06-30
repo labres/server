@@ -61,7 +61,7 @@ management:
 
 metrics:
   cloudwatch:
-    stepInSeconds: 1
+    stepInSeconds: 30
 
 ---
 labres:
@@ -107,6 +107,10 @@ labres:
 spring:
   profiles: prod
   profiles.include: dynamo, notify, secrets, jsonlog, cloudwatch
+
+metrics:
+  cloudwatch:
+    stepInSeconds: 3
 
 dynamo.local-endpoint:
 
