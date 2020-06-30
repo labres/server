@@ -105,18 +105,23 @@ class PreIssuedOrderNumberController(
                 description = "A short descriptive issuer name having at most 16 characters"
             )
         )
-        @PathVariable issuerId: String,
-        @RequestBody request: RegisterOrderRequest
+        @PathVariable(value = "issuerId") rawIssuerId: String,
+        @RequestBody rawRequest: RegisterOrderRequest
     ): ResponseEntity<RegisterOrderResponse> {
         val requestId = UUID.randomUUID()
+
+        val (issuerId, request) = transform(rawIssuerId, rawRequest, requestId)
+
         logger.debug(
             "[{}] for issuerId {} with request $request",
             kv("method", "registerOrder"),
             kv("issuerId", issuerId),
             kv("orderNumber", request.orderNumber),
             kv("sample", request.sample),
+            kv("testSiteId", request.testSiteId),
             kv("requestId", requestId)
         )
+
         val order = registerOrderUseCase(
             orderNumber = OrderNumber.from(issuerId, request.orderNumber),
             testSiteId = request.testSiteId,
@@ -414,5 +419,54 @@ class PreIssuedOrderNumberController(
         object Updated : UpdateOrderResponse(HttpStatus.OK)
         object NotFound : UpdateOrderResponse(HttpStatus.NOT_FOUND)
         data class BadRequest(val message: String) : UpdateOrderResponse(HttpStatus.BAD_REQUEST)
+    }
+
+    // TODO move out in classes being invoked depending on issuerId
+    fun transform(
+        rawIssuerId: String,
+        rawRequest: RegisterOrderRequest,
+        requestId: UUID
+    ): Pair<String, RegisterOrderRequest> {
+        // BEGIN IOS ISSUERID QUICKFIX
+        val iOsReplacedIssuerIdWithTestSite = rawIssuerId == "hpi" || rawIssuerId == "wmt"
+
+        if (iOsReplacedIssuerIdWithTestSite) {
+            logger.warn(
+                "[{}] IOS ISSUERID BUG: incoming issuerId $rawIssuerId, incoming testSiteId ${rawRequest.testSiteId}",
+                kv("method", "registerOrder"),
+                kv("requestId", requestId)
+            )
+        }
+
+        val request = if (iOsReplacedIssuerIdWithTestSite) {
+            rawRequest.copy(
+                testSiteId = rawIssuerId
+            )
+        } else {
+            rawRequest
+        }
+
+        val issuerId = if (iOsReplacedIssuerIdWithTestSite) {
+            "mvz"
+        } else {
+            rawIssuerId
+        }
+        // END IOS ISSUERID QUICKFIX
+
+        // BEGIN TRUNCATE KEVB ORDER NUMBERS
+        if (issuerId == "kevb" && request.orderNumber.length > 8) {
+            logger.info(
+                "[{}] Truncating analyt prefix for order {}",
+                kv("method", "registerOrder"),
+                kv("orderNumber", request.orderNumber),
+                kv("issuerId", issuerId),
+                kv("requestId", requestId),
+                kv("issuer", "kevb")
+            )
+            return issuerId to request.copy(orderNumber = request.orderNumber.substring(0, 8))
+        }
+        // END TRUNCATE KEVB ORDER NUMBERS
+
+        return issuerId to request
     }
 }

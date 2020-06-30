@@ -61,7 +61,7 @@ management:
 
 metrics:
   cloudwatch:
-    stepInSeconds: 1
+    stepInSeconds: 30
 
 ---
 labres:
@@ -69,10 +69,8 @@ labres:
   registry:
     labs:
       - id: hmx
-        issuers: hmx, labres
+        issuers: hmx, labres, mvz, kevb
       - id: d4l
-        issuers: labres
-      - id: pentest
         issuers: labres
 
 spring:
@@ -107,6 +105,10 @@ labres:
 spring:
   profiles: prod
   profiles.include: dynamo, notify, secrets, jsonlog, cloudwatch
+  
+metrics:
+  cloudwatch:
+    stepInSeconds: 3
 
 dynamo.local-endpoint:
 
