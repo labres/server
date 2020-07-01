@@ -197,7 +197,7 @@ class PreIssuedOrderNumberController(
                 description = "A short descriptive issuer name having at most 16 characters"
             )
         )
-        @PathVariable issuerId: String,
+        @PathVariable(value = "issuerId") rawIssuerId: String,
         @Parameter(
             description = "UUID of an order that has been sent to a lab",
             required = true,
@@ -206,6 +206,9 @@ class PreIssuedOrderNumberController(
         @PathVariable orderId: String
     ): ResponseEntity<StatusResponse> {
         val requestId = UUID.randomUUID()
+
+        val issuerId = transform(rawIssuerId, requestId)
+
         logger.debug(
             "[{}] for issuerId {} and orderId {}",
             kv("method", "getOrderNumber"),
@@ -302,8 +305,8 @@ class PreIssuedOrderNumberController(
                 description = "A short descriptive issuer name having at most 16 characters"
             )
         )
-        @PathVariable
-        issuerId: String,
+        @PathVariable(value = "issuerId")
+        rawIssuerId: String,
         @Parameter(
             description = "UUID of an order that has been sent to a lab",
             required = true,
@@ -315,6 +318,9 @@ class PreIssuedOrderNumberController(
         updateOrderRequestBody: UpdateOrderRequestBody
     ): ResponseEntity<UpdateOrderResponse> {
         val requestId = UUID.randomUUID()
+
+        val issuerId = transform(rawIssuerId, requestId)
+
         logger.debug(
             "[{}]: Update order for issuerId {} and orderId {}: $updateOrderRequestBody",
             kv("method", "updateOrder"),
@@ -472,5 +478,28 @@ class PreIssuedOrderNumberController(
         // END TRUNCATE KEVB ORDER NUMBERS
 
         return issuerId to request
+    }
+
+    private fun transform(
+        rawIssuerId: String,
+        requestId: UUID
+    ): String {
+        // BEGIN IOS ISSUERID QUICKFIX
+        val iOsReplacedIssuerIdWithTestSite = rawIssuerId == "hpi" || rawIssuerId == "wmt"
+
+        if (iOsReplacedIssuerIdWithTestSite) {
+            logger.warn(
+                "[{}] IOS ISSUERID BUG: incoming issuerId $rawIssuerId",
+                kv("method", "getOrder"),
+                kv("requestId", requestId)
+            )
+        }
+
+        return if (iOsReplacedIssuerIdWithTestSite) {
+            "mvz"
+        } else {
+            rawIssuerId
+        }
+        // END IOS ISSUERID QUICKFIX
     }
 }

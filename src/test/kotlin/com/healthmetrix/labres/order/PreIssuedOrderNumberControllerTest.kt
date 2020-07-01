@@ -48,13 +48,13 @@ class PreIssuedOrderNumberControllerTest {
         sample = Sample.SALIVA
     )
 
+    @BeforeEach
+    internal fun setUp() {
+        clearAllMocks()
+    }
+
     @Nested
     inner class RegisterOrderEndpointTest {
-
-        @BeforeEach
-        internal fun setUp() {
-            clearAllMocks()
-        }
 
         @Test
         fun `registering a preissued order number returns status 201`() {
@@ -217,6 +217,122 @@ class PreIssuedOrderNumberControllerTest {
                 )
             }.andExpect {
                 status { isBadRequest }
+            }
+        }
+    }
+
+    @Nested
+    inner class IosIssuerIdBugWorkaround {
+
+        @Test
+        fun `registering a preissued order number for for issuerId hpi should transform it to mvz`() {
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Ok(order)
+
+            val issuerId = "hpi"
+
+            val request = PreIssuedOrderNumberController.RegisterOrderRequest(
+                orderNumber = "01234567",
+                testSiteId = testSiteId,
+                notificationUrl = notificationUrl
+            )
+
+            mockMvc.post("/v1/issuers/$issuerId/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
+            }
+
+            val expected = OrderNumber.from("mvz", "01234567")
+            verify(exactly = 1) {
+                registerOrderUseCase.invoke(eq(expected), any(), any(), any(), any())
+            }
+        }
+
+        @Test
+        fun `registering a preissued order number for for issuerId wmt should transform it to mvz`() {
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Ok(order)
+
+            val issuerId = "wmt"
+
+            val request = PreIssuedOrderNumberController.RegisterOrderRequest(
+                orderNumber = "01234567",
+                testSiteId = testSiteId,
+                notificationUrl = notificationUrl
+            )
+
+            mockMvc.post("/v1/issuers/$issuerId/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
+            }
+
+            val expected = OrderNumber.from("mvz", "01234567")
+            verify(exactly = 1) {
+                registerOrderUseCase.invoke(eq(expected), any(), any(), any(), any())
+            }
+        }
+
+        @Test
+        fun `querying the status of an order for issuerId hpi should transform it to mvz`() {
+            every { queryStatusUseCase.invoke(any(), any()) } returns Status.POSITIVE
+
+            val issuerId = "hpi"
+
+            mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
+
+            verify(exactly = 1) {
+                queryStatusUseCase.invoke(any(), "mvz")
+            }
+        }
+
+        @Test
+        fun `querying the status of an order for issuerId wmt should transform it to mvz`() {
+            every { queryStatusUseCase.invoke(any(), any()) } returns Status.POSITIVE
+
+            val issuerId = "wmt"
+
+            mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
+
+            verify(exactly = 1) {
+                queryStatusUseCase.invoke(any(), "mvz")
+            }
+        }
+
+        @Test
+        fun `updating an order for issuerId hpi should transform it to mvz`() {
+            every { updateOrderUseCase(any(), any(), any()) } returns UpdateOrderUseCase.Result.SUCCESS
+
+            val issuerId = "hpi"
+
+            mockMvc.put("/v1/issuers/$issuerId/orders/$orderId") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsBytes(
+                    mapOf(
+                        "notificationUrl" to notificationUrl
+                    )
+                )
+            }
+
+            verify(exactly = 1) {
+                updateOrderUseCase.invoke(any(), "mvz", any())
+            }
+        }
+
+        @Test
+        fun `updating an order for issuerId wmt should transform it to mvz`() {
+            every { updateOrderUseCase(any(), any(), any()) } returns UpdateOrderUseCase.Result.SUCCESS
+
+            val issuerId = "wmt"
+
+            mockMvc.put("/v1/issuers/$issuerId/orders/$orderId") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsBytes(
+                    mapOf(
+                        "notificationUrl" to notificationUrl
+                    )
+                )
+            }
+
+            verify(exactly = 1) {
+                updateOrderUseCase.invoke(any(), "mvz", any())
             }
         }
     }
