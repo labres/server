@@ -27,8 +27,9 @@ internal class RegisterOrderUseCaseTest {
     private val now = Instant.now()
 
     private val repository: OrderInformationRepository = mockk()
+    private val metrics: OrderMetrics = mockk(relaxed = true)
 
-    private val underTest = RegisterOrderUseCase(repository) { orderId }
+    private val underTest = RegisterOrderUseCase(repository, metrics) { orderId }
 
     @BeforeEach
     internal fun setUp() {

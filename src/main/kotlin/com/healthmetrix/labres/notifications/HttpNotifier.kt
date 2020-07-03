@@ -3,7 +3,10 @@ package com.healthmetrix.labres.notifications
 import com.healthmetrix.labres.logger
 import org.springframework.web.reactive.function.client.WebClient
 
-class HttpNotifier(private val configHttp: HttpNotificationConfig) : Notifier<Notification.HttpNotification> {
+class HttpNotifier(
+    private val configHttp: HttpNotificationConfig,
+    private val metrics: NotificationMetrics
+) : Notifier<Notification.HttpNotification> {
 
     override fun send(notification: Notification.HttpNotification) = try {
         val response = WebClient.create(notification.url)
@@ -20,6 +23,7 @@ class HttpNotifier(private val configHttp: HttpNotificationConfig) : Notifier<No
         response?.statusCode?.is2xxSuccessful ?: false
     } catch (ex: Exception) {
         logger.warn("Failed to notify", ex)
+        metrics.countHttpNotificationFailed()
         false
     }
 }

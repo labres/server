@@ -15,6 +15,7 @@ import java.util.UUID
 @Component
 class RegisterOrderUseCase(
     private val repository: OrderInformationRepository,
+    private val metrics: OrderMetrics,
     private val idGenerator: () -> UUID = UUID::randomUUID
 ) {
     operator fun invoke(
@@ -36,7 +37,8 @@ class RegisterOrderUseCase(
             ).let(repository::save).let(::Ok)
 
         if (!existing.notificationUrls.contains(notificationUrl)) {
-            logger.warn(
+            metrics.countRegisteringOrdersMultipleTimes(orderNumber.issuerId, testSiteId)
+            logger.debug(
                 "[{}] Order already exists with a different notificationUrl",
                 StructuredArguments.kv("method", "registerOrder"),
                 StructuredArguments.kv("issuerId", orderNumber.issuerId),
