@@ -17,7 +17,8 @@ import java.io.ByteArrayInputStream
 class NotificationsConfig(
     @Value("\${labres.stage}")
     private val stage: String,
-    private val secrets: Secrets
+    private val secrets: Secrets,
+    private val metrics: NotificationMetrics
 ) {
 
     @Bean
@@ -26,7 +27,7 @@ class NotificationsConfig(
         secrets.get("lab-res/$stage/notification/basic-auth")
             ?.let { objectMapper.readValue(it, HttpNotificationConfig.BasicAuth::class.java) }
             ?.let(::HttpNotificationConfig)
-            ?.let(::HttpNotifier)
+            ?.let { HttpNotifier(it, metrics) }
             ?: throw InternalError("Could not retrieve basic auth credentials for HTTP notification")
 
     @Bean
@@ -49,7 +50,7 @@ class NotificationsConfig(
         val dryRun = stage == "local"
         logger.info("Initializing google FCM with dryRun==$dryRun")
 
-        return FirebaseNotifier(messaging, dryRun)
+        return FirebaseNotifier(messaging, dryRun, metrics)
     }
 
     @Bean

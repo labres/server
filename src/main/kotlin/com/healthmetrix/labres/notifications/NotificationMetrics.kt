@@ -3,7 +3,9 @@ package com.healthmetrix.labres.notifications
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
+import org.springframework.stereotype.Component
 
+@Component
 class NotificationMetrics(private val meterRegistry: MeterRegistry) {
 
     fun countTargetEmpty() = Counter.builder("notifications.target.empty")
