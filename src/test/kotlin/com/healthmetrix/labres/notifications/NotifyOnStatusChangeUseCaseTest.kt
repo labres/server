@@ -14,8 +14,9 @@ internal class NotifyOnStatusChangeUseCaseTest {
 
     private val fcmNotifier: Notifier<Notification.FcmNotification> = mockk()
     private val httpNotifier: Notifier<Notification.HttpNotification> = mockk()
+    private val metrics: NotificationMetrics = mockk(relaxed = true)
 
-    private val underTest = NotifyOnStatusChangeUseCase(fcmNotifier, httpNotifier)
+    private val underTest = NotifyOnStatusChangeUseCase(fcmNotifier, httpNotifier, metrics)
 
     @BeforeEach
     internal fun setUp() {

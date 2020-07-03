@@ -15,8 +15,8 @@ import java.util.UUID
 @Component
 class RegisterOrderUseCase(
     private val repository: OrderInformationRepository,
-    private val idGenerator: () -> UUID = UUID::randomUUID,
-    private val metrics: OrderMetrics
+    private val metrics: OrderMetrics,
+    private val idGenerator: () -> UUID = UUID::randomUUID
 ) {
     operator fun invoke(
         orderNumber: OrderNumber,
