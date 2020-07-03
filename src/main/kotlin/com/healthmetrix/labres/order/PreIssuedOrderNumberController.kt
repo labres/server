@@ -141,7 +141,7 @@ class PreIssuedOrderNumberController(
                 kv("sample", request.sample),
                 kv("requestId", requestId)
             )
-            metrics.countConflictOnRegisteringOrders(issuerId)
+            metrics.countConflictOnRegisteringOrders(issuerId, request.testSiteId)
         }.mapError {
             RegisterOrderResponse.Conflict
         }.onSuccess {
@@ -153,7 +153,7 @@ class PreIssuedOrderNumberController(
                 kv("sample", request.sample),
                 kv("requestId", requestId)
             )
-            metrics.countRegisteredOrders(issuerId)
+            metrics.countRegisteredOrders(issuerId, request.testSiteId)
         }.map { order ->
             RegisterOrderResponse.Created(order.id, order.orderNumber.number)
         }.unify().asEntity()
@@ -357,9 +357,7 @@ class PreIssuedOrderNumberController(
         return when (result) {
             UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
             UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound.also {
-                metrics.countOrderNotFoundOnUpdate(
-                    issuerId
-                )
+                metrics.countOrderNotFoundOnUpdate(issuerId)
             }
         }.asEntity()
     }
@@ -441,7 +439,8 @@ class PreIssuedOrderNumberController(
         val iOsReplacedIssuerIdWithTestSite = rawIssuerId == "hpi" || rawIssuerId == "wmt"
 
         if (iOsReplacedIssuerIdWithTestSite) {
-            logger.warn(
+            metrics.countRewriteIssuerIdForIosBug()
+            logger.debug(
                 "[{}] IOS ISSUERID BUG: incoming issuerId $rawIssuerId, incoming testSiteId ${rawRequest.testSiteId}",
                 kv("method", "registerOrder"),
                 kv("requestId", requestId)
@@ -465,7 +464,7 @@ class PreIssuedOrderNumberController(
 
         // BEGIN TRUNCATE KEVB ORDER NUMBERS
         if (issuerId == "kevb" && request.orderNumber.length > 8) {
-            logger.info(
+            logger.debug(
                 "[{}] Truncating analyt prefix for order {}",
                 kv("method", "registerOrder"),
                 kv("orderNumber", request.orderNumber),
@@ -473,6 +472,7 @@ class PreIssuedOrderNumberController(
                 kv("requestId", requestId),
                 kv("issuer", "kevb")
             )
+            metrics.countTruncateKevbSuffix()
             return issuerId to request.copy(orderNumber = request.orderNumber.substring(0, 8))
         }
         // END TRUNCATE KEVB ORDER NUMBERS
@@ -487,15 +487,13 @@ class PreIssuedOrderNumberController(
         // BEGIN IOS ISSUERID QUICKFIX
         val iOsReplacedIssuerIdWithTestSite = rawIssuerId == "hpi" || rawIssuerId == "wmt"
 
-        if (iOsReplacedIssuerIdWithTestSite) {
-            logger.warn(
+        return if (iOsReplacedIssuerIdWithTestSite) {
+            metrics.countRewriteIssuerIdForIosBug()
+            logger.debug(
                 "[{}] IOS ISSUERID BUG: incoming issuerId $rawIssuerId",
                 kv("method", "getOrder"),
                 kv("requestId", requestId)
             )
-        }
-
-        return if (iOsReplacedIssuerIdWithTestSite) {
             "mvz"
         } else {
             rawIssuerId

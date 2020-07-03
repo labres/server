@@ -6,7 +6,11 @@ import com.google.firebase.messaging.FirebaseMessagingException
 import com.google.firebase.messaging.Message
 import com.healthmetrix.labres.logger
 
-class FirebaseNotifier(private val messaging: FirebaseMessaging, private val dryRun: Boolean = true) :
+class FirebaseNotifier(
+    private val messaging: FirebaseMessaging,
+    private val dryRun: Boolean = true,
+    private val metrics: NotificationMetrics
+) :
     Notifier<Notification.FcmNotification> {
     override fun send(notification: Notification.FcmNotification): Boolean {
         val message = Message.builder()
@@ -31,6 +35,7 @@ class FirebaseNotifier(private val messaging: FirebaseMessaging, private val dry
             messageId != null
         } catch (ex: FirebaseMessagingException) {
             logger.warn("Failed sending message to FCM", ex)
+            metrics.countFcmNotificationFailed()
             false
         }
     }

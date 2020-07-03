@@ -7,14 +7,15 @@ import java.util.UUID
 @Service
 class NotifyOnStatusChangeUseCase(
     private val fcmNotifier: Notifier<Notification.FcmNotification>,
-    private val httpNotifier: Notifier<Notification.HttpNotification>
+    private val httpNotifier: Notifier<Notification.HttpNotification>,
+    private val metrics: NotificationMetrics
 ) {
     operator fun invoke(orderId: UUID, targets: List<String>): Boolean {
         if (targets.isEmpty()) {
             logger.warn("No notification url for $orderId")
             return false
         }
-
+        metrics.countTargetEmpty()
         logger.debug("Sending notification for id $orderId to $targets")
 
         return targets
@@ -28,6 +29,7 @@ class NotifyOnStatusChangeUseCase(
             is Notification.FcmNotification -> fcmNotifier.send(notification)
             null -> {
                 logger.warn("Notification type for id $orderId not supported: $target")
+                metrics.countTargetNotSupported()
                 false
             }
         }
