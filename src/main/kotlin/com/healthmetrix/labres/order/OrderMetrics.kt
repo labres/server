@@ -25,7 +25,7 @@ class OrderMetrics(private val meterRegistry: MeterRegistry) {
         .increment()
 
     fun countRegisteringOrdersMultipleTimes(issuerId: String?, testSiteId: String?): Unit = Counter
-        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.registration.conflict")
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.registration.multiple_times")
         .description("Increments the sum of conflicts on registering an order for issuer $issuerId")
         .tags(
             listOfNotNull(
