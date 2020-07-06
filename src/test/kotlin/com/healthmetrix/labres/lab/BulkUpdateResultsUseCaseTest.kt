@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test
 class BulkUpdateResultsUseCaseTest {
 
     private val updateResultUseCase: UpdateResultUseCase = mockk()
+    private val metrics: LabMetrics = mockk(relaxed = true)
 
     private val labId = "test-lab"
     private val issuerId = "test-issuer"
@@ -19,7 +20,7 @@ class BulkUpdateResultsUseCaseTest {
         orderNumber = orderNumber,
         result = Result.POSITIVE
     )
-    private val underTest = BulkUpdateResultsUseCase(updateResultUseCase)
+    private val underTest = BulkUpdateResultsUseCase(updateResultUseCase, metrics)
 
     @BeforeEach
     internal fun setUp() {
