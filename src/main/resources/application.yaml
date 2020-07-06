@@ -101,6 +101,8 @@ labres:
         issuers: kevb
       - id: hmx
         issuers: hmx
+      - id: mvz
+        issuers: mvz
 
 spring:
   profiles: prod
