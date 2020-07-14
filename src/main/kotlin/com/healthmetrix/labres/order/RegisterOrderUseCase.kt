@@ -25,7 +25,9 @@ class RegisterOrderUseCase(
         notificationUrl: String?,
         now: Instant = Instant.now()
     ): Result<OrderInformation, String> {
-        val existing = repository.findByOrderNumberAndSample(orderNumber, sample)
+        val existingOrders = repository.findByOrderNumberAndSample(orderNumber, sample)
+
+        val newestExisting = existingOrders.maxBy { it.issuedAt }
             ?: return OrderInformation(
                 id = idGenerator(),
                 orderNumber = orderNumber,
@@ -36,7 +38,7 @@ class RegisterOrderUseCase(
                 sample = sample
             ).let(repository::save).let(::Ok)
 
-        if (!existing.notificationUrls.contains(notificationUrl)) {
+        if (!newestExisting.notificationUrls.contains(notificationUrl)) {
             metrics.countRegisteringOrdersMultipleTimes(orderNumber.issuerId, testSiteId)
             logger.debug(
                 "[{}] Order already exists with a different notificationUrl",
@@ -47,18 +49,18 @@ class RegisterOrderUseCase(
             )
         }
 
-        if (existing.alreadyHasResult()) {
+        if (newestExisting.alreadyHasResult()) {
             return Err("Order already has a result")
         }
 
-        if (willHaveMoreThanThreeNotificationsUrls(existing, notificationUrl)) {
+        if (willHaveMoreThanThreeNotificationsUrls(newestExisting, notificationUrl)) {
             return Err("Order already has three notificationUrls")
         }
 
-        return existing.copy(
+        return newestExisting.copy(
             testSiteId = testSiteId,
             issuedAt = Date.from(now),
-            notificationUrls = mergeNotificationUrls(existing.notificationUrls, notificationUrl)
+            notificationUrls = mergeNotificationUrls(newestExisting.notificationUrls, notificationUrl)
         ).let(repository::save).let(::Ok)
     }
 
