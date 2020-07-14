@@ -35,7 +35,7 @@ internal class RegisterOrderUseCaseTest {
     internal fun setUp() {
         clearMocks(repository)
         every { repository.save(any()) } answers { arg(0) }
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns null
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns emptyList()
     }
 
     @Test
@@ -76,13 +76,15 @@ internal class RegisterOrderUseCaseTest {
     fun `it should save orderInformation when there is an existing order with less than 3 notification urls`() {
         val existingNotificationUrls = listOf("a", "b")
 
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
-            id = orderId,
-            orderNumber = preIssuedOrderNumber,
-            status = Status.IN_PROGRESS,
-            issuedAt = Date.from(now),
-            sample = Sample.SALIVA,
-            notificationUrls = existingNotificationUrls
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(
+            OrderInformation(
+                id = orderId,
+                orderNumber = preIssuedOrderNumber,
+                status = Status.IN_PROGRESS,
+                issuedAt = Date.from(now),
+                sample = Sample.SALIVA,
+                notificationUrls = existingNotificationUrls
+            )
         )
 
         underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
@@ -106,13 +108,15 @@ internal class RegisterOrderUseCaseTest {
     fun `it should save orderInformation when there is an existing order with 3 notification urls including the new notificationUrl`() {
         val existingNotificationUrls = listOf("a", "b", notificationUrl)
 
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
-            id = orderId,
-            orderNumber = preIssuedOrderNumber,
-            status = Status.IN_PROGRESS,
-            issuedAt = Date.from(now),
-            sample = Sample.SALIVA,
-            notificationUrls = existingNotificationUrls
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(
+            OrderInformation(
+                id = orderId,
+                orderNumber = preIssuedOrderNumber,
+                status = Status.IN_PROGRESS,
+                issuedAt = Date.from(now),
+                sample = Sample.SALIVA,
+                notificationUrls = existingNotificationUrls
+            )
         )
 
         underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
@@ -134,13 +138,15 @@ internal class RegisterOrderUseCaseTest {
 
     @Test
     fun `it should return null if order has already been registered with more than 3 different notificationUrls`() {
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
-            id = orderId,
-            orderNumber = eon,
-            status = Status.IN_PROGRESS,
-            issuedAt = Date.from(now),
-            sample = Sample.SALIVA,
-            notificationUrls = listOf("a", "b", "c")
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(
+            OrderInformation(
+                id = orderId,
+                orderNumber = eon,
+                status = Status.IN_PROGRESS,
+                issuedAt = Date.from(now),
+                sample = Sample.SALIVA,
+                notificationUrls = listOf("a", "b", "c")
+            )
         )
 
         val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
@@ -150,13 +156,15 @@ internal class RegisterOrderUseCaseTest {
 
     @Test
     fun `it should return null if the order already has a status that is not IN_PROGRESS`() {
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
-            id = orderId,
-            orderNumber = eon,
-            status = Status.POSITIVE,
-            issuedAt = Date.from(now),
-            sample = Sample.SALIVA,
-            notificationUrls = listOf("a")
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(
+            OrderInformation(
+                id = orderId,
+                orderNumber = eon,
+                status = Status.POSITIVE,
+                issuedAt = Date.from(now),
+                sample = Sample.SALIVA,
+                notificationUrls = listOf("a")
+            )
         )
 
         val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
@@ -166,13 +174,15 @@ internal class RegisterOrderUseCaseTest {
 
     @Test
     fun `it should not save anything if the order has already been registered three times`() {
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns OrderInformation(
-            id = orderId,
-            orderNumber = eon,
-            status = Status.IN_PROGRESS,
-            issuedAt = Date.from(now),
-            sample = Sample.SALIVA,
-            notificationUrls = listOf("a", "b", "c")
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(
+            OrderInformation(
+                id = orderId,
+                orderNumber = eon,
+                status = Status.IN_PROGRESS,
+                issuedAt = Date.from(now),
+                sample = Sample.SALIVA,
+                notificationUrls = listOf("a", "b", "c")
+            )
         )
 
         underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)

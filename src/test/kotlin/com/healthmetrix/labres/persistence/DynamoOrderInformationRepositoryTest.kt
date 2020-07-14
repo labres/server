@@ -104,13 +104,13 @@ internal class DynamoOrderInformationRepositoryTest {
     }
 
     @Test
-    fun `findByOrderNumberAndSample should return null when there is no order with the according sample`() {
+    fun `findByOrderNumberAndSample should return an empty list when there is no order with the according sample`() {
         every { orderInformation.sample } returns Sample.BLOOD
         every { repository.findByIssuerIdAndOrderNumber(any(), any()) } returns listOf(rawOrderInformation)
 
         val result = underTest.findByOrderNumberAndSample(orderNumber, Sample.SALIVA)
 
-        assertThat(result).isNull()
+        assertThat(result).isEmpty()
     }
 
     @Test
@@ -120,11 +120,11 @@ internal class DynamoOrderInformationRepositoryTest {
 
         val result = underTest.findByOrderNumberAndSample(orderNumber, Sample.SALIVA)
 
-        assertThat(result).isEqualTo(orderInformation)
+        assertThat(result).isEqualTo(listOf(orderInformation))
     }
 
     @Test
-    fun `findByOrderNumberAndSample should return the newer order only even when there are two due to bad state`() {
+    fun `findByOrderNumberAndSample should return the multiple orders`() {
         every { orderInformation.sample } returns Sample.SALIVA
         every { orderInformation.issuedAt } returns Date.from(Instant.now().minusSeconds(60))
         every { secondOrderInformation.sample } returns Sample.SALIVA
@@ -136,7 +136,7 @@ internal class DynamoOrderInformationRepositoryTest {
 
         val result = underTest.findByOrderNumberAndSample(orderNumber, Sample.SALIVA)
 
-        assertThat(result).isEqualTo(secondOrderInformation)
+        assertThat(result).isEqualTo(listOf(orderInformation, secondOrderInformation))
     }
 
     @Test

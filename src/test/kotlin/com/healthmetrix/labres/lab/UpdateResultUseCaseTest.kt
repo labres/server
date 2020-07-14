@@ -57,7 +57,7 @@ class UpdateResultUseCaseTest {
 
     @Test
     fun `returns SUCCESS if successfully updated`() {
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns orderInfo
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
         every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
 
@@ -68,7 +68,7 @@ class UpdateResultUseCaseTest {
     fun `updates orderInformation with enteredLabAt set if status is IN_PROGRESS`() {
         clearMocks(repository)
 
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns orderInfo
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
         val updated = updated.copy(status = Status.IN_PROGRESS, enteredLabAt = now)
         every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
@@ -82,7 +82,7 @@ class UpdateResultUseCaseTest {
     fun `notifies on updated order`() {
         clearMocks(notifier)
 
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns orderInfo
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
         every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
 
@@ -93,14 +93,14 @@ class UpdateResultUseCaseTest {
 
     @Test
     fun `returns ORDER_NOT_FOUND if no orderNumber found`() {
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns null
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns emptyList()
         assertThat(underTest(updateResultRequest, labId, issuerId)).isEqualTo(UpdateResult.ORDER_NOT_FOUND)
     }
 
     @Test
     fun `doesn't update or notify if no orderNumber found`() {
         clearMocks(repository)
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns null
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns emptyList()
 
         underTest(updateResultRequest, labId, issuerId)
 
@@ -114,7 +114,7 @@ class UpdateResultUseCaseTest {
     fun `updates orderInformation with reportedAt set if status is not IN_PROGRESS`() {
         clearMocks(repository)
 
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns orderInfo
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
         val updated = updated.copy(reportedAt = now, testType = testType)
         every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
@@ -126,7 +126,7 @@ class UpdateResultUseCaseTest {
 
     @Test
     fun `returns INVALID_ORDER_NUMBER if order number can't be parsed`() {
-        every { repository.findByOrderNumberAndSample(any(), any()) } returns orderInfo
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
         every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
         every { OrderNumber.from(any(), any()) } throws IllegalArgumentException()

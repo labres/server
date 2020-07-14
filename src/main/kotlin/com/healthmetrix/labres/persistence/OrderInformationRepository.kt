@@ -17,7 +17,7 @@ interface OrderInformationRepository {
 
     fun findByOrderNumber(orderNumber: OrderNumber): List<OrderInformation>
 
-    fun findByOrderNumberAndSample(orderNumber: OrderNumber, sample: Sample): OrderInformation?
+    fun findByOrderNumberAndSample(orderNumber: OrderNumber, sample: Sample): List<OrderInformation>
 
     // TODO delete after successful migration
     fun migrate(migration: (RawOrderInformation) -> RawOrderInformation?)
@@ -42,11 +42,11 @@ class DynamoOrderInformationRepository internal constructor(
         repository.findByIssuerIdAndOrderNumber(orderNumber.issuerId, orderNumber.number)
             .mapNotNull(RawOrderInformation::cook)
 
-    override fun findByOrderNumberAndSample(orderNumber: OrderNumber, sample: Sample): OrderInformation? {
+    override fun findByOrderNumberAndSample(orderNumber: OrderNumber, sample: Sample): List<OrderInformation> {
         val existingOrders = findByOrderNumber(orderNumber).filter { it.sample == sample }
 
         if (existingOrders.size > 1) {
-            logger.error(
+            logger.warn(
                 "Conflict in finding order with orderNumber ${orderNumber.number}, issuerId ${orderNumber.issuerId} " +
                     "and sample type $sample: More than one result found",
                 kv("orderNumber", orderNumber.number),
@@ -55,7 +55,7 @@ class DynamoOrderInformationRepository internal constructor(
             )
         }
 
-        return existingOrders.maxBy { it.issuedAt }
+        return existingOrders
     }
 
     // TODO make it return nullable
@@ -87,7 +87,7 @@ class InMemoryOrderInformationRepository : OrderInformationRepository {
         map.values.filter { it.orderNumber == orderNumber }
 
     override fun findByOrderNumberAndSample(orderNumber: OrderNumber, sample: Sample) =
-        map.values.singleOrNull { it.orderNumber == orderNumber && it.sample == sample }
+        map.values.filter { it.orderNumber == orderNumber && it.sample == sample }
 
     override fun migrate(migration: (RawOrderInformation) -> RawOrderInformation?) {
         map.values

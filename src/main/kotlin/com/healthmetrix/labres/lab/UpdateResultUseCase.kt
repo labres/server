@@ -26,21 +26,29 @@ class UpdateResultUseCase(
         }
 
         val sample = updateResultRequest.type.sample
-        val orderInfo = repository.findByOrderNumberAndSample(orderNumber, sample)
-            ?: return UpdateResult.ORDER_NOT_FOUND
+        val existingOrders = repository.findByOrderNumberAndSample(orderNumber, sample)
 
-        val update = orderInfo.copy(
-            status = updateResultRequest.result.asStatus(),
-            labId = labId,
-            testType = updateResultRequest.type
-        )
+        if (existingOrders.isEmpty())
+            return UpdateResult.ORDER_NOT_FOUND
 
-        updateTimestamp(update, updateResultRequest.result, now)
-            .let(repository::save)
-            .also { notifyOnStatusChange(it.id, it.notificationUrls) }
+        existingOrders
+            .map { updateExistingOrder(it, updateResultRequest, labId) }
+            .map { updateTimestamp(it, updateResultRequest.result, now) }
+            .map(repository::save)
+            .forEach { notifyOnStatusChange(it.id, it.notificationUrls) }
 
         return UpdateResult.SUCCESS
     }
+
+    private fun updateExistingOrder(
+        existing: OrderInformation,
+        updateResultRequest: UpdateResultRequest,
+        labId: String
+    ) = existing.copy(
+        status = updateResultRequest.result.asStatus(),
+        labId = labId,
+        testType = updateResultRequest.type
+    )
 
     private fun updateTimestamp(orderInformation: OrderInformation, result: Result, now: Date) =
         if (result == Result.IN_PROGRESS) {

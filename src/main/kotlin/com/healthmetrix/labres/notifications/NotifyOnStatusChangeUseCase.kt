@@ -13,12 +13,13 @@ class NotifyOnStatusChangeUseCase(
     operator fun invoke(orderId: UUID, targets: List<String>): Boolean {
         if (targets.isEmpty()) {
             logger.warn("No notification url for $orderId")
+            metrics.countTargetEmpty()
             return false
         }
-        metrics.countTargetEmpty()
         logger.debug("Sending notification for id $orderId to $targets")
 
         return targets
+            .distinct()
             .map { sendNotification(orderId, it) }
             .reduce(Boolean::and)
     }
