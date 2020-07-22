@@ -39,14 +39,13 @@ class ExternalOrderNumberControllerTest {
     )
 
     @Nested
-    inner class CreateOrderEndpointTest {
+    inner class CreateOrderEndpointWithoutNotificationUrlTest {
         @Test
         fun `issuing an external order number returns status 201`() {
-            every { issueExternalOrderNumberUseCase.invoke(any()) } returns order
+            every { issueExternalOrderNumberUseCase.invoke(any(), any()) } returns order
 
             mockMvc.post("/v1/orders") {
                 contentType = MediaType.APPLICATION_JSON
-                content = "{\"notificationUrl\":\"http://test.test\"}"
             }.andExpect {
                 status { isCreated }
             }
@@ -54,10 +53,106 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `issuing an external order number returns order number and id`() {
-            every { issueExternalOrderNumberUseCase.invoke(any()) } returns order
+            every { issueExternalOrderNumberUseCase.invoke(any(), any()) } returns order
 
             mockMvc.post("/v1/orders") {
                 contentType = MediaType.APPLICATION_JSON
+            }.andExpect {
+                jsonPath("$.orderNumber") { isString }
+                jsonPath("$.id") { isString }
+            }
+        }
+    }
+
+    @Nested
+    inner class CreateOrderEndpointWithNotificationUrlTest {
+        @Test
+        fun `issuing an external order number returns status 201`() {
+            every { issueExternalOrderNumberUseCase.invoke(any(), any()) } returns order
+
+            val request = ExternalOrderNumberController.IssueExternalOrderNumberRequestBody(notificationUrl = "http://test.test")
+
+            mockMvc.post("/v1/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
+            }.andExpect {
+                status { isCreated }
+            }
+        }
+
+        @Test
+        fun `issuing an external order number returns order number and id`() {
+            every { issueExternalOrderNumberUseCase.invoke(any(), any()) } returns order
+
+            val request = ExternalOrderNumberController.IssueExternalOrderNumberRequestBody(notificationUrl = "http://test.test")
+
+            mockMvc.post("/v1/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
+            }.andExpect {
+                jsonPath("$.orderNumber") { isString }
+                jsonPath("$.id") { isString }
+            }
+        }
+    }
+
+    @Nested
+    inner class CreateOrderEndpointWithSalivaTest {
+        @Test
+        fun `issuing an external order number returns status 201`() {
+            every { issueExternalOrderNumberUseCase.invoke(any(), any()) } returns order
+
+            val request = ExternalOrderNumberController.IssueExternalOrderNumberRequestBody(notificationUrl = null, sample = Sample.SALIVA)
+
+            mockMvc.post("/v1/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
+            }.andExpect {
+                status { isCreated }
+            }
+        }
+
+        @Test
+        fun `issuing an external order number returns order number and id`() {
+            every { issueExternalOrderNumberUseCase.invoke(any(), any()) } returns order
+
+            val request = ExternalOrderNumberController.IssueExternalOrderNumberRequestBody(notificationUrl = null, sample = Sample.SALIVA)
+
+            mockMvc.post("/v1/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
+            }.andExpect {
+                jsonPath("$.orderNumber") { isString }
+                jsonPath("$.id") { isString }
+            }
+        }
+    }
+
+    @Nested
+    inner class CreateOrderEndpointWithBloodTest {
+        @Test
+        fun `issuing an external order number returns status 201`() {
+            every { issueExternalOrderNumberUseCase.invoke(any(), any()) } returns order
+
+            val request = ExternalOrderNumberController.IssueExternalOrderNumberRequestBody(notificationUrl = null, sample = Sample.BLOOD)
+
+            mockMvc.post("/v1/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
+            }.andExpect {
+                status { isCreated }
+            }
+        }
+
+        @Test
+        fun `issuing an external order number returns order number and id`() {
+            every { issueExternalOrderNumberUseCase.invoke(any(), any()) } returns order
+
+            val request = ExternalOrderNumberController.IssueExternalOrderNumberRequestBody(notificationUrl = null, sample = Sample.BLOOD)
+
+            mockMvc.post("/v1/orders") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(request)
             }.andExpect {
                 jsonPath("$.orderNumber") { isString }
                 jsonPath("$.id") { isString }
