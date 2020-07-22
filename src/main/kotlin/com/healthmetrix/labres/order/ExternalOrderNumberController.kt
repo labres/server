@@ -94,9 +94,9 @@ class ExternalOrderNumberController(
     )
     fun issueExternalOrderNumber(
         @RequestBody(required = false)
-        requestBody: IssueExternalOrderNumberRequestBody?
+        requestBody: IssueExternalOrderNumberRequestBody? // nullable for backwards compatibility
     ): ResponseEntity<IssueExternalOrderNumberResponse> {
-        val order = issueExternalOrderNumber(requestBody?.notificationUrl)
+        val order = issueExternalOrderNumber(requestBody?.notificationUrl, requestBody?.sample ?: Sample.SALIVA)
             ?: return IssueExternalOrderNumberResponse.Conflict.asEntity()
 
         return IssueExternalOrderNumberResponse.Created(order.id, order.orderNumber.number).asEntity()
@@ -226,7 +226,16 @@ class ExternalOrderNumberController(
             example = "https://client.labres.de/notification",
             required = true
         )
-        val notificationUrl: String
+        val notificationUrl: String?,
+
+        @Schema(
+            description = "The sample type that is being used for the lab test.",
+            nullable = true,
+            required = false,
+            defaultValue = "SALIVA",
+            example = "BLOOD"
+        )
+        val sample: Sample = Sample.SALIVA
     )
 
     sealed class IssueExternalOrderNumberResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :

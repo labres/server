@@ -5,7 +5,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.healthmetrix.labres.LabResApplication
 import com.healthmetrix.labres.encodeBase64
 import com.healthmetrix.labres.lab.APPLICATION_KEVB_CSV
-import com.healthmetrix.labres.lab.PCR_LOINC
 import com.healthmetrix.labres.lab.Result
 import com.healthmetrix.labres.lab.TestType
 import com.healthmetrix.labres.notifications.Notification
@@ -17,9 +16,11 @@ import com.healthmetrix.labres.order.StatusResponse
 import com.healthmetrix.labres.persistence.InMemoryOrderInformationRepository
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.SpykBean
+import io.mockk.clearMocks
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -53,6 +54,7 @@ class KevbFlowTest {
     @BeforeEach
     internal fun setUp() {
         (repository as InMemoryOrderInformationRepository).clear()
+        clearMocks(fcmNotifier)
     }
 
     private val labId = "test_lab"
@@ -62,69 +64,139 @@ class KevbFlowTest {
     private val notificationUrl = "fcm://labres@$fcmToken"
     private val orderNumber = "1234567890"
 
-    @Test
-    fun `an order can be registered`() {
-        val registeredResponse = registerOrder()
+    @Nested
+    inner class Saliva {
 
-        val result = repository.findById(registeredResponse.id)
+        private val sample = Sample.SALIVA
+        private val testType = TestType.PCR
 
-        assertThat(result).isNotNull
-        assertThat(result!!).matches { it.status == Status.IN_PROGRESS && it.sample == Sample.SALIVA }
-    }
+        @Test
+        fun `an order can be registered`() {
+            val registeredResponse = registerOrder(sample = sample)
 
-    @Test
-    fun `an order with analyt can be registered`() {
-        val registeredResponse = registerOrder(orderNumber + "16")
+            val result = repository.findById(registeredResponse.id)
 
-        val result = repository.findById(registeredResponse.id)
+            assertThat(result).isNotNull
+            assertThat(result!!).matches { it.status == Status.IN_PROGRESS && it.sample == sample }
+        }
 
-        assertThat(result).isNotNull
-        assertThat(result!!).matches { it.status == Status.IN_PROGRESS && it.sample == Sample.SALIVA }
-    }
+        @Test
+        fun `an order with analyt can be registered`() {
+            val registeredResponse = registerOrder(orderNumber + "16", sample)
 
-    @Test
-    fun `a lab result can be successfully created, fetched, updated and a result can be uploaded`() {
-        val registeredResponse = registerOrder()
+            val result = repository.findById(registeredResponse.id)
 
-        val orderId = registeredResponse.id
-        mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
-            .andReturn().responseBody<StatusResponse.Found>()
+            assertThat(result).isNotNull
+            assertThat(result!!).matches { it.status == Status.IN_PROGRESS && it.sample == sample }
+        }
 
-        setNotificationUrlFor(orderId)
+        @Test
+        fun `a lab result can be successfully created, fetched, updated and a result can be uploaded`() {
+            val registeredResponse = registerOrder(sample = sample)
 
-        uploadResult()
+            val orderId = registeredResponse.id
+            mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
+                .andReturn().responseBody<StatusResponse.Found>()
 
-        val orderInformation = repository.findById(orderId)!!
-        assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
+            setNotificationUrlFor(orderId)
 
-        verify(exactly = 1) { fcmNotifier.send(match { it.token == fcmToken }) }
-    }
+            uploadResult(testType)
 
-    @Test
-    fun `updating results sets labId and testType`() {
-        val createResponse = registerOrder()
+            val orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
 
-        val orderId = createResponse.id
-        val orderInformation = repository.findById(orderId)!!
-        assertThat(orderInformation.labId).isNull()
-        assertThat(orderInformation.testType).isNull()
+            verify(exactly = 1) { fcmNotifier.send(match { it.token == fcmToken }) }
+        }
 
-        uploadResult()
+        @Test
+        fun `updating results sets labId and testType`() {
+            val createResponse = registerOrder(sample = sample)
 
-        val updatedOrderInformation = repository.findById(orderId)
-        assertThat(updatedOrderInformation).isNotNull
-        assertThat(updatedOrderInformation!!).matches {
-            it.labId == labId && it.testType == TestType.PCR
+            val orderId = createResponse.id
+            val orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.labId).isNull()
+            assertThat(orderInformation.testType).isNull()
+
+            uploadResult(testType)
+
+            val updatedOrderInformation = repository.findById(orderId)
+            assertThat(updatedOrderInformation).isNotNull
+            assertThat(updatedOrderInformation!!).matches {
+                it.labId == labId && it.testType == testType
+            }
         }
     }
 
-    private fun registerOrder(orderNumber: String = this.orderNumber): PreIssuedOrderNumberController.RegisterOrderResponse.Created {
+    @Nested
+    inner class Blood {
+
+        private val sample = Sample.BLOOD
+        private val testType = TestType.ANTIBODY
+
+        @Test
+        fun `an order can be registered`() {
+            val registeredResponse = registerOrder(sample = sample)
+
+            val result = repository.findById(registeredResponse.id)
+
+            assertThat(result).isNotNull
+            assertThat(result!!).matches { it.status == Status.IN_PROGRESS && it.sample == sample }
+        }
+
+        @Test
+        fun `an order with analyt can be registered`() {
+            val registeredResponse = registerOrder(orderNumber + "16", sample)
+
+            val result = repository.findById(registeredResponse.id)
+
+            assertThat(result).isNotNull
+            assertThat(result!!).matches { it.status == Status.IN_PROGRESS && it.sample == sample }
+        }
+
+        @Test
+        fun `a lab result can be successfully created, fetched, updated and a result can be uploaded`() {
+            val registeredResponse = registerOrder(sample = sample)
+
+            val orderId = registeredResponse.id
+            mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
+                .andReturn().responseBody<StatusResponse.Found>()
+
+            setNotificationUrlFor(orderId)
+
+            uploadResult(testType)
+
+            val orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
+
+            verify(exactly = 1) { fcmNotifier.send(match { it.token == fcmToken }) }
+        }
+
+        @Test
+        fun `updating results sets labId and testType`() {
+            val createResponse = registerOrder(sample = sample)
+
+            val orderId = createResponse.id
+            val orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.labId).isNull()
+            assertThat(orderInformation.testType).isNull()
+
+            uploadResult(testType)
+
+            val updatedOrderInformation = repository.findById(orderId)
+            assertThat(updatedOrderInformation).isNotNull
+            assertThat(updatedOrderInformation!!).matches {
+                it.labId == labId && it.testType == testType
+            }
+        }
+    }
+
+    private fun registerOrder(orderNumber: String = this.orderNumber, sample: Sample): PreIssuedOrderNumberController.RegisterOrderResponse.Created {
         return mockMvc.post("/v1/issuers/$issuerId/orders") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsBytes(
                 mapOf(
                     "orderNumber" to orderNumber,
-                    "sample" to Sample.SALIVA
+                    "sample" to sample
                 )
             )
         }.andReturn().responseBody()
@@ -136,12 +208,12 @@ class KevbFlowTest {
             content = objectMapper.writeValueAsBytes(mapOf("notificationUrl" to notificationUrl))
         }.andExpect { status { isOk } }
 
-    private fun uploadResult() =
+    private fun uploadResult(testType: TestType) =
         mockMvc.put("/v1/results") {
             contentType = APPLICATION_KEVB_CSV
             headers { setBasicAuth(labIdHeader) }
             param("issuerId", issuerId)
-            content = "$orderNumber,${Result.POSITIVE},$PCR_LOINC"
+            content = "$orderNumber,${Result.POSITIVE},$testType"
         }.andExpect { status { isOk } }
 
     private inline fun <reified T> MvcResult.responseBody(): T {

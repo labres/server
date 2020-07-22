@@ -35,7 +35,7 @@ internal class IssueExternalOrderNumberUseCaseTest {
         every { repository.findByOrderNumber(any()) } returns emptyList()
         every { registerOrder(any(), any(), any(), any(), any()) } returns Ok(order)
 
-        assertThat(underTest(notificationUrl)).isEqualTo(order)
+        assertThat(underTest(notificationUrl, Sample.SALIVA)).isEqualTo(order)
     }
 
     @Test
@@ -47,7 +47,7 @@ internal class IssueExternalOrderNumberUseCaseTest {
         )
         every { registerOrder(any(), any(), any(), any(), any()) } returns Ok(order)
 
-        underTest(notificationUrl)
+        underTest(notificationUrl, Sample.SALIVA)
 
         verify { registerOrder(any(), null, any(), notificationUrl, any()) }
     }
@@ -57,7 +57,7 @@ internal class IssueExternalOrderNumberUseCaseTest {
         every { repository.findByOrderNumber(any()) } returns emptyList()
         every { registerOrder(any(), any(), any(), any(), any()) } returns Ok(order)
 
-        underTest(notificationUrl)
+        underTest(notificationUrl, Sample.SALIVA)
 
         verify {
             registerOrder(
