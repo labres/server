@@ -6,6 +6,11 @@ type: docker
   environment:
     GRADLE_USER_HOME: /drone/src/.gradle_user_home
 
+.when_master: &when_master
+  when:
+    branch:
+      - master
+
 steps:
   - name: restore-cache
     image: drillster/drone-volume-cache
@@ -31,6 +36,47 @@ steps:
     <<: *gradle_user_home
     commands:
       - ./gradlew --no-daemon dependencyUpdates
+
+  - name: dev - assume role
+    image: amazon/aws-cli
+    environment:
+      ROLE_ARN:
+        from_secret: dev_role_arn
+    commands:
+      - mkdir -p .aws
+      - |-
+        cat << EOF > .aws/credentials
+        [default]
+        role_arn = $${ROLE_ARN}
+        role_session_name = ${DRONE_COMMIT_SHA:0:8}_${DRONE_BUILD_NUMBER}
+        credential_source = Ec2InstanceMetadata
+        EOF
+
+  - name: dev - release
+    image: amazon/aws-cli
+    environment:
+      BUCKET_NAME:
+        from_secret: dev_bucket
+    commands:
+      - cp -r .aws $HOME/.aws
+      - echo "$${BUCKET_NAME} a${BUCKET_NAME} $BUCKET_NAME"
+      - aws s3 cp build/libs/lab-res.jar s3://$${BUCKET_NAME}/${DRONE_COMMIT_SHA:0:8}/${DRONE_BUILD_NUMBER}/lab-res.jar
+      - >
+        aws elasticbeanstalk create-application-version
+        --application-name lab-res
+        --version-label "${DRONE_COMMIT_SHA:0:8}_${DRONE_BUILD_NUMBER}"
+        --source-bundle S3Bucket="$${BUCKET_NAME}",S3Key="${DRONE_COMMIT_SHA:0:8}/${DRONE_BUILD_NUMBER}/lab-res.jar"
+    <<: *when_master
+
+  - name: dev - deploy
+    image: amazon/aws-cli
+    commands:
+      - cp -r .aws $HOME/.aws
+      - >
+        aws elasticbeanstalk update-environment
+        --environment-name lab-res-dev
+        --version-label "${DRONE_COMMIT_SHA:0:8}_${DRONE_BUILD_NUMBER}"
+    <<: *when_master
 
   - name: rebuild-cache
     image: drillster/drone-volume-cache
