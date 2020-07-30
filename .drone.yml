@@ -72,6 +72,7 @@ steps:
     image: amazon/aws-cli
     commands:
       - cp -r .aws $HOME/.aws
+      # TODO: check if there is an update currently running and wait for it to terminate
       - >
         aws elasticbeanstalk update-environment
         --environment-name lab-res-dev
