@@ -51,6 +51,7 @@ steps:
         role_session_name = ${DRONE_COMMIT_SHA:0:8}_${DRONE_BUILD_NUMBER}
         credential_source = Ec2InstanceMetadata
         EOF
+    <<: *when_master
 
   - name: dev - release
     image: amazon/aws-cli
@@ -59,7 +60,6 @@ steps:
         from_secret: dev_bucket
     commands:
       - cp -r .aws $HOME/.aws
-      - echo "$${BUCKET_NAME} a${BUCKET_NAME} $BUCKET_NAME"
       - aws s3 cp build/libs/lab-res.jar s3://$${BUCKET_NAME}/${DRONE_COMMIT_SHA:0:8}/${DRONE_BUILD_NUMBER}/lab-res.jar
       - >
         aws elasticbeanstalk create-application-version
