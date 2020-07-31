@@ -72,7 +72,9 @@ labres:
         issuers: hmx, labres, mvz, kevb
       - id: d4l
         issuers: labres
-
+      - id: charite
+        issuers: labres
+        
 spring:
   profiles: dev
   profiles.include: dynamo, notify, secrets, jsonlog, cloudwatch
