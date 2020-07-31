@@ -60,6 +60,8 @@ class IlluminaFlowTest {
     private val fcmToken = "test"
     private val notificationUrl = "fcm://labres@$fcmToken"
 
+    // TODO rewrite this to use bulk upload
+
     @Test
     fun `an order can be registered`() {
         val registeredResponse = registerOrder(Sample.SALIVA)
@@ -97,7 +99,10 @@ class IlluminaFlowTest {
 
         val orderId = registeredResponse.id
         mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
-            .andExpect { status { isOk } }
+            .andExpect {
+                jsonPath("$.sampledAt") { doesNotExist() }
+                status { isOk }
+            }
 
         uploadResult(TestType.ANTIBODY)
 

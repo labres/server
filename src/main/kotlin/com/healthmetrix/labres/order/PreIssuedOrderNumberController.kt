@@ -71,7 +71,7 @@ import java.util.UUID
 class PreIssuedOrderNumberController(
     private val registerOrderUseCase: RegisterOrderUseCase,
     private val updateOrderUseCase: UpdateOrderUseCase,
-    private val queryStatusUseCase: QueryStatusUseCase,
+    private val findOrderUseCase: FindOrderUseCase,
     private val metrics: OrderMetrics
 ) {
     @PostMapping(
@@ -233,7 +233,7 @@ class PreIssuedOrderNumberController(
             return StatusResponse.BadRequest(message).asEntity()
         }
 
-        val result = queryStatusUseCase(id, issuerId)
+        val result = findOrderUseCase(id, issuerId)
 
         return if (result != null) {
             logger.debug(
@@ -243,7 +243,7 @@ class PreIssuedOrderNumberController(
                 kv("orderId", orderId),
                 kv("requestId", requestId)
             )
-            StatusResponse.Found(result).asEntity()
+            StatusResponse.Found(result.status, null).asEntity()
         } else {
             logger.info(
                 "[{}]: Not found",

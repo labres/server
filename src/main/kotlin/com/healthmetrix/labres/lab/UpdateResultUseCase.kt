@@ -47,7 +47,8 @@ class UpdateResultUseCase(
     ) = existing.copy(
         status = updateResultRequest.result.asStatus(),
         labId = labId,
-        testType = updateResultRequest.type
+        testType = updateResultRequest.type,
+        sampledAt = updateResultRequest.sampledAt
     )
 
     private fun updateTimestamp(orderInformation: OrderInformation, result: Result, now: Date) =

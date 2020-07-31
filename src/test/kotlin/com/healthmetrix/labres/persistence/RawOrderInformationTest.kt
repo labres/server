@@ -25,6 +25,7 @@ internal class RawOrderInformationTest {
     private val labId = "test-lab"
     private val testSiteId = "test-test-site"
     private val orderNumberString = "1234567890"
+    private val sampledAt = 1596186947L
 
     private val raw = RawOrderInformation(
         id = id,
@@ -39,7 +40,8 @@ internal class RawOrderInformationTest {
         issuedAt = issuedAt,
         enteredLabAt = enteredLabAt,
         reportedAt = reportedAt,
-        notifiedAt = notifiedAt
+        notifiedAt = notifiedAt,
+        sampledAt = sampledAt
     )
 
     private val cooked = OrderInformation(
@@ -54,7 +56,8 @@ internal class RawOrderInformationTest {
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
         enteredLabAt = enteredLabAt,
-        sample = Sample.BLOOD
+        sample = Sample.BLOOD,
+        sampledAt = sampledAt
     )
 
     @Nested
@@ -74,7 +77,8 @@ internal class RawOrderInformationTest {
                 labId = null,
                 testSiteId = null,
                 testType = null,
-                enteredLabAt = null
+                enteredLabAt = null,
+                sampledAt = null
             ).cook()
 
             val expected = cooked.copy(
@@ -84,7 +88,8 @@ internal class RawOrderInformationTest {
                 labId = null,
                 testSiteId = null,
                 testType = null,
-                enteredLabAt = null
+                enteredLabAt = null,
+                sampledAt = null
             )
 
             assertThat(result).isEqualTo(expected)
@@ -199,7 +204,8 @@ internal class RawOrderInformationTest {
                 notifiedAt = null,
                 notificationUrls = emptyList(),
                 enteredLabAt = null,
-                testType = null
+                testType = null,
+                sampledAt = null
             ).raw()
 
             val expected = raw.copy(
@@ -209,7 +215,8 @@ internal class RawOrderInformationTest {
                 labId = null,
                 testSiteId = null,
                 testType = null,
-                enteredLabAt = null
+                enteredLabAt = null,
+                sampledAt = null
             )
 
             assertThat(result).isEqualTo(expected)

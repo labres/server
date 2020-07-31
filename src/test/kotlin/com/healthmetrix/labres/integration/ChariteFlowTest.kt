@@ -6,6 +6,7 @@ import com.healthmetrix.labres.LabResApplication
 import com.healthmetrix.labres.encodeBase64
 import com.healthmetrix.labres.lab.Result
 import com.healthmetrix.labres.lab.TestType
+import com.healthmetrix.labres.lab.UpdateResultRequest
 import com.healthmetrix.labres.notifications.Notification
 import com.healthmetrix.labres.notifications.Notifier
 import com.healthmetrix.labres.order.ExternalOrderNumberController.IssueExternalOrderNumberResponse
@@ -58,6 +59,7 @@ class ChariteFlowTest {
     private val labId = "test_lab"
     private val labIdHeader = "$labId:pass".encodeBase64()
     private val notificationUrl = "http://notify.test"
+    private val sampledAt = 1596186947L
 
     @Nested
     inner class SalivaImplicit {
@@ -80,23 +82,36 @@ class ChariteFlowTest {
 
         @Test
         fun `a lab result can be successfully created, fetched and a result can be uploaded`() {
+            // register
             val registeredResponse = registerOrderWithNotificationUrl(notificationUrl, null)
-
             val orderId = registeredResponse.id
-            mockMvc.get("/v1/orders/$orderId")
+            val orderNumber = registeredResponse.orderNumber
+
+            // query result while IN_PROGRESS
+            var queryResult = mockMvc.get("/v1/orders/$orderId")
+                .andExpect { jsonPath("$.sampledAt") { doesNotExist() } }
                 .andReturn().responseBody<StatusResponse.Found>()
 
-            val orderNumber = registeredResponse.orderNumber
-            updateResultFor(orderNumber, null)
+            assertThat(queryResult.status).isEqualTo(Status.IN_PROGRESS)
+
+            // update result
+            updateResultFor(orderNumber, null, sampledAt)
 
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
 
             verify(exactly = 1) { httpNotifier.send(match { it.url == notificationUrl }) }
+
+            // query result
+            queryResult = mockMvc.get("/v1/orders/$orderId")
+                .andReturn().responseBody<StatusResponse.Found>()
+
+            assertThat(queryResult.sampledAt).isEqualTo(sampledAt)
+            assertThat(queryResult.status).isEqualTo(Status.POSITIVE)
         }
 
         @Test
-        fun `updating results sets labId and testType`() {
+        fun `updating results sets labId, sampledAt and testType`() {
             val createResponse = registerOrderWithNotificationUrl("http://before.test", null)
 
             val orderId = createResponse.id
@@ -104,13 +119,14 @@ class ChariteFlowTest {
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.labId).isNull()
             assertThat(orderInformation.testType).isNull()
+            assertThat(orderInformation.sampledAt).isNull()
 
-            updateResultFor(orderNumber, null)
+            updateResultFor(orderNumber, null, sampledAt)
 
             val updatedOrderInformation = repository.findById(orderId)
             assertThat(updatedOrderInformation).isNotNull
             assertThat(updatedOrderInformation!!).matches {
-                it.labId == labId && it.testType == testType
+                it.labId == labId && it.testType == testType && it.sampledAt == sampledAt
             }
         }
     }
@@ -136,19 +152,32 @@ class ChariteFlowTest {
 
         @Test
         fun `a lab result can be successfully created, fetched and a result can be uploaded`() {
+            // register
             val registeredResponse = registerOrderWithNotificationUrl(notificationUrl, sample)
-
             val orderId = registeredResponse.id
-            mockMvc.get("/v1/orders/$orderId")
+            val orderNumber = registeredResponse.orderNumber
+
+            // query result while IN_PROGRESS
+            var queryResult = mockMvc.get("/v1/orders/$orderId")
+                .andExpect { jsonPath("$.sampledAt") { doesNotExist() } }
                 .andReturn().responseBody<StatusResponse.Found>()
 
-            val orderNumber = registeredResponse.orderNumber
-            updateResultFor(orderNumber, testType)
+            assertThat(queryResult.status).isEqualTo(Status.IN_PROGRESS)
+
+            // update result
+            updateResultFor(orderNumber, testType, sampledAt)
 
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
 
             verify(exactly = 1) { httpNotifier.send(match { it.url == notificationUrl }) }
+
+            // query result
+            queryResult = mockMvc.get("/v1/orders/$orderId")
+                .andReturn().responseBody<StatusResponse.Found>()
+
+            assertThat(queryResult.sampledAt).isEqualTo(sampledAt)
+            assertThat(queryResult.status).isEqualTo(Status.POSITIVE)
         }
 
         @Test
@@ -160,13 +189,14 @@ class ChariteFlowTest {
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.labId).isNull()
             assertThat(orderInformation.testType).isNull()
+            assertThat(orderInformation.sampledAt).isNull()
 
-            updateResultFor(orderNumber, testType)
+            updateResultFor(orderNumber, testType, sampledAt)
 
             val updatedOrderInformation = repository.findById(orderId)
             assertThat(updatedOrderInformation).isNotNull
             assertThat(updatedOrderInformation!!).matches {
-                it.labId == labId && it.testType == testType
+                it.labId == labId && it.testType == testType && it.sampledAt == sampledAt
             }
         }
     }
@@ -192,19 +222,32 @@ class ChariteFlowTest {
 
         @Test
         fun `a lab result can be successfully created, fetched and a result can be uploaded`() {
+            // register
             val registeredResponse = registerOrderWithNotificationUrl(notificationUrl, sample)
-
             val orderId = registeredResponse.id
-            mockMvc.get("/v1/orders/$orderId")
+            val orderNumber = registeredResponse.orderNumber
+
+            // query result while IN_PROGRESS
+            var queryResult = mockMvc.get("/v1/orders/$orderId")
+                .andExpect { jsonPath("$.sampledAt") { doesNotExist() } }
                 .andReturn().responseBody<StatusResponse.Found>()
 
-            val orderNumber = registeredResponse.orderNumber
-            updateResultFor(orderNumber, testType)
+            assertThat(queryResult.status).isEqualTo(Status.IN_PROGRESS)
+
+            // update result
+            updateResultFor(orderNumber, testType, sampledAt)
 
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
 
             verify(exactly = 1) { httpNotifier.send(match { it.url == notificationUrl }) }
+
+            // query result
+            queryResult = mockMvc.get("/v1/orders/$orderId")
+                .andReturn().responseBody<StatusResponse.Found>()
+
+            assertThat(queryResult.sampledAt).isEqualTo(sampledAt)
+            assertThat(queryResult.status).isEqualTo(Status.POSITIVE)
         }
 
         @Test
@@ -216,13 +259,14 @@ class ChariteFlowTest {
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.labId).isNull()
             assertThat(orderInformation.testType).isNull()
+            assertThat(orderInformation.sampledAt).isNull()
 
-            updateResultFor(orderNumber, testType)
+            updateResultFor(orderNumber, testType, sampledAt)
 
             val updatedOrderInformation = repository.findById(orderId)
             assertThat(updatedOrderInformation).isNotNull
             assertThat(updatedOrderInformation!!).matches {
-                it.labId == labId && it.testType == testType
+                it.labId == labId && it.testType == testType && sampledAt == sampledAt
             }
         }
     }
@@ -239,17 +283,20 @@ class ChariteFlowTest {
         content = objectMapper.writeValueAsBytes(body)
     }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
 
-    private fun updateResultFor(orderNumber: String, testType: TestType?) =
+    private fun updateResultFor(orderNumber: String, testType: TestType?, sampledAt: Long? = null) =
         mockMvc.put("/v1/results") {
             contentType = MediaType.APPLICATION_JSON
             headers { setBasicAuth(labIdHeader) }
-            val body = mutableMapOf(
-                "orderNumber" to orderNumber,
-                "result" to Result.POSITIVE.toString()
+            var body = UpdateResultRequest(
+                orderNumber = orderNumber,
+                result = Result.POSITIVE
             )
 
             if (testType != null)
-                body["type"] = testType.toString()
+                body = body.copy(type = testType)
+
+            if (sampledAt != null)
+                body = body.copy(sampledAt = sampledAt)
 
             content = objectMapper.writeValueAsBytes(body)
         }.andExpect { status { isOk } }

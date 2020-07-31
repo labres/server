@@ -92,20 +92,46 @@ class KevbFlowTest {
 
         @Test
         fun `a lab result can be successfully created, fetched, updated and a result can be uploaded`() {
-            val registeredResponse = registerOrder(sample = sample)
-
+            // register
+            val registeredResponse = registerOrder(sample = sample, notificationUrl = notificationUrl)
             val orderId = registeredResponse.id
-            mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
+
+            // query result while IN_PROGRESS
+            var queryResult = mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
+                .andExpect { jsonPath("$.sampledAt") { doesNotExist() } }
                 .andReturn().responseBody<StatusResponse.Found>()
 
-            setNotificationUrlFor(orderId)
+            assertThat(queryResult.status).isEqualTo(Status.IN_PROGRESS)
 
+            // update result
             uploadResult(testType)
-
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
 
             verify(exactly = 1) { fcmNotifier.send(match { it.token == fcmToken }) }
+
+            // query result
+            queryResult = mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
+                .andExpect { jsonPath("$.sampledAt") { doesNotExist() } }
+                .andReturn().responseBody<StatusResponse.Found>()
+
+            assertThat(queryResult.status).isEqualTo(Status.POSITIVE)
+        }
+
+        @Test
+        fun `the notificationUrl can be updated`() {
+            // register
+            val registeredResponse = registerOrder(sample = sample)
+            val orderId = registeredResponse.id
+
+            var orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.notificationUrls).isEmpty()
+
+            // set notificationUrl
+            setNotificationUrlFor(orderId)
+
+            orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.notificationUrls).containsExactly(notificationUrl)
         }
 
         @Test
@@ -122,7 +148,7 @@ class KevbFlowTest {
             val updatedOrderInformation = repository.findById(orderId)
             assertThat(updatedOrderInformation).isNotNull
             assertThat(updatedOrderInformation!!).matches {
-                it.labId == labId && it.testType == testType
+                it.labId == labId && it.testType == testType && it.sampledAt == null
             }
         }
     }
@@ -155,20 +181,46 @@ class KevbFlowTest {
 
         @Test
         fun `a lab result can be successfully created, fetched, updated and a result can be uploaded`() {
-            val registeredResponse = registerOrder(sample = sample)
-
+            // register
+            val registeredResponse = registerOrder(sample = sample, notificationUrl = notificationUrl)
             val orderId = registeredResponse.id
-            mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
+
+            // query result while IN_PROGRESS
+            var queryResult = mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
+                .andExpect { jsonPath("$.sampledAt") { doesNotExist() } }
                 .andReturn().responseBody<StatusResponse.Found>()
 
-            setNotificationUrlFor(orderId)
+            assertThat(queryResult.status).isEqualTo(Status.IN_PROGRESS)
 
+            // update result
             uploadResult(testType)
-
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
 
             verify(exactly = 1) { fcmNotifier.send(match { it.token == fcmToken }) }
+
+            // query result
+            queryResult = mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
+                .andExpect { jsonPath("$.sampledAt") { doesNotExist() } }
+                .andReturn().responseBody<StatusResponse.Found>()
+
+            assertThat(queryResult.status).isEqualTo(Status.POSITIVE)
+        }
+
+        @Test
+        fun `the notificationUrl can be updated`() {
+            // register
+            val registeredResponse = registerOrder(sample = sample)
+            val orderId = registeredResponse.id
+
+            var orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.notificationUrls).isEmpty()
+
+            // set notificationUrl
+            setNotificationUrlFor(orderId)
+
+            orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.notificationUrls).containsExactly(notificationUrl)
         }
 
         @Test
@@ -185,20 +237,23 @@ class KevbFlowTest {
             val updatedOrderInformation = repository.findById(orderId)
             assertThat(updatedOrderInformation).isNotNull
             assertThat(updatedOrderInformation!!).matches {
-                it.labId == labId && it.testType == testType
+                it.labId == labId && it.testType == testType && it.sampledAt == null
             }
         }
     }
 
-    private fun registerOrder(orderNumber: String = this.orderNumber, sample: Sample): PreIssuedOrderNumberController.RegisterOrderResponse.Created {
+    private fun registerOrder(orderNumber: String = this.orderNumber, sample: Sample, notificationUrl: String? = null): PreIssuedOrderNumberController.RegisterOrderResponse.Created {
         return mockMvc.post("/v1/issuers/$issuerId/orders") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsBytes(
-                mapOf(
-                    "orderNumber" to orderNumber,
-                    "sample" to sample
-                )
+            val body = mutableMapOf(
+                "orderNumber" to orderNumber,
+                "sample" to sample
             )
+
+            if (notificationUrl != null)
+                body["notificationUrl"] = notificationUrl
+
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsBytes(body)
         }.andReturn().responseBody()
     }
 

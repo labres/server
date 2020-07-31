@@ -71,7 +71,7 @@ import java.util.UUID
 class ExternalOrderNumberController(
     private val issueExternalOrderNumber: IssueExternalOrderNumberUseCase,
     private val updateOrderUseCase: UpdateOrderUseCase,
-    private val queryStatusUseCase: QueryStatusUseCase,
+    private val findOrderUseCase: FindOrderUseCase,
     private val metrics: OrderMetrics
 ) {
     @PostMapping(
@@ -205,7 +205,7 @@ class ExternalOrderNumberController(
             return StatusResponse.BadRequest(message).asEntity()
         }
 
-        val result = queryStatusUseCase(id, EON_ISSUER_ID)
+        val result = findOrderUseCase(id, null)
 
         return if (result != null) {
             logger.debug(
@@ -215,7 +215,7 @@ class ExternalOrderNumberController(
                 StructuredArguments.kv("orderId", orderId),
                 StructuredArguments.kv("requestId", requestId)
             )
-            StatusResponse.Found(result).asEntity()
+            StatusResponse.Found(result.status, result.sampledAt).asEntity()
         } else {
             logger.info(
                 "[{}]: Not found",
