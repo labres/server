@@ -1,10 +1,15 @@
 package com.healthmetrix.labres.order
 
+import com.github.michaelbull.result.map
+import com.github.michaelbull.result.mapError
+import com.github.michaelbull.result.onFailure
+import com.github.michaelbull.result.onSuccess
 import com.healthmetrix.labres.EXTERNAL_ORDER_NUMBER_API_TAG
 import com.healthmetrix.labres.GlobalErrorHandler
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
 import com.healthmetrix.labres.logger
+import com.healthmetrix.labres.unify
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.headers.Header
@@ -14,6 +19,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import net.logstash.logback.argument.StructuredArguments
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -65,7 +71,8 @@ import java.util.UUID
 class ExternalOrderNumberController(
     private val issueExternalOrderNumber: IssueExternalOrderNumberUseCase,
     private val updateOrderUseCase: UpdateOrderUseCase,
-    private val queryStatusUseCase: QueryStatusUseCase
+    private val queryStatusUseCase: QueryStatusUseCase,
+    private val metrics: OrderMetrics
 ) {
     @PostMapping(
         path = ["/v1/orders"],
@@ -94,12 +101,45 @@ class ExternalOrderNumberController(
     )
     fun issueExternalOrderNumber(
         @RequestBody(required = false)
-        requestBody: IssueExternalOrderNumberRequestBody? // nullable for backwards compatibility
+        request: IssueExternalOrderNumberRequestBody? // nullable for backwards compatibility
     ): ResponseEntity<IssueExternalOrderNumberResponse> {
-        val order = issueExternalOrderNumber(requestBody?.notificationUrl, requestBody?.sample ?: Sample.SALIVA)
-            ?: return IssueExternalOrderNumberResponse.Conflict.asEntity()
+        val requestId = UUID.randomUUID()
 
-        return IssueExternalOrderNumberResponse.Created(order.id, order.orderNumber.number).asEntity()
+        logger.debug(
+            "[{}] for issuerId labres with request $request",
+            StructuredArguments.kv("method", "registerOrder"),
+            StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+            StructuredArguments.kv("sample", request?.sample ?: Sample.SALIVA),
+            StructuredArguments.kv("requestId", requestId)
+        )
+
+        return issueExternalOrderNumber(
+            notificationUrl = request?.notificationUrl,
+            sample = request?.sample ?: Sample.SALIVA
+        ).onFailure { msg ->
+            logger.warn(
+                "[{}] Order already exists: $msg",
+                StructuredArguments.kv("method", "registerOrder"),
+                StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+                StructuredArguments.kv("sample", request?.sample ?: Sample.SALIVA),
+                StructuredArguments.kv("requestId", requestId)
+            )
+            metrics.countConflictOnRegisteringOrders(EON_ISSUER_ID, null)
+        }.mapError {
+            IssueExternalOrderNumberResponse.Conflict
+        }.onSuccess {
+            logger.debug(
+                "[{}] Order successfully registered",
+                StructuredArguments.kv("method", "registerOrder"),
+                StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+                StructuredArguments.kv("orderNumber", it.orderNumber.number),
+                StructuredArguments.kv("sample", request?.sample),
+                StructuredArguments.kv("requestId", requestId)
+            )
+            metrics.countRegisteredOrders(EON_ISSUER_ID, null)
+        }.map { order ->
+            IssueExternalOrderNumberResponse.Created(order.id, order.orderNumber.number)
+        }.unify().asEntity()
     }
 
     @GetMapping(path = ["/v1/orders/{orderId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -139,20 +179,54 @@ class ExternalOrderNumberController(
         )
         @PathVariable orderId: String
     ): ResponseEntity<StatusResponse> {
+        val requestId = UUID.randomUUID()
+
+        logger.debug(
+            "[{}] for issuerId {} and orderId {}",
+            StructuredArguments.kv("method", "getOrderNumber"),
+            StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+            StructuredArguments.kv("orderId", orderId),
+            StructuredArguments.kv("requestId", requestId)
+        )
+
         val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
-            logger.info(message, ex)
+            logger.info(
+                "[{}]: $message",
+                StructuredArguments.kv("method", "getOrderNumber"),
+                StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+                StructuredArguments.kv("orderId", orderId),
+                StructuredArguments.kv("requestId", requestId),
+                ex
+            )
+            metrics.countErrorOnParsingOrderNumbersOnGet(EON_ISSUER_ID)
             return StatusResponse.BadRequest(message).asEntity()
         }
 
-        return (
-            queryStatusUseCase(id, null)
-                ?.let(StatusResponse::Found)
-                ?: StatusResponse.NotFound
+        val result = queryStatusUseCase(id, EON_ISSUER_ID)
+
+        return if (result != null) {
+            logger.debug(
+                "[{}]: Found $result",
+                StructuredArguments.kv("method", "getOrderNumber"),
+                StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+                StructuredArguments.kv("orderId", orderId),
+                StructuredArguments.kv("requestId", requestId)
             )
-            .asEntity()
+            StatusResponse.Found(result).asEntity()
+        } else {
+            logger.info(
+                "[{}]: Not found",
+                StructuredArguments.kv("method", "getOrderNumber"),
+                StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+                StructuredArguments.kv("orderId", orderId),
+                StructuredArguments.kv("requestId", requestId)
+            )
+            metrics.countOrderNotFoundOnGet(EON_ISSUER_ID)
+            StatusResponse.NotFound.asEntity()
+        }
     }
 
     @PutMapping(
@@ -205,15 +279,42 @@ class ExternalOrderNumberController(
         @RequestBody
         updateOrderRequestBody: UpdateOrderRequestBody
     ): ResponseEntity<UpdateOrderResponse> {
+        val requestId = UUID.randomUUID()
+
+        logger.debug(
+            "[{}]: Update order for issuerId {} and orderId {}: $updateOrderRequestBody",
+            StructuredArguments.kv("method", "updateOrder"),
+            StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+            StructuredArguments.kv("orderId", orderId),
+            StructuredArguments.kv("requestId", requestId)
+        )
+
         val id = try {
             UUID.fromString(orderId)
         } catch (ex: IllegalArgumentException) {
             val message = "Failed to parse orderId $orderId"
-            logger.info(message, ex)
+            logger.info(
+                "[{}]: $message",
+                StructuredArguments.kv("method", "updateOrder"),
+                StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+                StructuredArguments.kv("orderId", orderId),
+                StructuredArguments.kv("requestId", requestId),
+                ex
+            )
+            metrics.countErrorOnParsingOrderNumbersOnUpdate(EON_ISSUER_ID)
             return UpdateOrderResponse.BadRequest(message).asEntity()
         }
 
-        return when (updateOrderUseCase(id, null, updateOrderRequestBody.notificationUrl)) {
+        val result = updateOrderUseCase(id, null, updateOrderRequestBody.notificationUrl)
+        logger.debug(
+            "[{}]: $result",
+            StructuredArguments.kv("method", "updateOrder"),
+            StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+            StructuredArguments.kv("orderId", orderId),
+            StructuredArguments.kv("requestId", requestId)
+        )
+
+        return when (result) {
             UpdateOrderUseCase.Result.SUCCESS -> UpdateOrderResponse.Updated
             UpdateOrderUseCase.Result.NOT_FOUND -> UpdateOrderResponse.NotFound
         }.asEntity()
