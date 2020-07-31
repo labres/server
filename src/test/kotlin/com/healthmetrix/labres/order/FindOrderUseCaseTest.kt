@@ -10,10 +10,10 @@ import java.time.Instant
 import java.util.Date
 import java.util.UUID
 
-internal class QueryStatusUseCaseTest {
+internal class FindOrderUseCaseTest {
 
     private val repository: OrderInformationRepository = mockk()
-    private val underTest = QueryStatusUseCase(repository)
+    private val underTest = FindOrderUseCase(repository)
 
     private val orderStatus = Status.IN_PROGRESS
     private val orderId = UUID.randomUUID()
@@ -32,14 +32,14 @@ internal class QueryStatusUseCaseTest {
     fun `it should return the order status for eon`() {
         every { repository.findById(any()) } returns orderInformation
 
-        assertThat(underTest(orderId, null)).isEqualTo(orderStatus)
+        assertThat(underTest(orderId, null)).isEqualTo(orderInformation)
     }
 
     @Test
     fun `it should return the order status for pon`() {
         every { repository.findById(any()) } returns orderInformation.copy(orderNumber = pon)
 
-        assertThat(underTest(orderId, issuerId)).isEqualTo(orderStatus)
+        assertThat(underTest(orderId, issuerId)).isEqualTo(orderInformation.copy(orderNumber = pon))
     }
 
     @Test

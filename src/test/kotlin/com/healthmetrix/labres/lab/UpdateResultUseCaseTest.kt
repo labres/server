@@ -79,6 +79,23 @@ class UpdateResultUseCaseTest {
     }
 
     @Test
+    fun `updates orderInformation with optional values testType and sampledAt if they're set`() {
+        clearMocks(repository)
+
+        val sampledAt = 1596186947L
+        val testType = TestType.ANTIBODY
+
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
+        val updated = updated.copy(status = Status.IN_PROGRESS, enteredLabAt = now, sampledAt = sampledAt, testType = testType)
+        every { repository.save(any()) } returns updated
+        every { notifier.invoke(any(), any()) } returns true
+
+        underTest(updateResultRequest.copy(result = Result.IN_PROGRESS, sampledAt = sampledAt, type = testType), labId, null, now = now)
+
+        verify(exactly = 1) { repository.save(updated) }
+    }
+
+    @Test
     fun `notifies on updated order`() {
         clearMocks(notifier)
 

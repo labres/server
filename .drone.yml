@@ -26,7 +26,9 @@ type: docker
 .release: &release
   image: amazon/aws-cli
   commands:
+    - aws sts get-caller-identity
     - cp -r .aws $HOME/.aws
+    - aws sts get-caller-identity
     - aws s3 cp build/libs/lab-res.jar s3://$${BUCKET_NAME}/${DRONE_COMMIT_SHA:0:8}/${DRONE_BUILD_NUMBER}/lab-res.jar
     - >
       aws elasticbeanstalk create-application-version

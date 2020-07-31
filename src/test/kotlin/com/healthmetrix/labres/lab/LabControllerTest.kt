@@ -310,6 +310,53 @@ class LabControllerTest {
                 )
             }
         }
+
+        @Test
+        fun `uploading a document with optional value sampledAt returns 200`() {
+            val sampledAt = 1596186947L
+
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(
+                    mapOf(
+                        "orderNumber" to "0123456789",
+                        "result" to Status.NEGATIVE,
+                        "sampledAt" to sampledAt
+                    )
+                )
+            }
+
+            verify {
+                updateResultUseCase.invoke(
+                    updateResultRequest = match {
+                        it.orderNumber == orderNumber &&
+                            it.result == Result.NEGATIVE &&
+                            it.sampledAt == sampledAt
+                    },
+                    labId = labId,
+                    issuerId = null,
+                    now = any()
+                )
+            }
+        }
+
+        @Test
+        fun `uploading a document with optional value sampledAt persists it`() {
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(
+                    mapOf(
+                        "orderNumber" to "0123456789",
+                        "result" to Status.NEGATIVE,
+                        "sampledAt" to 1596186947L
+                    )
+                )
+            }.andExpect {
+                status { isOk }
+            }
+        }
     }
 
     @Nested

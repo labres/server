@@ -20,9 +20,9 @@ import java.util.UUID
 class ExternalOrderNumberControllerTest {
     private val issueExternalOrderNumberUseCase: IssueExternalOrderNumberUseCase = mockk()
     private val updateOrderUseCase: UpdateOrderUseCase = mockk()
-    private val queryStatusUseCase: QueryStatusUseCase = mockk()
+    private val findOrderUseCase: FindOrderUseCase = mockk()
 
-    private val underTest = ExternalOrderNumberController(issueExternalOrderNumberUseCase, updateOrderUseCase, queryStatusUseCase)
+    private val underTest = ExternalOrderNumberController(issueExternalOrderNumberUseCase, updateOrderUseCase, findOrderUseCase)
 
     private val objectMapper = ObjectMapper().registerKotlinModule()
     private val mockMvc = MockMvcBuilders.standaloneSetup(underTest).build()
@@ -165,7 +165,7 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `querying the status of an order returns 200`() {
-            every { queryStatusUseCase.invoke(any(), any()) } returns Status.POSITIVE
+            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
 
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isOk }
@@ -174,10 +174,29 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `querying the status of an order returns status`() {
-            every { queryStatusUseCase.invoke(any(), any()) } returns Status.POSITIVE
+            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
 
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 jsonPath("$.status", Is.`is`(Status.POSITIVE.toString()))
+            }
+        }
+
+        @Test
+        fun `querying the status of an order does not return sampledAt if it is not set in the database`() {
+            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
+
+            mockMvc.get("/v1/orders/$orderId").andExpect {
+                jsonPath("$.sampledAt") { doesNotExist() }
+            }
+        }
+
+        @Test
+        fun `querying the status of an order returns sampledAt`() {
+            val sampledAt: Long = 1596186947
+            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE, sampledAt = sampledAt)
+
+            mockMvc.get("/v1/orders/$orderId").andExpect {
+                jsonPath("$.sampledAt", Is.`is`(sampledAt.toInt()))
             }
         }
 
@@ -190,7 +209,7 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `returns status 404 when no order is found`() {
-            every { queryStatusUseCase.invoke(any(), any()) } returns null
+            every { findOrderUseCase.invoke(any(), any()) } returns null
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isNotFound }
             }

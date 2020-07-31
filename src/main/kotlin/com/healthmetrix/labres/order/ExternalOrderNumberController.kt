@@ -65,7 +65,7 @@ import java.util.UUID
 class ExternalOrderNumberController(
     private val issueExternalOrderNumber: IssueExternalOrderNumberUseCase,
     private val updateOrderUseCase: UpdateOrderUseCase,
-    private val queryStatusUseCase: QueryStatusUseCase
+    private val findOrderUseCase: FindOrderUseCase
 ) {
     @PostMapping(
         path = ["/v1/orders"],
@@ -148,8 +148,13 @@ class ExternalOrderNumberController(
         }
 
         return (
-            queryStatusUseCase(id, null)
-                ?.let(StatusResponse::Found)
+            findOrderUseCase(id, null)
+                ?.let {
+                    StatusResponse.Found(
+                        status = it.status,
+                        sampledAt = it.sampledAt
+                    )
+                }
                 ?: StatusResponse.NotFound
             )
             .asEntity()

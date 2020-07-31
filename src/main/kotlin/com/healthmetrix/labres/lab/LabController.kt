@@ -309,8 +309,10 @@ data class UpdateResultRequest(
         example = "1234567890"
     )
     val orderNumber: String,
+
     @Schema(description = "The test result")
     val result: Result,
+
     @Schema(
         description = "The kind of test used to generate the given result.",
         nullable = true,
@@ -319,7 +321,15 @@ data class UpdateResultRequest(
         allowableValues = [PCR_LOINC],
         example = "NGS"
     )
-    val type: TestType = TestType.PCR
+    val type: TestType = TestType.PCR,
+
+    @Schema(
+        description = "Unix Epoch timestamp when the sample has been taken",
+        nullable = true,
+        required = false,
+        example = "1596184744"
+    )
+    val sampledAt: Long? = null
 )
 
 sealed class UpdateResultResponse(
