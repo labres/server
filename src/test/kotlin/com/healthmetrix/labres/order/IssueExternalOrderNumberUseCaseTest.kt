@@ -1,6 +1,7 @@
 package com.healthmetrix.labres.order
 
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.unwrap
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import io.mockk.every
@@ -35,7 +36,7 @@ internal class IssueExternalOrderNumberUseCaseTest {
         every { repository.findByOrderNumber(any()) } returns emptyList()
         every { registerOrder(any(), any(), any(), any(), any()) } returns Ok(order)
 
-        assertThat(underTest(notificationUrl, Sample.SALIVA)).isEqualTo(order)
+        assertThat(underTest(notificationUrl, Sample.SALIVA).unwrap()).isEqualTo(order)
     }
 
     @Test

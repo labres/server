@@ -1,6 +1,6 @@
 package com.healthmetrix.labres.order
 
-import com.github.michaelbull.result.getOr
+import com.github.michaelbull.result.Result
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
@@ -12,14 +12,14 @@ class IssueExternalOrderNumberUseCase(
     private val repository: OrderInformationRepository,
     private val registerOrder: RegisterOrderUseCase
 ) {
-    operator fun invoke(notificationUrl: String?, sample: Sample): OrderInformation? {
+    operator fun invoke(notificationUrl: String?, sample: Sample): Result<OrderInformation, String> {
         val eon = issueNewEon()
         return registerOrder(
             eon,
             testSiteId = null,
             notificationUrl = notificationUrl,
             sample = sample
-        ).getOr { null }
+        )
     }
 
     private fun issueNewEon(): OrderNumber.External {
