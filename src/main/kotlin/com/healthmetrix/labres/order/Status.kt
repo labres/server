@@ -39,5 +39,6 @@ sealed class StatusResponse(httpStatus: HttpStatus, hasBody: Boolean = true) : L
     ) : StatusResponse(HttpStatus.OK)
 
     object NotFound : StatusResponse(HttpStatus.NOT_FOUND, false)
+    object Forbidden : StatusResponse(HttpStatus.FORBIDDEN, false)
     data class BadRequest(val message: String) : StatusResponse(HttpStatus.BAD_REQUEST, true)
 }
