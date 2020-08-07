@@ -34,9 +34,9 @@ internal class IssueExternalOrderNumberUseCaseTest {
     @Test
     fun `it returns registered orderId and orderNumber`() {
         every { repository.findByOrderNumber(any()) } returns emptyList()
-        every { registerOrder(any(), any(), any(), any(), any()) } returns Ok(order)
+        every { registerOrder.invoke(any(), any(), any(), any(), any(), any()) } returns Ok(order)
 
-        assertThat(underTest(notificationUrl, Sample.SALIVA).unwrap()).isEqualTo(order)
+        assertThat(underTest(notificationUrl, Sample.SALIVA, null).unwrap()).isEqualTo(order)
     }
 
     @Test
@@ -46,27 +46,28 @@ internal class IssueExternalOrderNumberUseCaseTest {
             listOf(orderInformation, orderInformation),
             emptyList()
         )
-        every { registerOrder(any(), any(), any(), any(), any()) } returns Ok(order)
+        every { registerOrder.invoke(any(), any(), any(), any(), any(), any()) } returns Ok(order)
 
-        underTest(notificationUrl, Sample.SALIVA)
+        underTest(notificationUrl, Sample.SALIVA, null)
 
-        verify { registerOrder(any(), null, any(), notificationUrl, any()) }
+        verify { registerOrder.invoke(any(), null, any(), notificationUrl, any(), null) }
     }
 
     @Test
     fun `it calls registerOrder with default sample type SALIVA`() {
         every { repository.findByOrderNumber(any()) } returns emptyList()
-        every { registerOrder(any(), any(), any(), any(), any()) } returns Ok(order)
+        every { registerOrder.invoke(any(), any(), any(), any(), any(), any()) } returns Ok(order)
 
-        underTest(notificationUrl, Sample.SALIVA)
+        underTest(notificationUrl, Sample.SALIVA, null)
 
         verify {
-            registerOrder(
+            registerOrder.invoke(
                 orderNumber = any(),
                 testSiteId = any(),
                 sample = Sample.SALIVA,
                 notificationUrl = any(),
-                now = any()
+                now = any(),
+                verificationSecret = null
             )
         }
     }

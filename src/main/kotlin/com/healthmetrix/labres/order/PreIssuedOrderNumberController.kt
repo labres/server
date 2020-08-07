@@ -127,11 +127,12 @@ class PreIssuedOrderNumberController(
             kv("requestId", requestId)
         )
 
-        return registerOrderUseCase(
+        return registerOrderUseCase.invoke(
             orderNumber = OrderNumber.from(issuerId, request.orderNumber),
             testSiteId = request.testSiteId,
             sample = request.sample,
-            notificationUrl = request.notificationUrl
+            notificationUrl = request.notificationUrl,
+            verificationSecret = null
         ).onFailure { msg ->
             logger.warn(
                 "[{}] Order already exists: $msg",
