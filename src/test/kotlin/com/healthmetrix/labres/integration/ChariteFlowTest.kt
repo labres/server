@@ -181,6 +181,41 @@ class ChariteFlowTest {
                 status { isForbidden }
             }
         }
+
+        @Test
+        fun `updating results can set verificationSecret`() {
+            val createResponse = registerOrder(null, sample)
+
+            val orderId = createResponse.id
+            val orderNumber = createResponse.orderNumber
+
+            val orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.verificationSecret).isNull()
+
+            updateResultFor(orderNumber, null, null, verificationSecret)
+
+            val updatedOrderInformation = repository.findById(orderId)
+            assertThat(updatedOrderInformation).isNotNull
+            assertThat(updatedOrderInformation!!.verificationSecret).isEqualTo(verificationSecret)
+        }
+
+        @Test
+        fun `updating results can overwrite verificationSecret`() {
+            val firstVerificationSecret = "first"
+            val createResponse = registerOrder(null, sample, firstVerificationSecret)
+
+            val orderId = createResponse.id
+            val orderNumber = createResponse.orderNumber
+
+            val orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.verificationSecret).isEqualTo(firstVerificationSecret)
+
+            updateResultFor(orderNumber, null, null, verificationSecret)
+
+            val updatedOrderInformation = repository.findById(orderId)
+            assertThat(updatedOrderInformation).isNotNull
+            assertThat(updatedOrderInformation!!.verificationSecret).isEqualTo(verificationSecret)
+        }
     }
 
     abstract inner class AbstractChariteFlowTest(
@@ -252,7 +287,7 @@ class ChariteFlowTest {
             assertThat(updatedOrderInformation.sampledAt).isEqualTo(sampledAt)
         }
 
-        private fun registerOrder(
+        fun registerOrder(
             url: String? = notificationUrl,
             sample: Sample?,
             verificationSecret: String? = null
@@ -271,7 +306,12 @@ class ChariteFlowTest {
             content = objectMapper.writeValueAsBytes(body)
         }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
 
-        private fun updateResultFor(orderNumber: String, testType: TestType?, sampledAt: Long? = null) =
+        fun updateResultFor(
+            orderNumber: String,
+            testType: TestType?,
+            sampledAt: Long? = null,
+            verificationSecret: String? = null
+        ) =
             mockMvc.put("/v1/results") {
                 contentType = MediaType.APPLICATION_JSON
                 headers { setBasicAuth(labIdHeader) }
@@ -285,6 +325,9 @@ class ChariteFlowTest {
 
                 if (sampledAt != null)
                     body = body.copy(sampledAt = sampledAt)
+
+                if (verificationSecret != null)
+                    body = body.copy(verificationSecret = verificationSecret)
 
                 content = objectMapper.writeValueAsBytes(body)
             }.andExpect { status { isOk } }

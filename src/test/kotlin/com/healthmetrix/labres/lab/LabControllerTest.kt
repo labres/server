@@ -20,6 +20,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
 import org.springframework.test.web.servlet.put
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import java.util.UUID
 
 class LabControllerTest {
     private val updateResultUseCase: UpdateResultUseCase = mockk()
@@ -40,6 +41,7 @@ class LabControllerTest {
     private val issuerId = "test-issuer"
     private val orderNumber = "0123456789"
     private val labIdHeader = "Basic ${"$labId:pass".encodeBase64()}"
+    private val verificationSecret = UUID.randomUUID().toString()
 
     @BeforeEach
     internal fun setUp() {
@@ -351,6 +353,53 @@ class LabControllerTest {
                         "orderNumber" to "0123456789",
                         "result" to Status.NEGATIVE,
                         "sampledAt" to 1596186947L
+                    )
+                )
+            }.andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `uploading a document with optional value verificationSecret returns 200`() {
+            val sampledAt = 1596186947L
+
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(
+                    mapOf(
+                        "orderNumber" to "0123456789",
+                        "result" to Status.NEGATIVE,
+                        "verificationSecret" to verificationSecret
+                    )
+                )
+            }
+
+            verify {
+                updateResultUseCase.invoke(
+                    updateResultRequest = match {
+                        it.orderNumber == orderNumber &&
+                            it.result == Result.NEGATIVE &&
+                            it.verificationSecret == verificationSecret
+                    },
+                    labId = labId,
+                    issuerId = null,
+                    now = any()
+                )
+            }
+        }
+
+        @Test
+        fun `uploading a document with optional value verificationSecret persists it`() {
+            mockMvc.put("/v1/results") {
+                header(HttpHeaders.AUTHORIZATION, labIdHeader)
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(
+                    mapOf(
+                        "orderNumber" to "0123456789",
+                        "result" to Status.NEGATIVE,
+                        "verificationSecret" to verificationSecret
                     )
                 )
             }.andExpect {

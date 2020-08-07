@@ -329,7 +329,16 @@ data class UpdateResultRequest(
         required = false,
         example = "1596184744"
     )
-    val sampledAt: Long? = null
+    val sampledAt: Long? = null,
+
+    @Schema(
+        description = "Verification secret that has to be presented when querying the status on an order by EON",
+        nullable = true,
+        required = false,
+        defaultValue = "null",
+        example = "3ASsdfSA*SFDnj!f"
+    )
+    val verificationSecret: String? = null
 )
 
 sealed class UpdateResultResponse(
