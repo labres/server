@@ -10,10 +10,10 @@ import java.time.Instant
 import java.util.Date
 import java.util.UUID
 
-internal class FindOrderUseCaseTest {
+internal class FindOrderByIdUseCaseTest {
 
     private val repository: OrderInformationRepository = mockk()
-    private val underTest = FindOrderUseCase(repository)
+    private val underTest = FindOrderByIdUseCase(repository)
 
     private val orderStatus = Status.IN_PROGRESS
     private val orderId = UUID.randomUUID()

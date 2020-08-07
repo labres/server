@@ -10,10 +10,12 @@ import com.healthmetrix.labres.lab.UpdateResultRequest
 import com.healthmetrix.labres.notifications.Notification
 import com.healthmetrix.labres.notifications.Notifier
 import com.healthmetrix.labres.order.ExternalOrderNumberController.IssueExternalOrderNumberResponse
+import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Sample
 import com.healthmetrix.labres.order.Status
 import com.healthmetrix.labres.order.StatusResponse
 import com.healthmetrix.labres.persistence.InMemoryOrderInformationRepository
+import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.SpykBean
 import io.mockk.clearMocks
@@ -31,6 +33,8 @@ import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
+import java.time.Instant
+import java.util.Date
 import java.util.UUID
 
 @SpringBootTest(
@@ -47,7 +51,7 @@ class ChariteFlowTest {
     private lateinit var repository: OrderInformationRepository
 
     @Autowired
-    private lateinit var objectMapper: ObjectMapper
+    lateinit var objectMapper: ObjectMapper
 
     @SpykBean
     private lateinit var httpNotifier: Notifier<Notification.HttpNotification>
@@ -75,14 +79,114 @@ class ChariteFlowTest {
     @Nested
     inner class VerificationSecretOnIssueEon : AbstractChariteFlowTest(
         sample = null,
-        testType = TestType.PCR,
+        testType = null,
         verificationSecret = UUID.randomUUID().toString()
-    )
+    ) {
+
+        @Test
+        fun `result can be fetched by EON and verification secret`() {
+            val orderNumberString = "1234567890"
+
+            val order = OrderInformation(
+                id = UUID.randomUUID(),
+                orderNumber = OrderNumber.from(null, orderNumberString),
+                sample = Sample.SALIVA,
+                issuedAt = Date.from(Instant.now()),
+                status = Status.POSITIVE,
+                verificationSecret = verificationSecret
+            )
+
+            repository.save(order)
+
+            val actual = mockMvc.get("/v1/orders") {
+                param("orderNumber", orderNumberString)
+                param("verificationSecret", verificationSecret!!)
+            }.andExpect {
+                status { isOk }
+            }.andReturn().responseBody<StatusResponse.Found>()
+
+            assertThat(actual.status).isEqualTo(order.status)
+        }
+
+        @Test
+        fun `result can be fetched by EON, verification secret and sample`() {
+            val orderNumberString = "1234567890"
+
+            val order = OrderInformation(
+                id = UUID.randomUUID(),
+                orderNumber = OrderNumber.from(null, orderNumberString),
+                sample = Sample.BLOOD,
+                issuedAt = Date.from(Instant.now()),
+                status = Status.POSITIVE,
+                verificationSecret = verificationSecret
+            )
+
+            repository.save(order)
+
+            val actual = mockMvc.get("/v1/orders") {
+                param("orderNumber", orderNumberString)
+                param("verificationSecret", verificationSecret!!)
+                param("sample", Sample.BLOOD.toString())
+            }.andExpect {
+                status { isOk }
+            }.andReturn().responseBody<StatusResponse.Found>()
+
+            assertThat(actual.status).isEqualTo(order.status)
+        }
+
+        @Test
+        fun `result can not be fetched with wrong verification secret`() {
+            val orderNumberString = "1234567890"
+
+            val order = OrderInformation(
+                id = UUID.randomUUID(),
+                orderNumber = OrderNumber.from(null, orderNumberString),
+                sample = Sample.BLOOD,
+                issuedAt = Date.from(Instant.now()),
+                status = Status.POSITIVE,
+                verificationSecret = verificationSecret
+            )
+
+            repository.save(order)
+
+            val actual = mockMvc.get("/v1/orders") {
+                param("orderNumber", orderNumberString)
+                param("verificationSecret", "wrong")
+                param("sample", Sample.BLOOD.toString())
+            }.andExpect {
+                status { isForbidden }
+            }
+        }
+
+        @Test
+        fun `result can not be fetched if no verification secret is set in the database`() {
+            val orderNumberString = "1234567890"
+
+            val order = OrderInformation(
+                id = UUID.randomUUID(),
+                orderNumber = OrderNumber.from(null, orderNumberString),
+                sample = Sample.BLOOD,
+                issuedAt = Date.from(Instant.now()),
+                status = Status.POSITIVE,
+                verificationSecret = verificationSecret
+            )
+
+            repository.save(order)
+
+            val actual = mockMvc.get("/v1/orders") {
+                param("orderNumber", orderNumberString)
+                param("verificationSecret", "wrong")
+                param("sample", Sample.BLOOD.toString())
+            }.andExpect {
+                status { isForbidden }
+            }
+        }
+    }
 
     abstract inner class AbstractChariteFlowTest(
-        private val sample: Sample?,
-        private val testType: TestType?,
-        private val verificationSecret: String?
+        val sample: Sample?,
+        val testType: TestType?,
+        val verificationSecret: String?
     ) {
 
         @Test
@@ -120,7 +224,7 @@ class ChariteFlowTest {
 
             verify(exactly = 1) { httpNotifier.send(match { it.url == notificationUrl }) }
 
-            // query result
+            // query result by id
             queryResult = mockMvc.get("/v1/orders/$orderId")
                 .andReturn().responseBody<StatusResponse.Found>()
 
@@ -185,7 +289,7 @@ class ChariteFlowTest {
                 content = objectMapper.writeValueAsBytes(body)
             }.andExpect { status { isOk } }
 
-        private inline fun <reified T> MvcResult.responseBody(): T {
+        inline fun <reified T> MvcResult.responseBody(): T {
             return objectMapper.readValue(response.contentAsString)
         }
     }

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service
 import java.util.UUID
 
 @Service
-class FindOrderUseCase(private val repository: OrderInformationRepository) {
+class FindOrderByIdUseCase(private val repository: OrderInformationRepository) {
 
     operator fun invoke(id: UUID, issuerId: String?) = repository
         .findById(id)

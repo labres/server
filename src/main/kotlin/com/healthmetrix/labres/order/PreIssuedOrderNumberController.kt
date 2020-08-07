@@ -71,7 +71,7 @@ import java.util.UUID
 class PreIssuedOrderNumberController(
     private val registerOrderUseCase: RegisterOrderUseCase,
     private val updateOrderUseCase: UpdateOrderUseCase,
-    private val findOrderUseCase: FindOrderUseCase,
+    private val findOrderByIdUseCase: FindOrderByIdUseCase,
     private val metrics: OrderMetrics
 ) {
     @PostMapping(
@@ -230,11 +230,11 @@ class PreIssuedOrderNumberController(
                 kv("requestId", requestId),
                 ex
             )
-            metrics.countErrorOnParsingOrderNumbersOnGet(issuerId)
+            metrics.countErrorOnParsingOrderIdOnGet(issuerId)
             return StatusResponse.BadRequest(message).asEntity()
         }
 
-        val result = findOrderUseCase(id, issuerId)
+        val result = findOrderByIdUseCase(id, issuerId)
 
         return if (result != null) {
             logger.debug(

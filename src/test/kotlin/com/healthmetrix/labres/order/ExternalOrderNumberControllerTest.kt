@@ -2,6 +2,7 @@ package com.healthmetrix.labres.order
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.healthmetrix.labres.persistence.OrderInformation
 import io.mockk.every
@@ -21,12 +22,14 @@ import java.util.UUID
 class ExternalOrderNumberControllerTest {
     private val issueExternalOrderNumberUseCase: IssueExternalOrderNumberUseCase = mockk()
     private val updateOrderUseCase: UpdateOrderUseCase = mockk()
-    private val findOrderUseCase: FindOrderUseCase = mockk()
+    private val findOrderByIdUseCase: FindOrderByIdUseCase = mockk()
+    private val findOrderByOrderNumberUseCase: FindOrderByOrderNumberUseCase = mockk()
 
     private val underTest = ExternalOrderNumberController(
         issueExternalOrderNumber = issueExternalOrderNumberUseCase,
         updateOrderUseCase = updateOrderUseCase,
-        findOrderUseCase = findOrderUseCase,
+        findOrderByIdUseCase = findOrderByIdUseCase,
+        findOrderByOrderNumberUseCase = findOrderByOrderNumberUseCase,
         metrics = mockk(relaxed = true)
     )
 
@@ -208,11 +211,11 @@ class ExternalOrderNumberControllerTest {
     }
 
     @Nested
-    inner class GetOrderNumberEndpointTest {
+    inner class GetOrderByIdEndpointTest {
 
         @Test
         fun `querying the status of an order returns 200`() {
-            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
 
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isOk }
@@ -221,7 +224,7 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `querying the status of an order returns status`() {
-            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
 
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 jsonPath("$.status", Is.`is`(Status.POSITIVE.toString()))
@@ -230,7 +233,7 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `querying the status of an order does not return sampledAt if it is not set in the database`() {
-            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
 
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 jsonPath("$.sampledAt") { doesNotExist() }
@@ -240,7 +243,7 @@ class ExternalOrderNumberControllerTest {
         @Test
         fun `querying the status of an order returns sampledAt`() {
             val sampledAt: Long = 1596186947
-            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE, sampledAt = sampledAt)
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE, sampledAt = sampledAt)
 
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 jsonPath("$.sampledAt", Is.`is`(sampledAt.toInt()))
@@ -256,9 +259,110 @@ class ExternalOrderNumberControllerTest {
 
         @Test
         fun `returns status 404 when no order is found`() {
-            every { findOrderUseCase.invoke(any(), any()) } returns null
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns null
             mockMvc.get("/v1/orders/$orderId").andExpect {
                 status { isNotFound }
+            }
+        }
+    }
+
+    @Nested
+    inner class GetOrderByEonEndpointTest {
+
+        private val verificationString = UUID.randomUUID().toString()
+
+        @Test
+        fun `querying the status of an order returns 200`() {
+            every {
+                findOrderByOrderNumberUseCase.invoke(any(), any(), any())
+            } returns Ok(order.copy(status = Status.POSITIVE))
+
+            mockMvc.get("/v1/orders") {
+                param("orderNumber", orderNumberString)
+                param("verificationSecret", verificationString)
+            }.andExpect {
+                status { isOk }
+            }
+        }
+
+        @Test
+        fun `querying the status of an order returns status`() {
+            every {
+                findOrderByOrderNumberUseCase.invoke(any(), any(), any())
+            } returns Ok(order.copy(status = Status.POSITIVE))
+
+            mockMvc.get("/v1/orders") {
+                param("orderNumber", orderNumberString)
+                param("verificationSecret", verificationString)
+            }.andExpect {
+                jsonPath("$.status", Is.`is`(Status.POSITIVE.toString()))
+            }
+        }
+
+        @Test
+        fun `querying the status of an order does not return sampledAt if it is not set in the database`() {
+            every {
+                findOrderByOrderNumberUseCase.invoke(any(), any(), any())
+            } returns Ok(order.copy(status = Status.POSITIVE))
+
+            mockMvc.get("/v1/orders") {
+                param("orderNumber", orderNumberString)
+                param("verificationSecret", verificationString)
+            }.andExpect {
+                jsonPath("$.sampledAt") { doesNotExist() }
+            }
+        }
+
+        @Test
+        fun `querying the status of an order returns sampledAt`() {
+            val sampledAt: Long = 1596186947
+            every {
+                findOrderByOrderNumberUseCase.invoke(any(), any(), any())
+            } returns Ok(order.copy(status = Status.POSITIVE, sampledAt = sampledAt))
+
+            mockMvc.get("/v1/orders") {
+                param("orderNumber", orderNumberString)
+                param("verificationSecret", verificationString)
+            }.andExpect {
+                jsonPath("$.sampledAt", Is.`is`(sampledAt.toInt()))
+            }
+        }
+
+        @Test
+        fun `returns status 400 when orderId is not a valid EON`() {
+            mockMvc.get("/v1/orders") {
+                param("orderNumber", "not an eon")
+                param("verificationSecret", verificationString)
+            }.andExpect {
+                status { isBadRequest }
+            }
+        }
+
+        @Test
+        fun `returns status 404 when no order is found`() {
+            every {
+                findOrderByOrderNumberUseCase.invoke(any(), any(), any())
+            } returns Err(FindOrderByOrderNumberUseCase.FindOrderError.NOT_FOUND)
+
+            mockMvc.get("/v1/orders") {
+                param("orderNumber", orderNumberString)
+                param("verificationSecret", verificationString)
+            }.andExpect {
+                status { isNotFound }
+            }
+        }
+
+        @Test
+        fun `returns status 403 when the verification secret is wrong`() {
+            every {
+                findOrderByOrderNumberUseCase.invoke(any(), any(), any())
+            } returns Err(FindOrderByOrderNumberUseCase.FindOrderError.FORBIDDEN)
+
+            mockMvc.get("/v1/orders") {
+                param("orderNumber", orderNumberString)
+                param("verificationSecret", verificationString)
+            }.andExpect {
+                status { isForbidden }
             }
         }
     }

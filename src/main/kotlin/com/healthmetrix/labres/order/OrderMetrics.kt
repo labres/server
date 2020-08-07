@@ -56,8 +56,23 @@ class OrderMetrics(private val meterRegistry: MeterRegistry) {
         .register(meterRegistry) // idempotent
         .increment()
 
+    fun countErrorOnParsingOrderIdOnGet(issuerId: String?): Unit = Counter
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.get.orderIdParseErrors")
+        .description("Increments the sum of errors parsing an order id for issuer $issuerId when getting an order")
+        .tags(
+            listOfNotNull(
+                Tag.of("api", "orders"),
+                Tag.of("operation", "getOrder"),
+                Tag.of("metric", "count"),
+                Tag.of("scope", "orders"),
+                Tag.of("issuerId", issuerId ?: EON_ISSUER_ID)
+            )
+        )
+        .register(meterRegistry) // idempotent
+        .increment()
+
     fun countErrorOnParsingOrderNumbersOnGet(issuerId: String?): Unit = Counter
-        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.get.orderNumberParseErrors")
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.orders.getByEon.orderNumberParseErrors")
         .description("Increments the sum of errors parsing an order number for issuer $issuerId when getting an order")
         .tags(
             listOfNotNull(
@@ -81,6 +96,36 @@ class OrderMetrics(private val meterRegistry: MeterRegistry) {
                 Tag.of("metric", "count"),
                 Tag.of("scope", "orders"),
                 Tag.of("issuerId", issuerId ?: EON_ISSUER_ID)
+            )
+        )
+        .register(meterRegistry) // idempotent
+        .increment()
+
+    fun countOrderNotFoundOnGetByEon(): Unit = Counter
+        .builder("issuers.$EON_ISSUER_ID.orders.getByEon.orderNotFound")
+        .description("Increments the sum of orderNotFound for issuer $EON_ISSUER_ID when getting an order by EON")
+        .tags(
+            listOfNotNull(
+                Tag.of("api", "orders"),
+                Tag.of("operation", "getOrder"),
+                Tag.of("metric", "count"),
+                Tag.of("scope", "orders"),
+                Tag.of("issuerId", EON_ISSUER_ID)
+            )
+        )
+        .register(meterRegistry) // idempotent
+        .increment()
+
+    fun countForbiddenOnGetByEon(): Unit = Counter
+        .builder("issuers.$EON_ISSUER_ID.orders.getByEon.forbidden")
+        .description("Increments the sum of forbidden for issuer $EON_ISSUER_ID when getting an order by EON")
+        .tags(
+            listOfNotNull(
+                Tag.of("api", "orders"),
+                Tag.of("operation", "getOrder"),
+                Tag.of("metric", "count"),
+                Tag.of("scope", "orders"),
+                Tag.of("issuerId", EON_ISSUER_ID)
             )
         )
         .register(meterRegistry) // idempotent

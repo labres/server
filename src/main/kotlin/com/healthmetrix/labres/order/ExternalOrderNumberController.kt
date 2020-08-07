@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -71,7 +72,8 @@ import java.util.UUID
 class ExternalOrderNumberController(
     private val issueExternalOrderNumber: IssueExternalOrderNumberUseCase,
     private val updateOrderUseCase: UpdateOrderUseCase,
-    private val findOrderUseCase: FindOrderUseCase,
+    private val findOrderByIdUseCase: FindOrderByIdUseCase,
+    private val findOrderByOrderNumberUseCase: FindOrderByOrderNumberUseCase,
     private val metrics: OrderMetrics
 ) {
     @PostMapping(
@@ -202,11 +204,11 @@ class ExternalOrderNumberController(
                 StructuredArguments.kv("requestId", requestId),
                 ex
             )
-            metrics.countErrorOnParsingOrderNumbersOnGet(EON_ISSUER_ID)
+            metrics.countErrorOnParsingOrderIdOnGet(EON_ISSUER_ID)
             return StatusResponse.BadRequest(message).asEntity()
         }
 
-        val result = findOrderUseCase(id, null)
+        val result = findOrderByIdUseCase(id, null)
 
         return if (result != null) {
             logger.debug(
@@ -228,6 +230,157 @@ class ExternalOrderNumberController(
             metrics.countOrderNotFoundOnGet(EON_ISSUER_ID)
             StatusResponse.NotFound.asEntity()
         }
+    }
+
+    @GetMapping(path = ["/v1/orders"], produces = [MediaType.APPLICATION_JSON_VALUE])
+    @Operation(
+        summary = "Returns the current status of a given lab order",
+        description = "Should only be invoked for verified users (logged into account or verified email address)"
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "returns current status of the lab order",
+                content = [
+                    Content(schema = Schema(type = "object", implementation = StatusResponse.Found::class))
+                ]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No order for the given eon found",
+                content = [
+                    Content(
+                        schema = Schema(
+                            type = "object",
+                            implementation = StatusResponse.NotFound::class,
+                            hidden = true
+                        )
+                    )
+                ]
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "Verification secret was wrong for the given EON",
+                content = [
+                    Content(
+                        schema = Schema(
+                            type = "object",
+                            implementation = StatusResponse.Forbidden::class,
+                            hidden = true
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+    fun queryStatusByEon(
+        @Parameter(
+            description = "OrderNumber",
+            required = true,
+            schema = Schema(type = "string", format = "[0123456789]{10}", description = "OrderNumber in format [0123456789]{10}")
+        )
+        @RequestParam(required = true, name = "orderNumber")
+        orderNumberAsString: String,
+
+        @Parameter(
+            description = "Verification secret that has been registered on issuing the order number",
+            required = true,
+            schema = Schema(
+                nullable = false,
+                required = true,
+                example = "3ASsdfSA*SFDnj!f"
+            )
+        )
+        @RequestParam(required = true)
+        verificationSecret: String,
+
+        @Parameter(
+            description = "The sample type that is being used for the lab test.",
+            required = false,
+            schema = Schema(
+                type = "string",
+                defaultValue = "SALIVA",
+                allowableValues = ["SALIVA", "BLOOD"],
+                example = "SALIVA"
+            )
+        )
+        @RequestParam(required = false, defaultValue = "SALIVA")
+        sample: Sample = Sample.SALIVA
+    ): ResponseEntity<StatusResponse> {
+        val requestId = UUID.randomUUID()
+
+        logger.debug(
+            "[{}] for issuerId {}, orderNumber {} and sample {}",
+            StructuredArguments.kv("method", "getResultByEon"),
+            StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+            StructuredArguments.kv("orderNumber", orderNumberAsString),
+            StructuredArguments.kv("sample", sample.toString()),
+            StructuredArguments.kv("requestId", requestId)
+        )
+
+        val orderNumber = try {
+            OrderNumber.from(null, orderNumberAsString)
+        } catch (ex: IllegalArgumentException) {
+            val message = "Failed to parse orderNumber $orderNumberAsString"
+            logger.info(
+                "[{}]: $message",
+                StructuredArguments.kv("method", "getResultByEon"),
+                StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+                StructuredArguments.kv("orderNumber", orderNumberAsString),
+                StructuredArguments.kv("sample", sample),
+                StructuredArguments.kv("requestId", requestId),
+                ex
+            )
+            metrics.countErrorOnParsingOrderIdOnGet(EON_ISSUER_ID)
+            return StatusResponse.BadRequest(message).asEntity()
+        }
+
+        return findOrderByOrderNumberUseCase(orderNumber, sample, verificationSecret)
+            .onFailure { err ->
+                when (err) {
+                    FindOrderByOrderNumberUseCase.FindOrderError.NOT_FOUND -> {
+                        logger.info(
+                            "[{}]: Not found",
+                            StructuredArguments.kv("method", "getResultByEon"),
+                            StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+                            StructuredArguments.kv("orderNumber", orderNumberAsString),
+                            StructuredArguments.kv("sample", sample),
+                            StructuredArguments.kv("requestId", requestId)
+                        )
+                        metrics.countOrderNotFoundOnGetByEon()
+                    }
+                    FindOrderByOrderNumberUseCase.FindOrderError.FORBIDDEN -> {
+                        logger.info(
+                            "[{}]: Forbidden",
+                            StructuredArguments.kv("method", "getResultByEon"),
+                            StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+                            StructuredArguments.kv("orderNumber", orderNumberAsString),
+                            StructuredArguments.kv("sample", sample),
+                            StructuredArguments.kv("requestId", requestId)
+                        )
+                        metrics.countForbiddenOnGetByEon()
+                    }
+                }
+            }
+            .mapError { err ->
+                when (err) {
+                    FindOrderByOrderNumberUseCase.FindOrderError.FORBIDDEN -> StatusResponse.Forbidden
+                    FindOrderByOrderNumberUseCase.FindOrderError.NOT_FOUND -> StatusResponse.NotFound
+                }
+            }
+            .onSuccess { order ->
+                logger.debug(
+                    "[{}]: Found ${order.status}",
+                    StructuredArguments.kv("method", "getResultByEon"),
+                    StructuredArguments.kv("issuerId", EON_ISSUER_ID),
+                    StructuredArguments.kv("orderNumber", order.orderNumber),
+                    StructuredArguments.kv("sample", order.sample),
+                    StructuredArguments.kv("requestId", requestId)
+                )
+            }
+            .map { order -> StatusResponse.Found(order.status, order.sampledAt) }
+            .unify().asEntity()
     }
 
     @PutMapping(

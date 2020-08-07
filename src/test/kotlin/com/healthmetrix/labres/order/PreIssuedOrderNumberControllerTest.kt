@@ -25,11 +25,11 @@ import java.util.UUID
 class PreIssuedOrderNumberControllerTest {
     private val registerOrderUseCase: RegisterOrderUseCase = mockk()
     private val updateOrderUseCase: UpdateOrderUseCase = mockk()
-    private val findOrderUseCase: FindOrderUseCase = mockk()
+    private val findOrderByIdUseCase: FindOrderByIdUseCase = mockk()
     private val metrics: OrderMetrics = mockk(relaxUnitFun = true)
 
     private val underTest =
-        PreIssuedOrderNumberController(registerOrderUseCase, updateOrderUseCase, findOrderUseCase, metrics)
+        PreIssuedOrderNumberController(registerOrderUseCase, updateOrderUseCase, findOrderByIdUseCase, metrics)
     private val mockMvc = MockMvcBuilders.standaloneSetup(underTest).build()
 
     private val objectMapper = ObjectMapper().registerKotlinModule()
@@ -138,7 +138,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `querying the status of an order returns 200`() {
-            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
 
             mockMvc.get("/v1/issuers/$issuerId/orders/$orderId").andExpect {
                 status { isOk }
@@ -147,7 +147,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `querying the status of an order returns status`() {
-            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
 
             mockMvc.get("/v1/issuers/$issuerId/orders/$orderId").andExpect {
                 jsonPath("$.status", Is.`is`(Status.POSITIVE.toString()))
@@ -156,7 +156,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `querying the status of an order does not set sampledAt on the response`() {
-            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE, sampledAt = 1596186947L)
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE, sampledAt = 1596186947L)
 
             mockMvc.get("/v1/issuers/$issuerId/orders/$orderId").andExpect {
                 jsonPath("$.sampledAt") { doesNotExist() }
@@ -172,7 +172,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `returns status 404 when no order is found`() {
-            every { findOrderUseCase.invoke(any(), any()) } returns null
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns null
             mockMvc.get("/v1/issuers/$issuerId/orders/$orderId").andExpect {
                 status { isNotFound }
             }
@@ -281,27 +281,27 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `querying the status of an order for issuerId hpi should transform it to mvz`() {
-            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
 
             val issuerId = "hpi"
 
             mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
 
             verify(exactly = 1) {
-                findOrderUseCase.invoke(any(), "mvz")
+                findOrderByIdUseCase.invoke(any(), "mvz")
             }
         }
 
         @Test
         fun `querying the status of an order for issuerId wmt should transform it to mvz`() {
-            every { findOrderUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
+            every { findOrderByIdUseCase.invoke(any(), any()) } returns order.copy(status = Status.POSITIVE)
 
             val issuerId = "wmt"
 
             mockMvc.get("/v1/issuers/$issuerId/orders/$orderId")
 
             verify(exactly = 1) {
-                findOrderUseCase.invoke(any(), "mvz")
+                findOrderByIdUseCase.invoke(any(), "mvz")
             }
         }
 
