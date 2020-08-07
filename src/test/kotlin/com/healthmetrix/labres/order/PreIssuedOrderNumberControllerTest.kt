@@ -58,7 +58,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number returns status 201`() {
-            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Ok(order)
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any(), null) } returns Ok(order)
 
             val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
@@ -76,7 +76,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number for kevb with more than 8 digits truncates the analyt`() {
-            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Ok(order)
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any(), null) } returns Ok(order)
 
             val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = "0123456799",
@@ -91,13 +91,13 @@ class PreIssuedOrderNumberControllerTest {
 
             val correct = OrderNumber.from("kevb", "01234567")
             verify(exactly = 1) {
-                registerOrderUseCase.invoke(eq(correct), any(), any(), any(), any())
+                registerOrderUseCase.invoke(eq(correct), any(), any(), any(), any(), null)
             }
         }
 
         @Test
         fun `registering a preissued order number returns order number and id`() {
-            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Ok(order)
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any(), null) } returns Ok(order)
 
             val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
@@ -116,7 +116,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number returns 409 if it has already been registered before`() {
-            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Err("already exists")
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any(), null) } returns Err("already exists")
 
             val request = PreIssuedOrderNumberController.RegisterOrderRequest(
                 orderNumber = orderNumberString,
@@ -235,7 +235,7 @@ class PreIssuedOrderNumberControllerTest {
 
         @Test
         fun `registering a preissued order number for for issuerId hpi should transform it to mvz`() {
-            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Ok(order)
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any(), null) } returns Ok(order)
 
             val issuerId = "hpi"
 
@@ -252,13 +252,13 @@ class PreIssuedOrderNumberControllerTest {
 
             val expected = OrderNumber.from("mvz", "01234567")
             verify(exactly = 1) {
-                registerOrderUseCase.invoke(eq(expected), any(), any(), any(), any())
+                registerOrderUseCase.invoke(eq(expected), any(), any(), any(), any(), any())
             }
         }
 
         @Test
         fun `registering a preissued order number for for issuerId wmt should transform it to mvz`() {
-            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any()) } returns Ok(order)
+            every { registerOrderUseCase.invoke(any(), any(), any(), any(), any(), null) } returns Ok(order)
 
             val issuerId = "wmt"
 
@@ -275,7 +275,7 @@ class PreIssuedOrderNumberControllerTest {
 
             val expected = OrderNumber.from("mvz", "01234567")
             verify(exactly = 1) {
-                registerOrderUseCase.invoke(eq(expected), any(), any(), any(), any())
+                registerOrderUseCase.invoke(eq(expected), any(), any(), any(), any(), any())
             }
         }
 

@@ -31,6 +31,7 @@ import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
+import java.util.UUID
 
 @SpringBootTest(
     classes = [LabResApplication::class],
@@ -38,6 +39,7 @@ import org.springframework.test.web.servlet.put
 )
 @AutoConfigureMockMvc
 class ChariteFlowTest {
+
     @Autowired
     private lateinit var mockMvc: MockMvc
 
@@ -62,28 +64,44 @@ class ChariteFlowTest {
     private val sampledAt = 1596186947L
 
     @Nested
-    inner class SalivaImplicit {
-        private val sample = Sample.SALIVA
-        private val testType = TestType.PCR
+    inner class SalivaImplicit : AbstractChariteFlowTest(null, null, null)
+
+    @Nested
+    inner class Saliva : AbstractChariteFlowTest(Sample.SALIVA, TestType.PCR, null)
+
+    @Nested
+    inner class Blood : AbstractChariteFlowTest(Sample.BLOOD, TestType.ANTIBODY, null)
+
+    @Nested
+    inner class VerificationSecretOnIssueEon : AbstractChariteFlowTest(
+        sample = null,
+        testType = TestType.PCR,
+        verificationSecret = UUID.randomUUID().toString()
+    )
+
+    abstract inner class AbstractChariteFlowTest(
+        private val sample: Sample?,
+        private val testType: TestType?,
+        private val verificationSecret: String?
+    ) {
 
         @Test
         fun `an orderInformation can be created with a notification url`() {
-            val registeredResponse = registerOrderWithNotificationUrl(notificationUrl, null)
+            val registeredResponse = registerOrder(notificationUrl, sample, verificationSecret)
 
             val result = repository.findById(registeredResponse.id)
 
             assertThat(result).isNotNull
-            assertThat(result!!).matches { order ->
-                order.notificationUrls == listOf(notificationUrl) &&
-                    order.status == Status.IN_PROGRESS &&
-                    order.sample == sample
-            }
+            assertThat(result!!.notificationUrls).containsExactly(notificationUrl)
+            assertThat(result.status).isEqualTo(Status.IN_PROGRESS)
+            assertThat(result.sample).isEqualTo(sample ?: Sample.SALIVA)
+            assertThat(result.verificationSecret).isEqualTo(verificationSecret)
         }
 
         @Test
         fun `a lab result can be successfully created, fetched and a result can be uploaded`() {
             // register
-            val registeredResponse = registerOrderWithNotificationUrl(notificationUrl, null)
+            val registeredResponse = registerOrder(notificationUrl, sample)
             val orderId = registeredResponse.id
             val orderNumber = registeredResponse.orderNumber
 
@@ -95,7 +113,7 @@ class ChariteFlowTest {
             assertThat(queryResult.status).isEqualTo(Status.IN_PROGRESS)
 
             // update result
-            updateResultFor(orderNumber, null, sampledAt)
+            updateResultFor(orderNumber, testType, sampledAt)
 
             val orderInformation = repository.findById(orderId)!!
             assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
@@ -112,77 +130,7 @@ class ChariteFlowTest {
 
         @Test
         fun `updating results sets labId, sampledAt and testType`() {
-            val createResponse = registerOrderWithNotificationUrl("http://before.test", null)
-
-            val orderId = createResponse.id
-            val orderNumber = createResponse.orderNumber
-            val orderInformation = repository.findById(orderId)!!
-            assertThat(orderInformation.labId).isNull()
-            assertThat(orderInformation.testType).isNull()
-            assertThat(orderInformation.sampledAt).isNull()
-
-            updateResultFor(orderNumber, null, sampledAt)
-
-            val updatedOrderInformation = repository.findById(orderId)
-            assertThat(updatedOrderInformation).isNotNull
-            assertThat(updatedOrderInformation!!).matches {
-                it.labId == labId && it.testType == testType && it.sampledAt == sampledAt
-            }
-        }
-    }
-
-    @Nested
-    inner class Saliva {
-        private val sample = Sample.SALIVA
-        private val testType = TestType.PCR
-
-        @Test
-        fun `an orderInformation can be created with a notification url`() {
-            val registeredResponse = registerOrderWithNotificationUrl(notificationUrl, sample)
-
-            val result = repository.findById(registeredResponse.id)
-
-            assertThat(result).isNotNull
-            assertThat(result!!).matches { order ->
-                order.notificationUrls == listOf(notificationUrl) &&
-                    order.status == Status.IN_PROGRESS &&
-                    order.sample == sample
-            }
-        }
-
-        @Test
-        fun `a lab result can be successfully created, fetched and a result can be uploaded`() {
-            // register
-            val registeredResponse = registerOrderWithNotificationUrl(notificationUrl, sample)
-            val orderId = registeredResponse.id
-            val orderNumber = registeredResponse.orderNumber
-
-            // query result while IN_PROGRESS
-            var queryResult = mockMvc.get("/v1/orders/$orderId")
-                .andExpect { jsonPath("$.sampledAt") { doesNotExist() } }
-                .andReturn().responseBody<StatusResponse.Found>()
-
-            assertThat(queryResult.status).isEqualTo(Status.IN_PROGRESS)
-
-            // update result
-            updateResultFor(orderNumber, testType, sampledAt)
-
-            val orderInformation = repository.findById(orderId)!!
-            assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
-
-            verify(exactly = 1) { httpNotifier.send(match { it.url == notificationUrl }) }
-
-            // query result
-            queryResult = mockMvc.get("/v1/orders/$orderId")
-                .andReturn().responseBody<StatusResponse.Found>()
-
-            assertThat(queryResult.sampledAt).isEqualTo(sampledAt)
-            assertThat(queryResult.status).isEqualTo(Status.POSITIVE)
-        }
-
-        @Test
-        fun `updating results sets labId and testType`() {
-            val createResponse = registerOrderWithNotificationUrl("http://before.test", sample)
+            val createResponse = registerOrder("http://before.test", sample)
 
             val orderId = createResponse.id
             val orderNumber = createResponse.orderNumber
@@ -195,113 +143,50 @@ class ChariteFlowTest {
 
             val updatedOrderInformation = repository.findById(orderId)
             assertThat(updatedOrderInformation).isNotNull
-            assertThat(updatedOrderInformation!!).matches {
-                it.labId == labId && it.testType == testType && it.sampledAt == sampledAt
-            }
-        }
-    }
-
-    @Nested
-    inner class Blood {
-        private val sample = Sample.BLOOD
-        private val testType = TestType.ANTIBODY
-
-        @Test
-        fun `an orderInformation can be created with a notification url`() {
-            val registeredResponse = registerOrderWithNotificationUrl(notificationUrl, sample)
-
-            val result = repository.findById(registeredResponse.id)
-
-            assertThat(result).isNotNull
-            assertThat(result!!).matches { order ->
-                order.notificationUrls == listOf(notificationUrl) &&
-                    order.status == Status.IN_PROGRESS &&
-                    order.sample == sample
-            }
+            assertThat(updatedOrderInformation!!.labId).isEqualTo(labId)
+            assertThat(updatedOrderInformation.testType).isEqualTo(testType ?: TestType.PCR)
+            assertThat(updatedOrderInformation.sampledAt).isEqualTo(sampledAt)
         }
 
-        @Test
-        fun `a lab result can be successfully created, fetched and a result can be uploaded`() {
-            // register
-            val registeredResponse = registerOrderWithNotificationUrl(notificationUrl, sample)
-            val orderId = registeredResponse.id
-            val orderNumber = registeredResponse.orderNumber
-
-            // query result while IN_PROGRESS
-            var queryResult = mockMvc.get("/v1/orders/$orderId")
-                .andExpect { jsonPath("$.sampledAt") { doesNotExist() } }
-                .andReturn().responseBody<StatusResponse.Found>()
-
-            assertThat(queryResult.status).isEqualTo(Status.IN_PROGRESS)
-
-            // update result
-            updateResultFor(orderNumber, testType, sampledAt)
-
-            val orderInformation = repository.findById(orderId)!!
-            assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
-
-            verify(exactly = 1) { httpNotifier.send(match { it.url == notificationUrl }) }
-
-            // query result
-            queryResult = mockMvc.get("/v1/orders/$orderId")
-                .andReturn().responseBody<StatusResponse.Found>()
-
-            assertThat(queryResult.sampledAt).isEqualTo(sampledAt)
-            assertThat(queryResult.status).isEqualTo(Status.POSITIVE)
-        }
-
-        @Test
-        fun `updating results sets labId and testType`() {
-            val createResponse = registerOrderWithNotificationUrl("http://before.test", sample)
-
-            val orderId = createResponse.id
-            val orderNumber = createResponse.orderNumber
-            val orderInformation = repository.findById(orderId)!!
-            assertThat(orderInformation.labId).isNull()
-            assertThat(orderInformation.testType).isNull()
-            assertThat(orderInformation.sampledAt).isNull()
-
-            updateResultFor(orderNumber, testType, sampledAt)
-
-            val updatedOrderInformation = repository.findById(orderId)
-            assertThat(updatedOrderInformation).isNotNull
-            assertThat(updatedOrderInformation!!).matches {
-                it.labId == labId && it.testType == testType && sampledAt == sampledAt
-            }
-        }
-    }
-
-    private fun registerOrderWithNotificationUrl(url: String? = notificationUrl, sample: Sample?) = mockMvc.post("/v1/orders") {
-        contentType = MediaType.APPLICATION_JSON
-        val body = mutableMapOf(
-            "notificationUrl" to url
-        )
-
-        if (sample != null)
-            body["sample"] = sample.toString()
-
-        content = objectMapper.writeValueAsBytes(body)
-    }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
-
-    private fun updateResultFor(orderNumber: String, testType: TestType?, sampledAt: Long? = null) =
-        mockMvc.put("/v1/results") {
+        private fun registerOrder(
+            url: String? = notificationUrl,
+            sample: Sample?,
+            verificationSecret: String? = null
+        ) = mockMvc.post("/v1/orders") {
             contentType = MediaType.APPLICATION_JSON
-            headers { setBasicAuth(labIdHeader) }
-            var body = UpdateResultRequest(
-                orderNumber = orderNumber,
-                result = Result.POSITIVE
+            val body = mutableMapOf(
+                "notificationUrl" to url
             )
 
-            if (testType != null)
-                body = body.copy(type = testType)
+            if (sample != null)
+                body["sample"] = sample.toString()
 
-            if (sampledAt != null)
-                body = body.copy(sampledAt = sampledAt)
+            if (verificationSecret != null)
+                body["verificationSecret"] = verificationSecret
 
             content = objectMapper.writeValueAsBytes(body)
-        }.andExpect { status { isOk } }
+        }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
 
-    private inline fun <reified T> MvcResult.responseBody(): T {
-        return objectMapper.readValue(response.contentAsString)
+        private fun updateResultFor(orderNumber: String, testType: TestType?, sampledAt: Long? = null) =
+            mockMvc.put("/v1/results") {
+                contentType = MediaType.APPLICATION_JSON
+                headers { setBasicAuth(labIdHeader) }
+                var body = UpdateResultRequest(
+                    orderNumber = orderNumber,
+                    result = Result.POSITIVE
+                )
+
+                if (testType != null)
+                    body = body.copy(type = testType)
+
+                if (sampledAt != null)
+                    body = body.copy(sampledAt = sampledAt)
+
+                content = objectMapper.writeValueAsBytes(body)
+            }.andExpect { status { isOk } }
+
+        private inline fun <reified T> MvcResult.responseBody(): T {
+            return objectMapper.readValue(response.contentAsString)
+        }
     }
 }

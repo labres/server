@@ -23,7 +23,8 @@ class RegisterOrderUseCase(
         testSiteId: String?,
         sample: Sample,
         notificationUrl: String?,
-        now: Instant = Instant.now()
+        now: Instant = Instant.now(),
+        verificationSecret: String?
     ): Result<OrderInformation, String> {
         val existingOrders = repository.findByOrderNumberAndSample(orderNumber, sample)
 
@@ -35,7 +36,8 @@ class RegisterOrderUseCase(
                 notificationUrls = listOfNotNull(notificationUrl),
                 issuedAt = Date.from(now),
                 testSiteId = testSiteId,
-                sample = sample
+                sample = sample,
+                verificationSecret = verificationSecret
             ).let(repository::save).let(::Ok)
 
         if (!newestExisting.notificationUrls.contains(notificationUrl)) {
@@ -61,6 +63,7 @@ class RegisterOrderUseCase(
             testSiteId = testSiteId,
             issuedAt = Date.from(now),
             notificationUrls = mergeNotificationUrls(newestExisting.notificationUrls, notificationUrl)
+            // don't update verification secret
         ).let(repository::save).let(::Ok)
     }
 

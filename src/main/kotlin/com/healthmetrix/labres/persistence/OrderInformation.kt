@@ -28,7 +28,8 @@ data class OrderInformation(
     val notificationUrls: List<String> = emptyList(),
     val enteredLabAt: Date? = null,
     val testType: TestType? = null,
-    val sampledAt: Long? = null
+    val sampledAt: Long? = null,
+    val verificationSecret: String? = null
 ) {
     internal fun raw() = RawOrderInformation(
         id = id,
@@ -44,7 +45,8 @@ data class OrderInformation(
         labId = labId,
         testSiteId = testSiteId,
         sample = sample.toString(),
-        sampledAt = sampledAt
+        sampledAt = sampledAt,
+        verificationSecret = verificationSecret
     )
 }
 
@@ -91,7 +93,10 @@ data class RawOrderInformation(
     var sample: String? = null,
 
     @DynamoDBAttribute
-    var sampledAt: Long? = null
+    var sampledAt: Long? = null,
+
+    @DynamoDBAttribute
+    var verificationSecret: String? = null
 ) {
     fun cook(): OrderInformation? {
         // for smart casts
@@ -198,7 +203,8 @@ data class RawOrderInformation(
             notifiedAt = notifiedAt,
             enteredLabAt = enteredLabAt,
             sample = cookedSample,
-            sampledAt = sampledAt
+            sampledAt = sampledAt,
+            verificationSecret = verificationSecret
         )
     }
 

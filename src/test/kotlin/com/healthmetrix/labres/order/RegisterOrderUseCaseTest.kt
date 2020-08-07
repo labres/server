@@ -24,6 +24,7 @@ internal class RegisterOrderUseCaseTest {
     private val preIssuedOrderNumber = OrderNumber.PreIssued(issuerId, orderNumberString)
     private val testSiteId = "testSiteA"
     private val notificationUrl = "http://callme.test"
+    private val verificationSecret = UUID.randomUUID().toString()
     private val now = Instant.now()
 
     private val repository: OrderInformationRepository = mockk()
@@ -40,7 +41,7 @@ internal class RegisterOrderUseCaseTest {
 
     @Test
     fun `it should return the registered order when there is no existing order in the database`() {
-        val result = underTest.invoke(eon, null, Sample.SALIVA, null, now)
+        val result = underTest.invoke(eon, null, Sample.SALIVA, null, now, null)
 
         assertThat(result.unwrap()).isEqualTo(
             OrderInformation(
@@ -55,7 +56,7 @@ internal class RegisterOrderUseCaseTest {
 
     @Test
     fun `it should save orderInformation when there is no existing order in the database`() {
-        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
+        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now, null)
 
         verify(exactly = 1) {
             repository.save(
@@ -67,6 +68,26 @@ internal class RegisterOrderUseCaseTest {
                     testSiteId = testSiteId,
                     issuedAt = Date.from(now),
                     sample = Sample.SALIVA
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `it should save the order with verification secret when there is no existing order in the database`() {
+        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now, verificationSecret)
+
+        verify(exactly = 1) {
+            repository.save(
+                OrderInformation(
+                    id = orderId,
+                    orderNumber = preIssuedOrderNumber,
+                    status = Status.IN_PROGRESS,
+                    notificationUrls = listOf(notificationUrl),
+                    testSiteId = testSiteId,
+                    issuedAt = Date.from(now),
+                    sample = Sample.SALIVA,
+                    verificationSecret = verificationSecret
                 )
             )
         }
@@ -87,7 +108,7 @@ internal class RegisterOrderUseCaseTest {
             )
         )
 
-        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
+        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now, null)
 
         verify(exactly = 1) {
             repository.save(
@@ -119,7 +140,39 @@ internal class RegisterOrderUseCaseTest {
             )
         )
 
-        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
+        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now, null)
+
+        verify(exactly = 1) {
+            repository.save(
+                OrderInformation(
+                    id = orderId,
+                    orderNumber = preIssuedOrderNumber,
+                    status = Status.IN_PROGRESS,
+                    notificationUrls = existingNotificationUrls,
+                    testSiteId = testSiteId,
+                    issuedAt = Date.from(now),
+                    sample = Sample.SALIVA
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `it should not update the verification secret on reregistering orders`() {
+        val existingNotificationUrls = listOf("a", "b", notificationUrl)
+
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(
+            OrderInformation(
+                id = orderId,
+                orderNumber = preIssuedOrderNumber,
+                status = Status.IN_PROGRESS,
+                issuedAt = Date.from(now),
+                sample = Sample.SALIVA,
+                notificationUrls = existingNotificationUrls
+            )
+        )
+
+        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now, verificationSecret)
 
         verify(exactly = 1) {
             repository.save(
@@ -149,7 +202,7 @@ internal class RegisterOrderUseCaseTest {
             )
         )
 
-        val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
+        val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now, null)
 
         assertThat(res).isInstanceOf(Err::class.java)
     }
@@ -167,7 +220,7 @@ internal class RegisterOrderUseCaseTest {
             )
         )
 
-        val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
+        val res = underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now, null)
 
         assertThat(res).isInstanceOf(Err::class.java)
     }
@@ -185,7 +238,7 @@ internal class RegisterOrderUseCaseTest {
             )
         )
 
-        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now)
+        underTest.invoke(preIssuedOrderNumber, testSiteId, Sample.SALIVA, notificationUrl, now, null)
 
         verify(exactly = 0) {
             repository.save(any())

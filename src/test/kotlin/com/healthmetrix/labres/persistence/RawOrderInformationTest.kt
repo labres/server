@@ -26,6 +26,7 @@ internal class RawOrderInformationTest {
     private val testSiteId = "test-test-site"
     private val orderNumberString = "1234567890"
     private val sampledAt = 1596186947L
+    private val verificationSecret = UUID.randomUUID().toString()
 
     private val raw = RawOrderInformation(
         id = id,
@@ -41,7 +42,8 @@ internal class RawOrderInformationTest {
         enteredLabAt = enteredLabAt,
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
-        sampledAt = sampledAt
+        sampledAt = sampledAt,
+        verificationSecret = verificationSecret
     )
 
     private val cooked = OrderInformation(
@@ -57,7 +59,8 @@ internal class RawOrderInformationTest {
         notifiedAt = notifiedAt,
         enteredLabAt = enteredLabAt,
         sample = Sample.BLOOD,
-        sampledAt = sampledAt
+        sampledAt = sampledAt,
+        verificationSecret = verificationSecret
     )
 
     @Nested
@@ -78,7 +81,8 @@ internal class RawOrderInformationTest {
                 testSiteId = null,
                 testType = null,
                 enteredLabAt = null,
-                sampledAt = null
+                sampledAt = null,
+                verificationSecret = null
             ).cook()
 
             val expected = cooked.copy(
@@ -89,7 +93,8 @@ internal class RawOrderInformationTest {
                 testSiteId = null,
                 testType = null,
                 enteredLabAt = null,
-                sampledAt = null
+                sampledAt = null,
+                verificationSecret = null
             )
 
             assertThat(result).isEqualTo(expected)
@@ -205,7 +210,8 @@ internal class RawOrderInformationTest {
                 notificationUrls = emptyList(),
                 enteredLabAt = null,
                 testType = null,
-                sampledAt = null
+                sampledAt = null,
+                verificationSecret = null
             ).raw()
 
             val expected = raw.copy(
@@ -216,7 +222,8 @@ internal class RawOrderInformationTest {
                 testSiteId = null,
                 testType = null,
                 enteredLabAt = null,
-                sampledAt = null
+                sampledAt = null,
+                verificationSecret = null
             )
 
             assertThat(result).isEqualTo(expected)

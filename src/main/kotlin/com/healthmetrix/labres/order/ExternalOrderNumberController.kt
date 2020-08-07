@@ -115,7 +115,8 @@ class ExternalOrderNumberController(
 
         return issueExternalOrderNumber(
             notificationUrl = request?.notificationUrl,
-            sample = request?.sample ?: Sample.SALIVA
+            sample = request?.sample ?: Sample.SALIVA,
+            verificationSecret = request?.verificationSecret
         ).onFailure { msg ->
             logger.warn(
                 "[{}] Order already exists: $msg",
@@ -336,7 +337,16 @@ class ExternalOrderNumberController(
             defaultValue = "SALIVA",
             example = "BLOOD"
         )
-        val sample: Sample = Sample.SALIVA
+        val sample: Sample = Sample.SALIVA,
+
+        @Schema(
+            description = "Verification secret that has to be presented when querying the status on an order by EON",
+            nullable = true,
+            required = false,
+            defaultValue = "null",
+            example = "3ASsdfSA*SFDnj!f"
+        )
+        val verificationSecret: String? = null
     )
 
     sealed class IssueExternalOrderNumberResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :
