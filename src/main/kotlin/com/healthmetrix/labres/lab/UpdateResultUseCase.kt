@@ -1,9 +1,11 @@
 package com.healthmetrix.labres.lab
 
+import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.notifications.NotifyOnStatusChangeUseCase
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
+import net.logstash.logback.argument.StructuredArguments
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.Date
@@ -11,7 +13,8 @@ import java.util.Date
 @Component
 class UpdateResultUseCase(
     private val repository: OrderInformationRepository,
-    private val notifyOnStatusChange: NotifyOnStatusChangeUseCase
+    private val notifyOnStatusChange: NotifyOnStatusChangeUseCase,
+    private val metrics: LabMetrics
 ) {
     operator fun invoke(
         updateResultRequest: UpdateResultRequest,
@@ -44,11 +47,22 @@ class UpdateResultUseCase(
         existing: OrderInformation,
         updateResultRequest: UpdateResultRequest,
         labId: String
-    ) = existing.copy(
+    ) = existing.also {
+        if (it.verificationSecret != updateResultRequest.verificationSecret)
+            logger.warn(
+                "[{}]: Overwriting verificationSecret",
+                StructuredArguments.kv("method", "updateResult"),
+                StructuredArguments.kv("issuerId", existing.orderNumber.issuerId),
+                StructuredArguments.kv("orderNumber", existing.orderNumber.number),
+                StructuredArguments.kv("testType", existing.testType)
+            )
+        metrics.countOverwritingVerificationSecret(labId, existing.orderNumber.issuerId)
+    }.copy(
         status = updateResultRequest.result.asStatus(),
         labId = labId,
         testType = updateResultRequest.type,
-        sampledAt = updateResultRequest.sampledAt
+        sampledAt = updateResultRequest.sampledAt,
+        verificationSecret = updateResultRequest.verificationSecret
     )
 
     private fun updateTimestamp(orderInformation: OrderInformation, result: Result, now: Date) =

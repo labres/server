@@ -23,7 +23,7 @@ import java.util.UUID
 class UpdateResultUseCaseTest {
     private val repository: OrderInformationRepository = mockk()
     private val notifier: NotifyOnStatusChangeUseCase = mockk()
-    private val underTest = UpdateResultUseCase(repository, notifier)
+    private val underTest = UpdateResultUseCase(repository, notifier, mockk(relaxed = true))
     private val orderNumberString = "1234567891"
     private val orderNumber = OrderNumber.External.from(orderNumberString)
     private val notificationUrls = listOf("http://callMe.test")
@@ -41,6 +41,7 @@ class UpdateResultUseCaseTest {
     private val now = Date.from(Instant.now())
     private val updateResultRequest = UpdateResultRequest(orderNumber.number, Result.POSITIVE, TestType.PCR)
     private val updated = orderInfo.copy(status = Status.POSITIVE, labId = labId, testType = TestType.PCR)
+    private val verificationSecret = UUID.randomUUID().toString()
 
     @BeforeEach
     internal fun setUp() {
@@ -155,5 +156,35 @@ class UpdateResultUseCaseTest {
                 issuerId
             )
         ).isEqualTo(UpdateResult.INVALID_ORDER_NUMBER)
+    }
+
+    @Test
+    fun `updates verificationSecret if it was null before`() {
+        clearMocks(repository)
+
+        every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
+        val updated = updated.copy(reportedAt = now, verificationSecret = verificationSecret)
+        every { repository.save(any()) } returns updated
+        every { notifier.invoke(any(), any()) } returns true
+
+        underTest(updateResultRequest.copy(verificationSecret = verificationSecret), labId, null, now)
+
+        verify(exactly = 1) { repository.save(updated) }
+    }
+
+    @Test
+    fun `overwrites verificationSecret`() {
+        clearMocks(repository)
+
+        every {
+            repository.findByOrderNumberAndSample(any(), any())
+        } returns listOf(orderInfo.copy(verificationSecret = "something"))
+        val updated = updated.copy(reportedAt = now, verificationSecret = verificationSecret)
+        every { repository.save(any()) } returns updated
+        every { notifier.invoke(any(), any()) } returns true
+
+        underTest(updateResultRequest.copy(verificationSecret = verificationSecret), labId, null, now)
+
+        verify(exactly = 1) { repository.save(updated) }
     }
 }

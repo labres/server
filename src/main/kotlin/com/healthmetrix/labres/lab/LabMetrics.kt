@@ -43,6 +43,22 @@ class LabMetrics(
         .register(meterRegistry) // idempotent
         .increment()
 
+    fun countOverwritingVerificationSecret(labId: String, issuerId: String?): Unit = Counter
+        .builder("issuers.${issuerId ?: EON_ISSUER_ID}.labs.$labId.overwriteVerificationSecret")
+        .description("Increments the sum overwriting verificationSecrets for issuer $issuerId and $labId")
+        .tags(
+            listOf(
+                Tag.of("api", "lab"),
+                Tag.of("operation", "updateResult"),
+                Tag.of("metric", "count"),
+                Tag.of("scope", "updateResult"),
+                Tag.of("issuerId", issuerId ?: EON_ISSUER_ID),
+                Tag.of("labId", labId)
+            )
+        )
+        .register(meterRegistry) // idempotent
+        .increment()
+
     fun countUnauthorized() = Counter
         .builder("labApi.unauthorized")
         .description("Increments the sum of unauthorized requests on the lab facing API")
