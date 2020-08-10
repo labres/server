@@ -40,7 +40,6 @@ class UpdateResultUseCaseTest {
     private val testType = TestType.ANTIBODY
     private val now = Date.from(Instant.now())
     private val updateResultRequest = UpdateResultRequest(orderNumber.number, Result.POSITIVE, TestType.PCR)
-    private val updated = orderInfo.copy(status = Status.POSITIVE, labId = labId, testType = TestType.PCR)
     private val verificationSecret = UUID.randomUUID().toString()
 
     @BeforeEach
@@ -48,18 +47,18 @@ class UpdateResultUseCaseTest {
         mockkObject(OrderNumber)
         every { OrderNumber.from(any(), any()) } returns orderNumber
         every { OrderNumber.from(null, any()) } returns orderNumber
+        every { repository.save(any()) } answers { firstArg() }
     }
 
     @AfterEach
     internal fun tearDown() {
-        clearMocks(OrderNumber)
+        clearMocks(OrderNumber, repository)
         unmockkObject(OrderNumber)
     }
 
     @Test
     fun `returns SUCCESS if successfully updated`() {
         every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
-        every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
 
         assertThat(underTest(updateResultRequest, labId, null)).isEqualTo(UpdateResult.SUCCESS)
@@ -67,33 +66,25 @@ class UpdateResultUseCaseTest {
 
     @Test
     fun `updates orderInformation with enteredLabAt set if status is IN_PROGRESS`() {
-        clearMocks(repository)
-
         every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
-        val updated = updated.copy(status = Status.IN_PROGRESS, enteredLabAt = now)
-        every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
 
         underTest(updateResultRequest.copy(result = Result.IN_PROGRESS), labId, null, now = now)
 
-        verify(exactly = 1) { repository.save(updated) }
+        verify(exactly = 1) { repository.save(match { it.enteredLabAt == now }) }
     }
 
     @Test
     fun `updates orderInformation with optional values testType and sampledAt if they're set`() {
-        clearMocks(repository)
-
         val sampledAt = 1596186947L
         val testType = TestType.ANTIBODY
 
         every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
-        val updated = updated.copy(status = Status.IN_PROGRESS, enteredLabAt = now, sampledAt = sampledAt, testType = testType)
-        every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
 
         underTest(updateResultRequest.copy(result = Result.IN_PROGRESS, sampledAt = sampledAt, type = testType), labId, null, now = now)
 
-        verify(exactly = 1) { repository.save(updated) }
+        verify(exactly = 1) { repository.save(match { it.testType == testType && it.sampledAt == sampledAt }) }
     }
 
     @Test
@@ -101,7 +92,6 @@ class UpdateResultUseCaseTest {
         clearMocks(notifier)
 
         every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
-        every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
 
         underTest(updateResultRequest, labId, issuerId, now = now)
@@ -117,7 +107,6 @@ class UpdateResultUseCaseTest {
 
     @Test
     fun `doesn't update or notify if no orderNumber found`() {
-        clearMocks(repository)
         every { repository.findByOrderNumberAndSample(any(), any()) } returns emptyList()
 
         underTest(updateResultRequest, labId, issuerId)
@@ -130,22 +119,17 @@ class UpdateResultUseCaseTest {
 
     @Test
     fun `updates orderInformation with reportedAt set if status is not IN_PROGRESS`() {
-        clearMocks(repository)
-
         every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
-        val updated = updated.copy(reportedAt = now, testType = testType)
-        every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
 
         underTest(updateResultRequest.copy(type = testType), labId, null, now)
 
-        verify(exactly = 1) { repository.save(updated) }
+        verify(exactly = 1) { repository.save(match { it.reportedAt == now }) }
     }
 
     @Test
     fun `returns INVALID_ORDER_NUMBER if order number can't be parsed`() {
         every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
-        every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
         every { OrderNumber.from(any(), any()) } throws IllegalArgumentException()
 
@@ -160,31 +144,37 @@ class UpdateResultUseCaseTest {
 
     @Test
     fun `updates verificationSecret if it was null before`() {
-        clearMocks(repository)
-
         every { repository.findByOrderNumberAndSample(any(), any()) } returns listOf(orderInfo)
-        val updated = updated.copy(reportedAt = now, verificationSecret = verificationSecret)
-        every { repository.save(any()) } returns updated
         every { notifier.invoke(any(), any()) } returns true
 
         underTest(updateResultRequest.copy(verificationSecret = verificationSecret), labId, null, now)
 
-        verify(exactly = 1) { repository.save(updated) }
+        verify(exactly = 1) { repository.save(match { it.verificationSecret == verificationSecret }) }
     }
 
     @Test
-    fun `overwrites verificationSecret`() {
-        clearMocks(repository)
-
+    fun `it should overwrite verificationSecret`() {
         every {
             repository.findByOrderNumberAndSample(any(), any())
         } returns listOf(orderInfo.copy(verificationSecret = "something"))
-        val updated = updated.copy(reportedAt = now, verificationSecret = verificationSecret)
-        every { repository.save(any()) } returns updated
+
         every { notifier.invoke(any(), any()) } returns true
 
         underTest(updateResultRequest.copy(verificationSecret = verificationSecret), labId, null, now)
 
-        verify(exactly = 1) { repository.save(updated) }
+        verify(exactly = 1) { repository.save(match { it.verificationSecret == verificationSecret }) }
+    }
+
+    @Test
+    fun `it shouldn't overwrite verificationSecret when verificationSecret is null on the updateResultRequest`() {
+        every {
+            repository.findByOrderNumberAndSample(any(), any())
+        } returns listOf(orderInfo.copy(verificationSecret = verificationSecret))
+
+        every { notifier.invoke(any(), any()) } returns true
+
+        underTest(updateResultRequest, labId, null, now)
+
+        verify(exactly = 1) { repository.save(match { it.verificationSecret == verificationSecret }) }
     }
 }

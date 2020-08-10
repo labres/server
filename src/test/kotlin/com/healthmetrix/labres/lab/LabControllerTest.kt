@@ -362,8 +362,6 @@ class LabControllerTest {
 
         @Test
         fun `uploading a document with optional value verificationSecret returns 200`() {
-            val sampledAt = 1596186947L
-
             mockMvc.put("/v1/results") {
                 header(HttpHeaders.AUTHORIZATION, labIdHeader)
                 contentType = MediaType.APPLICATION_JSON

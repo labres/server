@@ -149,7 +149,7 @@ class ChariteFlowTest {
 
             repository.save(order)
 
-            val actual = mockMvc.get("/v1/orders") {
+            mockMvc.get("/v1/orders") {
                 param("orderNumber", orderNumberString)
                 param("verificationSecret", "wrong")
                 param("sample", Sample.BLOOD.toString())
@@ -173,7 +173,7 @@ class ChariteFlowTest {
 
             repository.save(order)
 
-            val actual = mockMvc.get("/v1/orders") {
+            mockMvc.get("/v1/orders") {
                 param("orderNumber", orderNumberString)
                 param("verificationSecret", "wrong")
                 param("sample", Sample.BLOOD.toString())
@@ -215,6 +215,24 @@ class ChariteFlowTest {
             val updatedOrderInformation = repository.findById(orderId)
             assertThat(updatedOrderInformation).isNotNull
             assertThat(updatedOrderInformation!!.verificationSecret).isEqualTo(verificationSecret)
+        }
+
+        @Test
+        fun `updating results doesn't overwrite verificationSecret if verificationSecret is null on the request`() {
+            val firstVerificationSecret = "first"
+            val createResponse = registerOrder(null, sample, firstVerificationSecret)
+
+            val orderId = createResponse.id
+            val orderNumber = createResponse.orderNumber
+
+            val orderInformation = repository.findById(orderId)!!
+            assertThat(orderInformation.verificationSecret).isEqualTo(firstVerificationSecret)
+
+            updateResultFor(orderNumber, null, null, null)
+
+            val updatedOrderInformation = repository.findById(orderId)
+            assertThat(updatedOrderInformation).isNotNull
+            assertThat(updatedOrderInformation!!.verificationSecret).isEqualTo(firstVerificationSecret)
         }
     }
 

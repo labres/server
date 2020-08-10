@@ -35,7 +35,15 @@ class UpdateResultUseCase(
             return UpdateResult.ORDER_NOT_FOUND
 
         existingOrders
-            .map { updateExistingOrder(it, updateResultRequest, labId) }
+            .map { existing ->
+                existing.copy(
+                    status = updateResultRequest.result.asStatus(),
+                    labId = labId,
+                    testType = updateResultRequest.type,
+                    sampledAt = updateResultRequest.sampledAt
+                )
+            }
+            .map { overwriteVerificationSecret(it, updateResultRequest.verificationSecret, labId) }
             .map { updateTimestamp(it, updateResultRequest.result, now) }
             .map(repository::save)
             .forEach { notifyOnStatusChange(it.id, it.notificationUrls) }
@@ -43,27 +51,20 @@ class UpdateResultUseCase(
         return UpdateResult.SUCCESS
     }
 
-    private fun updateExistingOrder(
-        existing: OrderInformation,
-        updateResultRequest: UpdateResultRequest,
-        labId: String
-    ) = existing.also {
-        if (it.verificationSecret != updateResultRequest.verificationSecret)
+    private fun overwriteVerificationSecret(order: OrderInformation, verificationSecret: String?, labId: String) =
+        if (verificationSecret == null || order.verificationSecret == verificationSecret) {
+            order
+        } else {
             logger.warn(
                 "[{}]: Overwriting verificationSecret",
                 StructuredArguments.kv("method", "updateResult"),
-                StructuredArguments.kv("issuerId", existing.orderNumber.issuerId),
-                StructuredArguments.kv("orderNumber", existing.orderNumber.number),
-                StructuredArguments.kv("testType", existing.testType)
+                StructuredArguments.kv("issuerId", order.orderNumber.issuerId),
+                StructuredArguments.kv("orderNumber", order.orderNumber.number),
+                StructuredArguments.kv("testType", order.testType)
             )
-        metrics.countOverwritingVerificationSecret(labId, existing.orderNumber.issuerId)
-    }.copy(
-        status = updateResultRequest.result.asStatus(),
-        labId = labId,
-        testType = updateResultRequest.type,
-        sampledAt = updateResultRequest.sampledAt,
-        verificationSecret = updateResultRequest.verificationSecret
-    )
+            metrics.countOverwritingVerificationSecret(labId, order.orderNumber.issuerId)
+            order.copy(verificationSecret = verificationSecret)
+        }
 
     private fun updateTimestamp(orderInformation: OrderInformation, result: Result, now: Date) =
         if (result == Result.IN_PROGRESS) {
