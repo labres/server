@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration
 
 const val EXTERNAL_ORDER_NUMBER_API_TAG = "External Order Number API"
 const val PRE_ISSUED_ORDER_NUMBER_API_TAG = "Preissued Order Number API"
+const val REPORTS_API_TAG = "Reports API"
 const val LABORATORY_API_TAG = "Laboratory API"
 const val LABORATORY_BULK_API_TAG = "Laboratory Bulk API"
 
@@ -35,7 +36,8 @@ class SwaggerConfig(
             .components(
                 Components()
                     .addSecuritySchemes("OrdersApiToken", bearerSecurityScheme)
-                    .addSecuritySchemes("LabCredential", basicAuthSecurityScheme)
+                    .addSecuritySchemes("ReportsApiToken", reportsAuthSecurityScheme)
+                    .addSecuritySchemes("LabCredential", labAuthSecurityScheme)
             )
     }
 
@@ -51,15 +53,19 @@ class SwaggerConfig(
     private val labBulkApiTag = Tag()
         .name(LABORATORY_BULK_API_TAG)
         .description("Endpoints to be invoked by laboratories to bulk report results")
-    private val basicAuthSecurityScheme = SecurityScheme()
+    private val labAuthSecurityScheme = SecurityScheme()
         .type(SecurityScheme.Type.HTTP)
         .scheme("basic")
-        .description("Base-64 encoded basic auth credential, the username of which is the Client ID used to authorize labs to upload results for an external or internal order number")
+        .description("Base-64 encoded basic auth credential, the username of which is used to authorize labs to upload results for an external or internal order number. The lab has to be whitelisted to upload results for a certain issuer.")
     private val bearerSecurityScheme = SecurityScheme()
         .type(SecurityScheme.Type.HTTP)
         .scheme("bearer")
         .bearerFormat("JWT")
         .description("validated by JWKS")
+    private val reportsAuthSecurityScheme = SecurityScheme()
+        .type(SecurityScheme.Type.HTTP)
+        .scheme("basic")
+        .description("Base-64 encoded basic auth credential, the username of which is used to determine the test sites the caller is authorized to query reports for. The basic auth user has to be whitelisted to query reports for a certain test site.")
 }
 
 @ConfigurationProperties(prefix = "documentation-info")
