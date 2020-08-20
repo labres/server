@@ -390,7 +390,14 @@ class PreIssuedOrderNumberController(
             defaultValue = "SALIVA",
             example = "BLOOD"
         )
-        val sample: Sample = Sample.SALIVA
+        val sample: Sample = Sample.SALIVA,
+        @Schema(
+            description = "Unix Epoch timestamp when the sample has been taken",
+            nullable = true,
+            required = false,
+            example = "1596184744"
+        )
+        val sampledAt: Long? = null
     )
 
     sealed class RegisterOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :

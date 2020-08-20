@@ -73,6 +73,7 @@ private const val AUTHORIZATION_REALM = "Basic realm=\"labres:labresults:write\"
     ]
 )
 @SecurityRequirement(name = "LabCredential")
+@Tag(name = LABORATORY_API_TAG)
 class LabController(
     private val updateResultUseCase: UpdateResultUseCase,
     private val bulkUpdateResultsUseCase: BulkUpdateResultsUseCase,
