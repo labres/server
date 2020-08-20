@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.order
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.github.michaelbull.result.map
 import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.onFailure
@@ -132,7 +133,9 @@ class PreIssuedOrderNumberController(
             testSiteId = request.testSiteId,
             sample = request.sample,
             notificationUrl = request.notificationUrl,
-            verificationSecret = null
+            verificationSecret = null,
+            sampledAt = request.sampledAt,
+            metadata = request.metadata
         ).onFailure { msg ->
             logger.warn(
                 "[{}] Order already exists: $msg",
@@ -397,7 +400,15 @@ class PreIssuedOrderNumberController(
             required = false,
             example = "1596184744"
         )
-        val sampledAt: Long? = null
+        val sampledAt: Long? = null,
+        @Schema(
+            description = "Any metadata to the order",
+            type = "object",
+            nullable = true,
+            required = false,
+            example = "{\"hello\":\"world\"}"
+        )
+        val metadata: JsonNode? = null
     )
 
     sealed class RegisterOrderResponse(httpStatus: HttpStatus, hasBody: Boolean = true) :
