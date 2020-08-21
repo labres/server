@@ -21,9 +21,11 @@ class IssueExternalOrderNumberUseCase(
         return registerOrder.invoke(
             eon,
             testSiteId = null,
-            notificationUrl = notificationUrl,
             sample = sample,
-            verificationSecret = verificationSecret
+            notificationUrl = notificationUrl,
+            verificationSecret = verificationSecret,
+            sampledAt = null,
+            metadata = null
         )
     }
 

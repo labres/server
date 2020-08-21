@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.persistence
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.healthmetrix.labres.lab.TestType
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Sample
@@ -27,6 +28,9 @@ internal class RawOrderInformationTest {
     private val orderNumberString = "1234567890"
     private val sampledAt = 1596186947L
     private val verificationSecret = UUID.randomUUID().toString()
+    private val metadata = JsonNodeFactory.instance.objectNode().apply {
+        put("hello", "world")
+    }
 
     private val raw = RawOrderInformation(
         id = id,
@@ -43,7 +47,8 @@ internal class RawOrderInformationTest {
         reportedAt = reportedAt,
         notifiedAt = notifiedAt,
         sampledAt = sampledAt,
-        verificationSecret = verificationSecret
+        verificationSecret = verificationSecret,
+        metadata = metadata
     )
 
     private val cooked = OrderInformation(
@@ -60,7 +65,8 @@ internal class RawOrderInformationTest {
         enteredLabAt = enteredLabAt,
         sample = Sample.BLOOD,
         sampledAt = sampledAt,
-        verificationSecret = verificationSecret
+        verificationSecret = verificationSecret,
+        metadata = metadata
     )
 
     @Nested
@@ -82,7 +88,8 @@ internal class RawOrderInformationTest {
                 testType = null,
                 enteredLabAt = null,
                 sampledAt = null,
-                verificationSecret = null
+                verificationSecret = null,
+                metadata = null
             ).cook()
 
             val expected = cooked.copy(
@@ -94,7 +101,8 @@ internal class RawOrderInformationTest {
                 testType = null,
                 enteredLabAt = null,
                 sampledAt = null,
-                verificationSecret = null
+                verificationSecret = null,
+                metadata = null
             )
 
             assertThat(result).isEqualTo(expected)
@@ -211,7 +219,8 @@ internal class RawOrderInformationTest {
                 enteredLabAt = null,
                 testType = null,
                 sampledAt = null,
-                verificationSecret = null
+                verificationSecret = null,
+                metadata = null
             ).raw()
 
             val expected = raw.copy(
@@ -223,7 +232,8 @@ internal class RawOrderInformationTest {
                 testType = null,
                 enteredLabAt = null,
                 sampledAt = null,
-                verificationSecret = null
+                verificationSecret = null,
+                metadata = null
             )
 
             assertThat(result).isEqualTo(expected)

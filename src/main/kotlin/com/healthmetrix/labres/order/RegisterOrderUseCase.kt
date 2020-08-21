@@ -1,5 +1,6 @@
 package com.healthmetrix.labres.order
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -23,8 +24,10 @@ class RegisterOrderUseCase(
         testSiteId: String?,
         sample: Sample,
         notificationUrl: String?,
-        now: Instant = Instant.now(),
-        verificationSecret: String?
+        verificationSecret: String?,
+        sampledAt: Long?,
+        metadata: JsonNode?,
+        now: Instant = Instant.now()
     ): Result<OrderInformation, String> {
         val existingOrders = repository.findByOrderNumberAndSample(orderNumber, sample)
 
@@ -37,7 +40,9 @@ class RegisterOrderUseCase(
                 issuedAt = Date.from(now),
                 testSiteId = testSiteId,
                 sample = sample,
-                verificationSecret = verificationSecret
+                verificationSecret = verificationSecret,
+                sampledAt = sampledAt,
+                metadata = metadata
             ).let(repository::save).let(::Ok)
 
         if (!newestExisting.notificationUrls.contains(notificationUrl)) {
@@ -60,9 +65,11 @@ class RegisterOrderUseCase(
         }
 
         return newestExisting.copy(
-            testSiteId = testSiteId,
+            testSiteId = testSiteId ?: newestExisting.testSiteId,
             issuedAt = Date.from(now),
-            notificationUrls = mergeNotificationUrls(newestExisting.notificationUrls, notificationUrl)
+            notificationUrls = mergeNotificationUrls(newestExisting.notificationUrls, notificationUrl),
+            sampledAt = sampledAt ?: newestExisting.sampledAt,
+            metadata = metadata ?: newestExisting.metadata
             // don't update verification secret
         ).let(repository::save).let(::Ok)
     }

@@ -34,7 +34,7 @@ internal class IssueExternalOrderNumberUseCaseTest {
     @Test
     fun `it returns registered orderId and orderNumber`() {
         every { repository.findByOrderNumber(any()) } returns emptyList()
-        every { registerOrder.invoke(any(), any(), any(), any(), any(), any()) } returns Ok(order)
+        every { registerOrder.invoke(any(), any(), any(), any(), any(), null, null, any()) } returns Ok(order)
 
         assertThat(underTest(notificationUrl, Sample.SALIVA, null).unwrap()).isEqualTo(order)
     }
@@ -46,17 +46,39 @@ internal class IssueExternalOrderNumberUseCaseTest {
             listOf(orderInformation, orderInformation),
             emptyList()
         )
-        every { registerOrder.invoke(any(), any(), any(), any(), any(), any()) } returns Ok(order)
+        every {
+            registerOrder.invoke(
+                orderNumber = any(),
+                testSiteId = any(),
+                sample = any(),
+                notificationUrl = any(),
+                verificationSecret = any(),
+                sampledAt = any(),
+                metadata = any(),
+                now = any()
+            )
+        } returns Ok(order)
 
         underTest(notificationUrl, Sample.SALIVA, null)
 
-        verify { registerOrder.invoke(any(), null, any(), notificationUrl, any(), null) }
+        verify {
+            registerOrder.invoke(
+                orderNumber = any(),
+                testSiteId = null,
+                sample = Sample.SALIVA,
+                notificationUrl = notificationUrl,
+                verificationSecret = null,
+                sampledAt = null,
+                metadata = null,
+                now = any()
+            )
+        }
     }
 
     @Test
     fun `it calls registerOrder with default sample type SALIVA`() {
         every { repository.findByOrderNumber(any()) } returns emptyList()
-        every { registerOrder.invoke(any(), any(), any(), any(), any(), any()) } returns Ok(order)
+        every { registerOrder.invoke(any(), any(), any(), any(), any(), null, null, any()) } returns Ok(order)
 
         underTest(notificationUrl, Sample.SALIVA, null)
 
@@ -66,8 +88,10 @@ internal class IssueExternalOrderNumberUseCaseTest {
                 testSiteId = any(),
                 sample = Sample.SALIVA,
                 notificationUrl = any(),
-                now = any(),
-                verificationSecret = null
+                verificationSecret = null,
+                sampledAt = null,
+                metadata = null,
+                now = any()
             )
         }
     }

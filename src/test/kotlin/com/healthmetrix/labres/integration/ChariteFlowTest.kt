@@ -1,22 +1,15 @@
 package com.healthmetrix.labres.integration
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.healthmetrix.labres.LabResApplication
 import com.healthmetrix.labres.encodeBase64
 import com.healthmetrix.labres.lab.Result
 import com.healthmetrix.labres.lab.TestType
-import com.healthmetrix.labres.lab.UpdateResultRequest
 import com.healthmetrix.labres.notifications.Notification
 import com.healthmetrix.labres.notifications.Notifier
-import com.healthmetrix.labres.order.ExternalOrderNumberController.IssueExternalOrderNumberResponse
 import com.healthmetrix.labres.order.OrderNumber
 import com.healthmetrix.labres.order.Sample
 import com.healthmetrix.labres.order.Status
-import com.healthmetrix.labres.order.StatusResponse
 import com.healthmetrix.labres.persistence.InMemoryOrderInformationRepository
 import com.healthmetrix.labres.persistence.OrderInformation
-import com.healthmetrix.labres.persistence.OrderInformationRepository
 import com.ninjasquad.springmockk.SpykBean
 import io.mockk.clearMocks
 import io.mockk.verify
@@ -24,48 +17,24 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.get
-import org.springframework.test.web.servlet.post
-import org.springframework.test.web.servlet.put
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
 
-@SpringBootTest(
-    classes = [LabResApplication::class],
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
-@AutoConfigureMockMvc
-class ChariteFlowTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
-
-    @Autowired
-    private lateinit var repository: OrderInformationRepository
-
-    @Autowired
-    lateinit var objectMapper: ObjectMapper
+class ChariteFlowTest : AbstractIntegrationTest() {
 
     @SpykBean
     private lateinit var httpNotifier: Notifier<Notification.HttpNotification>
 
     @BeforeEach
-    internal fun setUp() {
+    override fun setUp() {
         (repository as InMemoryOrderInformationRepository).clear()
         clearMocks(httpNotifier)
     }
 
     private val labId = "test_lab"
     private val labIdHeader = "$labId:pass".encodeBase64()
-    private val notificationUrl = "http://notify.test"
-    private val sampledAt = 1596186947L
 
     @Nested
     inner class SalivaImplicit : AbstractChariteFlowTest(null, null, null)
@@ -98,12 +67,7 @@ class ChariteFlowTest {
 
             repository.save(order)
 
-            val actual = mockMvc.get("/v1/orders") {
-                param("orderNumber", orderNumberString)
-                param("verificationSecret", verificationSecret!!)
-            }.andExpect {
-                status { isOk }
-            }.andReturn().responseBody<StatusResponse.Found>()
+            val actual = getResultByOrderNumber(orderNumberString, verificationSecret!!)
 
             assertThat(actual.status).isEqualTo(order.status)
         }
@@ -123,13 +87,11 @@ class ChariteFlowTest {
 
             repository.save(order)
 
-            val actual = mockMvc.get("/v1/orders") {
-                param("orderNumber", orderNumberString)
-                param("verificationSecret", verificationSecret!!)
-                param("sample", Sample.BLOOD.toString())
-            }.andExpect {
-                status { isOk }
-            }.andReturn().responseBody<StatusResponse.Found>()
+            val actual = getResultByOrderNumber(
+                orderNumber = orderNumberString,
+                verificationSecret = verificationSecret!!,
+                sample = Sample.BLOOD
+            )
 
             assertThat(actual.status).isEqualTo(order.status)
         }
@@ -184,55 +146,86 @@ class ChariteFlowTest {
 
         @Test
         fun `updating results can set verificationSecret`() {
-            val createResponse = registerOrder(null, sample)
+            val createResponse = issueEon(null, sample ?: Sample.SALIVA)
 
             val orderId = createResponse.id
             val orderNumber = createResponse.orderNumber
 
-            val orderInformation = repository.findById(orderId)!!
-            assertThat(orderInformation.verificationSecret).isNull()
+            assertThatOrderHasBeenSaved(
+                id = orderId,
+                verificationSecret = null
+            )
 
-            updateResultFor(orderNumber, null, null, verificationSecret)
+            updateResultFor(
+                orderNumber = orderNumber,
+                labIdHeader = labIdHeader,
+                result = Result.POSITIVE,
+                verificationSecret = verificationSecret
+            )
 
-            val updatedOrderInformation = repository.findById(orderId)
-            assertThat(updatedOrderInformation).isNotNull
-            assertThat(updatedOrderInformation!!.verificationSecret).isEqualTo(verificationSecret)
+            assertThatOrderHasBeenSaved(
+                id = orderId,
+                verificationSecret = verificationSecret
+            )
         }
 
         @Test
         fun `updating results can overwrite verificationSecret`() {
             val firstVerificationSecret = "first"
-            val createResponse = registerOrder(null, sample, firstVerificationSecret)
+            val createResponse = issueEon(
+                notificationUrl = null,
+                sample = sample ?: Sample.SALIVA,
+                verificationSecret = firstVerificationSecret
+            )
 
             val orderId = createResponse.id
             val orderNumber = createResponse.orderNumber
 
-            val orderInformation = repository.findById(orderId)!!
-            assertThat(orderInformation.verificationSecret).isEqualTo(firstVerificationSecret)
+            assertThatOrderHasBeenSaved(
+                id = orderId,
+                verificationSecret = firstVerificationSecret
+            )
 
-            updateResultFor(orderNumber, null, null, verificationSecret)
+            updateResultFor(
+                orderNumber = orderNumber,
+                labIdHeader = labIdHeader,
+                result = Result.POSITIVE,
+                verificationSecret = verificationSecret
+            )
 
-            val updatedOrderInformation = repository.findById(orderId)
-            assertThat(updatedOrderInformation).isNotNull
-            assertThat(updatedOrderInformation!!.verificationSecret).isEqualTo(verificationSecret)
+            assertThatOrderHasBeenSaved(
+                id = orderId,
+                verificationSecret = verificationSecret
+            )
         }
 
         @Test
         fun `updating results doesn't overwrite verificationSecret if verificationSecret is null on the request`() {
             val firstVerificationSecret = "first"
-            val createResponse = registerOrder(null, sample, firstVerificationSecret)
+            val createResponse = issueEon(
+                notificationUrl = null,
+                sample = sample ?: Sample.SALIVA,
+                verificationSecret = firstVerificationSecret
+            )
 
             val orderId = createResponse.id
             val orderNumber = createResponse.orderNumber
 
-            val orderInformation = repository.findById(orderId)!!
-            assertThat(orderInformation.verificationSecret).isEqualTo(firstVerificationSecret)
+            assertThatOrderHasBeenSaved(
+                id = orderId,
+                verificationSecret = firstVerificationSecret
+            )
 
-            updateResultFor(orderNumber, null, null, null)
+            updateResultFor(
+                orderNumber = orderNumber,
+                labIdHeader = labIdHeader,
+                result = Result.POSITIVE
+            )
 
-            val updatedOrderInformation = repository.findById(orderId)
-            assertThat(updatedOrderInformation).isNotNull
-            assertThat(updatedOrderInformation!!.verificationSecret).isEqualTo(firstVerificationSecret)
+            assertThatOrderHasBeenSaved(
+                id = orderId,
+                verificationSecret = firstVerificationSecret
+            )
         }
     }
 
@@ -244,114 +237,93 @@ class ChariteFlowTest {
 
         @Test
         fun `an orderInformation can be created with a notification url`() {
-            val registeredResponse = registerOrder(notificationUrl, sample, verificationSecret)
+            val registeredResponse = issueEon(
+                notificationUrl = httpNotificationUrl,
+                sample = sample ?: Sample.SALIVA,
+                verificationSecret = verificationSecret
+            )
 
-            val result = repository.findById(registeredResponse.id)
+            repository.findById(registeredResponse.id)
 
-            assertThat(result).isNotNull
-            assertThat(result!!.notificationUrls).containsExactly(notificationUrl)
-            assertThat(result.status).isEqualTo(Status.IN_PROGRESS)
-            assertThat(result.sample).isEqualTo(sample ?: Sample.SALIVA)
-            assertThat(result.verificationSecret).isEqualTo(verificationSecret)
+            assertThatOrderHasBeenSaved(
+                id = registeredResponse.id,
+                status = Status.IN_PROGRESS,
+                sample = sample ?: Sample.SALIVA,
+                verificationSecret = verificationSecret
+            )
         }
 
         @Test
         fun `a lab result can be successfully created, fetched and a result can be uploaded`() {
             // register
-            val registeredResponse = registerOrder(notificationUrl, sample)
+            val registeredResponse = issueEon(
+                notificationUrl = httpNotificationUrl,
+                sample = sample ?: Sample.SALIVA,
+                verificationSecret = testSiteId
+            )
             val orderId = registeredResponse.id
             val orderNumber = registeredResponse.orderNumber
 
             // query result while IN_PROGRESS
-            var queryResult = mockMvc.get("/v1/orders/$orderId")
-                .andExpect { jsonPath("$.sampledAt") { doesNotExist() } }
-                .andReturn().responseBody<StatusResponse.Found>()
+            var queryResult = getResultByOrderId(orderId)
+            assertThat(queryResult.sampledAt == null)
 
             assertThat(queryResult.status).isEqualTo(Status.IN_PROGRESS)
 
             // update result
-            updateResultFor(orderNumber, testType, sampledAt)
+            updateResultFor(
+                orderNumber = orderNumber,
+                labIdHeader = labIdHeader,
+                result = Result.POSITIVE,
+                testType = testType ?: TestType.PCR,
+                sampledAt = sampledAt
+            )
 
-            val orderInformation = repository.findById(orderId)!!
-            assertThat(orderInformation.status).isEqualTo(Status.POSITIVE)
+            assertThatOrderHasBeenSaved(
+                id = orderId,
+                status = Status.POSITIVE
+            )
 
-            verify(exactly = 1) { httpNotifier.send(match { it.url == notificationUrl }) }
+            verify(exactly = 1) { httpNotifier.send(match { it.url == httpNotificationUrl }) }
 
             // query result by id
-            queryResult = mockMvc.get("/v1/orders/$orderId")
-                .andReturn().responseBody<StatusResponse.Found>()
-
+            queryResult = getResultByOrderId(orderId)
             assertThat(queryResult.sampledAt).isEqualTo(sampledAt)
             assertThat(queryResult.status).isEqualTo(Status.POSITIVE)
         }
 
         @Test
         fun `updating results sets labId, sampledAt and testType`() {
-            val createResponse = registerOrder("http://before.test", sample)
+            val createResponse = issueEon(
+                notificationUrl = "http://before.test",
+                sample = sample ?: Sample.SALIVA,
+                verificationSecret = verificationSecret
+            )
 
             val orderId = createResponse.id
             val orderNumber = createResponse.orderNumber
-            val orderInformation = repository.findById(orderId)!!
-            assertThat(orderInformation.labId).isNull()
-            assertThat(orderInformation.testType).isNull()
-            assertThat(orderInformation.sampledAt).isNull()
 
-            updateResultFor(orderNumber, testType, sampledAt)
-
-            val updatedOrderInformation = repository.findById(orderId)
-            assertThat(updatedOrderInformation).isNotNull
-            assertThat(updatedOrderInformation!!.labId).isEqualTo(labId)
-            assertThat(updatedOrderInformation.testType).isEqualTo(testType ?: TestType.PCR)
-            assertThat(updatedOrderInformation.sampledAt).isEqualTo(sampledAt)
-        }
-
-        fun registerOrder(
-            url: String? = notificationUrl,
-            sample: Sample?,
-            verificationSecret: String? = null
-        ) = mockMvc.post("/v1/orders") {
-            contentType = MediaType.APPLICATION_JSON
-            val body = mutableMapOf(
-                "notificationUrl" to url
+            assertThatOrderHasBeenSaved(
+                id = orderId,
+                labId = null,
+                testType = null,
+                sampledAt = null
             )
 
-            if (sample != null)
-                body["sample"] = sample.toString()
+            updateResultFor(
+                orderNumber = orderNumber,
+                labIdHeader = labIdHeader,
+                result = Result.POSITIVE,
+                testType = testType ?: TestType.PCR,
+                sampledAt = sampledAt
+            )
 
-            if (verificationSecret != null)
-                body["verificationSecret"] = verificationSecret
-
-            content = objectMapper.writeValueAsBytes(body)
-        }.andReturn().responseBody<IssueExternalOrderNumberResponse.Created>()
-
-        fun updateResultFor(
-            orderNumber: String,
-            testType: TestType?,
-            sampledAt: Long? = null,
-            verificationSecret: String? = null
-        ) =
-            mockMvc.put("/v1/results") {
-                contentType = MediaType.APPLICATION_JSON
-                headers { setBasicAuth(labIdHeader) }
-                var body = UpdateResultRequest(
-                    orderNumber = orderNumber,
-                    result = Result.POSITIVE
-                )
-
-                if (testType != null)
-                    body = body.copy(type = testType)
-
-                if (sampledAt != null)
-                    body = body.copy(sampledAt = sampledAt)
-
-                if (verificationSecret != null)
-                    body = body.copy(verificationSecret = verificationSecret)
-
-                content = objectMapper.writeValueAsBytes(body)
-            }.andExpect { status { isOk } }
-
-        inline fun <reified T> MvcResult.responseBody(): T {
-            return objectMapper.readValue(response.contentAsString)
+            assertThatOrderHasBeenSaved(
+                id = orderId,
+                labId = labId,
+                testType = testType ?: TestType.PCR,
+                sampledAt = sampledAt
+            )
         }
     }
 }

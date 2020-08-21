@@ -5,6 +5,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson
+import com.fasterxml.jackson.databind.JsonNode
 import com.healthmetrix.labres.lab.TestType
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.OrderNumber
@@ -29,7 +31,8 @@ data class OrderInformation(
     val enteredLabAt: Date? = null,
     val testType: TestType? = null,
     val sampledAt: Long? = null,
-    val verificationSecret: String? = null
+    val verificationSecret: String? = null,
+    val metadata: JsonNode? = null
 ) {
     internal fun raw() = RawOrderInformation(
         id = id,
@@ -46,7 +49,8 @@ data class OrderInformation(
         testSiteId = testSiteId,
         sample = sample.toString(),
         sampledAt = sampledAt,
-        verificationSecret = verificationSecret
+        verificationSecret = verificationSecret,
+        metadata = metadata
     )
 }
 
@@ -96,7 +100,11 @@ data class RawOrderInformation(
     var sampledAt: Long? = null,
 
     @DynamoDBAttribute
-    var verificationSecret: String? = null
+    var verificationSecret: String? = null,
+
+    @DynamoDBAttribute
+    @DynamoDBTypeConvertedJson
+    var metadata: JsonNode? = null
 ) {
     fun cook(): OrderInformation? {
         // for smart casts
@@ -204,7 +212,8 @@ data class RawOrderInformation(
             enteredLabAt = enteredLabAt,
             sample = cookedSample,
             sampledAt = sampledAt,
-            verificationSecret = verificationSecret
+            verificationSecret = verificationSecret,
+            metadata = metadata
         )
     }
 
