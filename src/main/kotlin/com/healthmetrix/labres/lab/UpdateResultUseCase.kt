@@ -40,7 +40,7 @@ class UpdateResultUseCase(
                     status = updateResultRequest.result.asStatus(),
                     labId = labId,
                     testType = updateResultRequest.type,
-                    sampledAt = updateResultRequest.sampledAt
+                    sampledAt = updateResultRequest.sampledAt ?: existing.sampledAt
                 )
             }
             .map { overwriteVerificationSecret(it, updateResultRequest.verificationSecret, labId) }

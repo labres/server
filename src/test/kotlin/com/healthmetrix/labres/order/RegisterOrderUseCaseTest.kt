@@ -414,7 +414,7 @@ internal class RegisterOrderUseCaseTest {
             )
         )
 
-        val res = underTest.invoke(
+        underTest.invoke(
             preIssuedOrderNumber,
             testSiteId,
             Sample.SALIVA,

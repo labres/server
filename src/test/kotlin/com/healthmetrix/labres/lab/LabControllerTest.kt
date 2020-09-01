@@ -31,7 +31,9 @@ class LabControllerTest {
     private val underTest = LabController(updateResultUseCase, bulkUpdateResultsUseCase, labRegistry, metrics)
 
     private val objectMapper = ObjectMapper().registerKotlinModule()
-    private val jsonMessageConverter = MappingJackson2HttpMessageConverter(objectMapper)
+    private val
+
+    jsonMessageConverter = MappingJackson2HttpMessageConverter(objectMapper)
     private val mockMvc = MockMvcBuilders
         .standaloneSetup(underTest)
         .setMessageConverters(jsonMessageConverter, KevbLabResultMessageConverter()) // rather mock?

@@ -5,9 +5,10 @@ import com.healthmetrix.labres.LABORATORY_API_TAG
 import com.healthmetrix.labres.LABORATORY_BULK_API_TAG
 import com.healthmetrix.labres.LabResApiResponse
 import com.healthmetrix.labres.asEntity
-import com.healthmetrix.labres.decodeBase64
+import com.healthmetrix.labres.extractBasicAuthUser
 import com.healthmetrix.labres.logger
 import com.healthmetrix.labres.order.EON_ISSUER_ID
+import com.healthmetrix.labres.toHttpHeaders
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.headers.Header
 import io.swagger.v3.oas.annotations.media.Content
@@ -21,7 +22,6 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -130,7 +130,7 @@ class LabController(
             kv("requestId", requestId)
         )
 
-        val labName = extractLabIdFrom(authorizationHeader)
+        val labName = authorizationHeader.extractBasicAuthUser()
         if (labName == null) {
             logger.warn(
                 "[{}]: Unauthorized - Authorization header incorrect",
@@ -270,7 +270,7 @@ class LabController(
         @RequestBody
         request: BulkUpdateResultRequest
     ): ResponseEntity<BulkUpdateResultResponse> {
-        val lab = extractLabIdFrom(authorizationHeader)
+        val lab = authorizationHeader.extractBasicAuthUser()
             ?.let(labRegistry::get)
             ?: return BulkUpdateResultResponse.Unauthorized.asEntity()
 
@@ -283,24 +283,6 @@ class LabController(
             else
                 BulkUpdateResultResponse.Success(request.results.size)
         }.asEntity()
-    }
-
-    private fun extractLabIdFrom(header: String): String? {
-        val (prefix, encoded) = header.split(" ").also {
-            if (it.size != 2) return null
-        }
-
-        if (prefix != "Basic")
-            return null
-
-        val decoded = encoded.decodeBase64()
-            ?.split(":")
-            ?: return null
-
-        if (decoded.size != 2)
-            return null
-
-        return decoded.first()
     }
 }
 
@@ -325,10 +307,10 @@ data class UpdateResultRequest(
     val type: TestType = TestType.PCR,
 
     @Schema(
-        description = "Unix Epoch timestamp when the sample has been taken",
+        description = "Unix Epoch timestamp in milliseconds when the sample has been taken",
         nullable = true,
         required = false,
-        example = "1596184744"
+        example = "1598886166256"
     )
     val sampledAt: Long? = null,
 
@@ -388,5 +370,3 @@ sealed class BulkUpdateResultResponse(
 
     object Forbidden : BulkUpdateResultResponse(HttpStatus.FORBIDDEN)
 }
-
-private fun Map<String, List<String>>.toHttpHeaders() = HttpHeaders(LinkedMultiValueMap(this))

@@ -1,6 +1,5 @@
 package com.healthmetrix.labres.integration
 
-import com.healthmetrix.labres.encodeBase64
 import com.healthmetrix.labres.lab.Result
 import com.healthmetrix.labres.lab.TestType
 import com.healthmetrix.labres.notifications.Notification
@@ -32,9 +31,6 @@ class ChariteFlowTest : AbstractIntegrationTest() {
         (repository as InMemoryOrderInformationRepository).clear()
         clearMocks(httpNotifier)
     }
-
-    private val labId = "test_lab"
-    private val labIdHeader = "$labId:pass".encodeBase64()
 
     @Nested
     inner class SalivaImplicit : AbstractChariteFlowTest(null, null, null)
