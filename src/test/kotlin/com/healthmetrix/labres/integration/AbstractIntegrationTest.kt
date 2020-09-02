@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.healthmetrix.labres.LabResApplication
+import com.healthmetrix.labres.encodeBase64
 import com.healthmetrix.labres.lab.Result
 import com.healthmetrix.labres.lab.TestType
 import com.healthmetrix.labres.lab.UpdateResultRequest
@@ -15,6 +16,7 @@ import com.healthmetrix.labres.order.StatusResponse
 import com.healthmetrix.labres.persistence.InMemoryOrderInformationRepository
 import com.healthmetrix.labres.persistence.OrderInformation
 import com.healthmetrix.labres.persistence.OrderInformationRepository
+import com.healthmetrix.labres.reports.ReportsController
 import org.assertj.core.api.Assertions.assertThat
 import org.joda.time.Instant
 import org.junit.jupiter.api.BeforeEach
@@ -46,10 +48,14 @@ abstract class AbstractIntegrationTest {
 
     protected val orderNumber = UUID.randomUUID().toString()
     protected val issuerId = "test_issuer"
-    protected val testSiteId = "test_test_site"
+    protected val testSiteId = "test_site_1"
     protected val httpNotificationUrl = "http://notify.test"
     protected val fcmNotificationUrl = "fcm://labres@notify.test"
     protected val sampledAt = Instant.now().millis
+    protected val labId = "test_lab"
+    protected val labIdHeader = "$labId:pass".encodeBase64()
+    protected val reportClient = "test_report_client"
+    protected val reportClientHeader = "$reportClient:pass".encodeBase64()
 
     @BeforeEach
     internal fun setUp() {
@@ -153,7 +159,7 @@ abstract class AbstractIntegrationTest {
     fun updateResultFor(
         orderNumber: String,
         issuerId: String? = null,
-        labIdHeader: String,
+        labIdHeader: String = this.labIdHeader,
         result: Result,
         testType: TestType = TestType.PCR,
         sampledAt: Long? = null,
@@ -202,6 +208,35 @@ abstract class AbstractIntegrationTest {
 
         return mockMvc.get(url).andReturn().responseBody()
     }
+
+    protected fun getLmsReport(
+        event: String,
+        clientHeader: String = reportClientHeader,
+        reportedAfter: Long? = null,
+        sampledAfter: Long? = null,
+        pageSize: Int? = null,
+        startKey: String? = null
+    ): ReportsController.LmsReportResponse.Success = mockMvc.get("/v1/reports/lms") {
+        headers { setBasicAuth(clientHeader) }
+        param("event", event)
+
+        reportedAfter?.let {
+            param("reportedAfter", it.toString())
+        }
+
+        sampledAfter?.let {
+            param("sampledAfter", it.toString())
+        }
+
+        pageSize?.let {
+            param("pageSize", it.toString())
+        }
+
+        startKey?.let {
+            param("startKey", it)
+        }
+    }.andExpect { status { isOk } }
+        .andReturn().responseBody()
 
     private inline fun <reified T> MvcResult.responseBody(): T {
         return objectMapper.readValue(response.contentAsString)

@@ -4,6 +4,13 @@ labres:
     labs:
       - id: test_lab
         issuers: test_issuer, labres
+    reportClients:
+      - userName: test_report_client
+        testSiteIds:
+          - test_site_1
+          - test_site_2
+      - userName: test_report_client_2
+        testSiteIds:
 
 dynamo:
   table-name: order_information
@@ -74,6 +81,12 @@ labres:
         issuers: labres
       - id: charite
         issuers: labres
+    reportClients:
+      - userName: hmx
+        testSiteIds:
+          - hmx-1
+          - hmx-2
+          - hmx-3
         
 spring:
   profiles: dev

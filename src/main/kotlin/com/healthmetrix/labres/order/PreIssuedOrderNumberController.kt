@@ -395,10 +395,10 @@ class PreIssuedOrderNumberController(
         )
         val sample: Sample = Sample.SALIVA,
         @Schema(
-            description = "Unix Epoch timestamp when the sample has been taken",
+            description = "Unix Epoch timestamp in milliseconds when the sample has been taken",
             nullable = true,
             required = false,
-            example = "1596184744"
+            example = "1598886166256"
         )
         val sampledAt: Long? = null,
         @Schema(
