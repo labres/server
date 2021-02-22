@@ -11,6 +11,11 @@ type: docker
     branch:
       - master
 
+.when_dev: &when_dev
+  when:
+    branch:
+      - dev
+
 .assume_role: &assume_role
   image: amazon/aws-cli
   commands:
@@ -65,14 +70,14 @@ steps:
       ROLE_ARN:
         from_secret: dev_role_arn
     <<: *assume_role
-    <<: *when_master
+    <<: *when_dev
 
   - name: dev - release
     environment:
       BUCKET_NAME:
         from_secret: dev_bucket
     <<: *release
-    <<: *when_master
+    <<: *when_dev
 
   - name: dev - deploy
     image: amazon/aws-cli
@@ -83,7 +88,7 @@ steps:
         aws elasticbeanstalk update-environment
         --environment-name lab-res-dev
         --version-label "${DRONE_COMMIT_SHA:0:8}_${DRONE_BUILD_NUMBER}"
-    <<: *when_master
+    <<: *when_dev
 
   # TODO: Wait for deployment to run through and run integration tests
     
